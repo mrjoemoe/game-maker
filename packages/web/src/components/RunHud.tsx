@@ -42,9 +42,18 @@ export function RunHud({ game, onSoftReset }: RunHudProps) {
           })
         )}
       </div>
+      {run.bump && run.status === "playing" ? (
+        <p className="run-bump" role="status">
+          {run.bump}
+        </p>
+      ) : null}
       {ended ? (
         <div className={`run-banner ${run.status}`}>
-          <p>{run.status === "won" ? "You reached the castle!" : "You fell…"}</p>
+          <p>
+            {run.status === "won"
+              ? "You reached the castle!"
+              : (run.bump ?? "Path over — you lose.")}
+          </p>
           <button type="button" onClick={onSoftReset}>
             Try again
           </button>

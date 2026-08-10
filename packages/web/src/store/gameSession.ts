@@ -20,7 +20,8 @@ export type UiState = {
 export type UiAction =
   | { type: "setMode"; mode: InteractionMode }
   | { type: "selectPiece"; pieceId: string | null }
-  | { type: "game"; action: GameAction };
+  | { type: "game"; action: GameAction }
+  | { type: "replaceGame"; game: GameState };
 
 export function createUiState(definition: GameDefinition): UiState {
   const runMode = isRunModeEnabled(definition);
@@ -39,13 +40,22 @@ export function uiReducer(state: UiState, action: UiAction): UiState {
       return { ...state, mode: action.mode, selectedPieceId: null };
     case "selectPiece":
       return { ...state, selectedPieceId: action.pieceId };
+    case "replaceGame":
+      return {
+        ...state,
+        game: action.game,
+        selectedPieceId: isRunModeEnabled(action.game.definition)
+          ? (action.game.definition.run?.heroPieceId ?? null)
+          : state.selectedPieceId,
+      };
     case "game": {
       try {
         const game = applyAction(state.game, action.action);
         const clearsSelection =
           action.action.type === "reset" ||
           action.action.type === "movePiece" ||
-          action.action.type === "softReset";
+          action.action.type === "softReset" ||
+          action.action.type === "runProgram";
         const runMode = isRunModeEnabled(game.definition);
         const selectedPieceId = clearsSelection
           ? runMode
@@ -72,17 +82,8 @@ export function cellClicked(
   pieceIdAtCell: string | undefined,
 ): UiAction[] {
   if (isRunModeEnabled(state.game.definition) || state.mode === "step") {
-    const heroId =
-      state.game.definition.run?.heroPieceId ?? state.selectedPieceId;
-    if (!heroId || state.game.run.status !== "playing") {
-      return [];
-    }
-    return [
-      {
-        type: "game",
-        action: { type: "step", pieceId: heroId, destination: coord },
-      },
-    ];
+    // Run mode uses the path planner — board clicks do not step.
+    return [];
   }
 
   if (state.mode === "flip") {

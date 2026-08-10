@@ -10,9 +10,10 @@
     "optional": ["items", "run"],
     "features": ["tileFlip", "runMode"],
     "notes": {
-      "run": "Required when features.runMode is true: { heroPieceId, startPosition, maxHp, baseAttack }",
+      "run": "Required when features.runMode is true: { heroPieceId, startPosition, maxHp, baseAttack, programLength? }",
       "items": "Optional ItemDefinition[] with attackBonus / maxHpBonus",
-      "tileEffects": "TileTypeDefinition.effect may be empty|wall|trap|enemy|powerup|goal"
+      "tileEffects": "TileTypeDefinition.effect may be empty|wall|trap|enemy|powerup|goal",
+      "programLength": "Exact number of charted moves before runProgram (default 6)"
     }
   }
 }

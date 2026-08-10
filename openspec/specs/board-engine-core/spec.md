@@ -111,31 +111,19 @@ When run mode is enabled, the game state SHALL include a run with status (playin
 - **THEN** the run starts playing with HP M, an empty or seeded inventory, and attempt count 1
 
 ### Requirement: Step action reveals and resolves tiles
-The engine SHALL provide a step action that moves the hero to an in-bounds orthogonally adjacent cell, reveals that tile face up, and resolves its effect. A wall SHALL reveal the tile but reject the move. A step SHALL be a no-op when the run is not playing.
+The engine SHALL provide a step action that moves the hero to an in-bounds orthogonally adjacent cell and reveals that tile face up when the crossing is allowed. A step SHALL be a no-op when the run is not playing. Only empty-effect tiles (meadow/forest) are safe path tiles.
 
 #### Scenario: Step onto an empty neighbor
 - **WHEN** the hero steps onto an adjacent empty face-down tile
-- **THEN** the hero moves there and the tile becomes face up
+- **THEN** the hero moves there, the tile becomes face up, and the run stays playing
 
-#### Scenario: Step into a wall
-- **WHEN** the hero steps toward an adjacent wall tile
-- **THEN** the wall tile becomes face up and the hero's position is unchanged
+#### Scenario: Step into a full-cell wall
+- **WHEN** the hero steps toward an adjacent full-cell wall tile
+- **THEN** the wall tile becomes face up, the hero's position is unchanged, and the run is lost with a path-over message
 
-#### Scenario: Step onto a trap
-- **WHEN** the hero steps onto a trap tile with damage D
-- **THEN** the hero's HP decreases by D and the run becomes lost if HP reaches zero
-
-#### Scenario: Step onto an enemy and win
-- **WHEN** the hero's effective attack is at least the enemy's power
-- **THEN** the enemy is defeated, its cell is marked resolved, and any reward item is added to the inventory
-
-#### Scenario: Step onto an enemy and lose the fight
-- **WHEN** the hero's effective attack is below the enemy's power
-- **THEN** the hero takes the enemy's damage and the enemy cell is not resolved
-
-#### Scenario: Step onto the goal
-- **WHEN** the hero steps onto a goal tile
-- **THEN** the run status becomes won
+#### Scenario: Step onto a non-empty hazard or goal
+- **WHEN** the hero steps onto a trap, enemy, powerup, or goal tile
+- **THEN** the hero moves onto that tile, the run is lost, and the bump message reports that the path is over because of that tile
 
 ### Requirement: Soft reset preserves learned map and items
 The engine SHALL provide a soft reset action that returns the hero to the start position, restores HP to max, seeds the inventory from discovered items, increments the attempt count, and clears enemy resolved flags, while preserving revealed tile faces and discovered items.
@@ -147,3 +135,24 @@ The engine SHALL provide a soft reset action that returns the hero to the start 
 #### Scenario: Full reset clears discoveries
 - **WHEN** a full reset action is applied
 - **THEN** tile faces, hero position, run state, and discovered items all return to the initial definition
+
+### Requirement: Programmed path length
+A run-mode definition MAY set `programLength` (default 6). The engine SHALL accept a `runProgram` of exactly that many orthogonal steps and SHALL stop applying further steps once the run is no longer playing.
+
+#### Scenario: Program stops after path-over
+- **WHEN** a programmed step ends the run as lost
+- **THEN** remaining steps in that program are not applied
+
+### Requirement: Side walls on tiles
+Board cells MAY carry zero or more orthogonal side walls. Board config MAY generate side walls with weights favoring mostly none, some one-sided, and few two-sided walls in random orientations. Crossing a walled edge SHALL reveal the destination and end the run as lost with a reported reason.
+
+#### Scenario: Side wall ends the path
+- **WHEN** the hero attempts to cross a side wall
+- **THEN** the destination tile is revealed, the hero does not move, and the run is lost with a wall path-over message
+
+### Requirement: Safe path tiles only
+In run mode, stepping onto a tile whose effect is not empty (meadow/forest) SHALL end the run as lost and report why (e.g. found a Castle — path over). Full-cell wall tiles SHALL reveal, keep the hero in place, and end the run as lost.
+
+#### Scenario: Castle ends the path
+- **WHEN** the hero steps onto a goal/castle tile
+- **THEN** the run status becomes lost and the bump message states the castle ended the path

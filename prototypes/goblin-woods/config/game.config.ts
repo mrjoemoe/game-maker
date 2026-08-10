@@ -1,11 +1,9 @@
 import type { GameDefinition } from "@game-maker/engine";
 
 /**
- * Goblin Woods — learn-the-map / die-and-retry forest run.
- *
- * Blind first runs usually fail on traps or underpowered goblin fights.
- * After a few deaths you know the walls, pits, and where the sword/shield
- * sit, then route around danger or come back geared for the castle.
+ * Goblin Woods — chart a 6-move path through a hidden forest.
+ * Start at the bottom center; castle waits near the top. Learn the map
+ * across failed runs, then program smarter routes with found gear.
  */
 export const goblinWoods: GameDefinition = {
   id: "goblin-woods",
@@ -21,12 +19,13 @@ export const goblinWoods: GameDefinition = {
   ],
   run: {
     heroPieceId: "hero",
-    startPosition: { x: 0, y: 0 },
+    startPosition: { x: 3, y: 6 },
     maxHp: 100,
     baseAttack: 1,
+    programLength: 6,
   },
   board: {
-    grid: { width: 6, height: 6 },
+    grid: { width: 7, height: 7 },
     tileTypes: [
       { id: "meadow", label: "Meadow", color: "#8fbc6b", effect: { kind: "empty" } },
       { id: "forest", label: "Forest", color: "#4f7a3e", effect: { kind: "empty" } },
@@ -87,36 +86,46 @@ export const goblinWoods: GameDefinition = {
       },
     ],
     defaultTileTypeId: "meadow",
+    sideWalls: {
+      seed: 42,
+      weights: { none: 0.7, one: 0.25, two: 0.05 },
+    },
     overrides: [
-      // Cosmetic forest patches
-      { coord: { x: 1, y: 0 }, typeId: "forest" },
-      { coord: { x: 3, y: 2 }, typeId: "forest" },
-      { coord: { x: 4, y: 4 }, typeId: "forest" },
-      { coord: { x: 0, y: 4 }, typeId: "forest" },
+      // Cosmetic forest
+      { coord: { x: 1, y: 5 }, typeId: "forest" },
+      { coord: { x: 5, y: 5 }, typeId: "forest" },
+      { coord: { x: 2, y: 3 }, typeId: "forest" },
+      { coord: { x: 4, y: 2 }, typeId: "forest" },
+      { coord: { x: 0, y: 1 }, typeId: "forest" },
+      { coord: { x: 6, y: 1 }, typeId: "forest" },
 
-      // Walls blocking the obvious shortcuts
-      { coord: { x: 2, y: 0 }, typeId: "thicket" },
-      { coord: { x: 2, y: 1 }, typeId: "river" },
+      // Walls — block center lane shortcuts
+      { coord: { x: 3, y: 4 }, typeId: "thicket" },
+      { coord: { x: 3, y: 3 }, typeId: "river" },
 
-      // Traps on tempting paths
-      { coord: { x: 1, y: 1 }, typeId: "pit" },
-      { coord: { x: 3, y: 3 }, typeId: "snare" },
+      // Traps on tempting climbs
+      { coord: { x: 2, y: 5 }, typeId: "pit" },
+      { coord: { x: 4, y: 5 }, typeId: "snare" },
+      { coord: { x: 1, y: 2 }, typeId: "pit" },
 
       // Enemies escalate toward the castle
-      { coord: { x: 2, y: 2 }, typeId: "goblin" },
-      { coord: { x: 4, y: 2 }, typeId: "brute" },
-      { coord: { x: 4, y: 5 }, typeId: "villain" },
+      { coord: { x: 2, y: 4 }, typeId: "goblin" },
+      { coord: { x: 4, y: 3 }, typeId: "brute" },
+      { coord: { x: 3, y: 1 }, typeId: "villain" },
 
-      // Gear off the main line — find on attempt 1, use on attempt 2+
-      { coord: { x: 0, y: 3 }, typeId: "sword-cache" },
-      { coord: { x: 5, y: 1 }, typeId: "shield-cache" },
+      // Gear off the main line
+      { coord: { x: 0, y: 4 }, typeId: "sword-cache" },
+      { coord: { x: 6, y: 3 }, typeId: "shield-cache" },
 
-      // Goal
-      { coord: { x: 5, y: 5 }, typeId: "castle" },
+      // Goal near top center
+      { coord: { x: 3, y: 0 }, typeId: "castle" },
+
+      // Keep the starting meadow free of side walls so the first plan isn't blocked in place
+      { coord: { x: 3, y: 6 }, walls: [] },
     ],
   },
   pieceTypes: [{ id: "hero", label: "Hero", color: "#c47a2c", icon: "H" }],
-  initialPieces: [{ id: "hero", typeId: "hero", position: { x: 0, y: 0 } }],
+  initialPieces: [{ id: "hero", typeId: "hero", position: { x: 3, y: 6 } }],
 };
 
 export default goblinWoods;

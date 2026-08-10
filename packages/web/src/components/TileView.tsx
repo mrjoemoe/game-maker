@@ -2,9 +2,11 @@ import {
   tileEffect,
   type Coord,
   type PieceInstance,
+  type TileSide,
   type TileState,
   type TileTypeDefinition,
 } from "@game-maker/engine";
+import type { CSSProperties } from "react";
 
 type TileViewProps = {
   coord: Coord;
@@ -37,6 +39,13 @@ function effectIcon(tileType: TileTypeDefinition, resolved?: boolean): string | 
   }
 }
 
+const SIDE_LABEL: Record<TileSide, string> = {
+  n: "north",
+  e: "east",
+  s: "south",
+  w: "west",
+};
+
 export function TileView({
   coord,
   tile,
@@ -47,24 +56,40 @@ export function TileView({
   selected,
   onClick,
 }: TileViewProps) {
-  const faceStyle = tile.isFaceUp
+  const faceStyle: CSSProperties = tile.isFaceUp
     ? { background: tileType.color }
     : { background: "var(--face-down)" };
   const icon = tile.isFaceUp ? effectIcon(tileType, tile.resolved) : null;
   const resolvedClass = tile.resolved ? " resolved" : "";
+  const isSolidWall =
+    tile.isFaceUp && tileEffect(tileType).kind === "wall";
+  const walls = tile.isFaceUp ? (tile.walls ?? []) : [];
+  const wallLabel =
+    walls.length > 0 ? ` walls ${walls.join(",")}` : "";
 
   return (
     <button
       type="button"
-      className={`tile${selected ? " selected" : ""}${tile.isFaceUp ? "" : " face-down"}${resolvedClass}`}
+      className={`tile${selected ? " selected" : ""}${tile.isFaceUp ? "" : " face-down"}${resolvedClass}${isSolidWall ? " solid-wall" : ""}`}
       style={faceStyle}
       onClick={onClick}
       aria-label={
         tile.isFaceUp
-          ? `Tile ${coord.x},${coord.y} ${tileType.label}${tile.resolved ? " cleared" : ""}`
+          ? `Tile ${coord.x},${coord.y} ${tileType.label}${tile.resolved ? " cleared" : ""}${wallLabel}${isSolidWall ? " blocked" : ""}`
           : `Tile ${coord.x},${coord.y} face down`
       }
     >
+      {walls.map((side) => (
+        <span
+          key={side}
+          className={`tile-wall tile-wall-${side}`}
+          aria-hidden="true"
+          title={`Wall on ${SIDE_LABEL[side]} side`}
+        />
+      ))}
+      {isSolidWall ? (
+        <span className="solid-wall-frame" aria-hidden="true" />
+      ) : null}
       {icon ? <span className="tile-icon">{icon}</span> : null}
       <span className="tile-label">
         {tile.isFaceUp ? tileType.label : "Hidden"}

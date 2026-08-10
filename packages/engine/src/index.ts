@@ -10,12 +10,30 @@ export {
 } from "./grid/index.js";
 
 export {
+  DIRECTIONS,
+  destinationFrom,
+  directionDelta,
+  directionLabel,
+  type Direction,
+} from "./grid/directions.js";
+
+export {
   createTileState,
   createTileTypeRegistry,
   flipTileState,
+  generateSideWalls,
+  isCrossingBlocked,
+  normalizeWalls,
+  oppositeSide,
   resolveTileType,
+  sideToward,
   tileEffect,
+  tileHasWall,
+  TILE_SIDES,
+  type SideWallConfig,
+  type SideWallWeights,
   type TileEffect,
+  type TileSide,
   type TileState,
   type TileTypeDefinition,
   type TileTypeRegistry,
@@ -49,9 +67,14 @@ export {
 
 export {
   applyDamage,
+  clearBump,
   collectItem,
   createRunState,
+  isSafePathEffect,
+  markLost,
   markWon,
+  pathOverMessage,
+  setBump,
   type CreateRunStateOptions,
   type RunState,
   type RunStatus,
@@ -62,6 +85,7 @@ export {
   createInitialState,
   isRunModeEnabled,
   isTileFlipEnabled,
+  runProgramLength,
   type GameAction,
   type GameDefinition,
   type GameFeatures,

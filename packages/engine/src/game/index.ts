@@ -1,4 +1,8 @@
 import { createBoard, getCell, type Board, type BoardConfig } from "../board/index.js";
+import {
+  destinationFrom,
+  type Direction,
+} from "../grid/directions.js";
 import { coordKey, isInBounds, neighbors, type Coord } from "../grid/index.js";
 import {
   createItemRegistry,
@@ -16,15 +20,23 @@ import {
 } from "../pieces/index.js";
 import {
   applyDamage,
+  clearBump,
   collectItem,
   createRunState,
+  isSafePathEffect,
+  markLost,
   markWon,
+  pathOverMessage,
+  setBump,
   type RunState,
 } from "../run/index.js";
 import {
   flipTileState,
+  isCrossingBlocked,
   resolveTileType,
+  sideToward,
   tileEffect,
+  tileHasWall,
   type TileState,
 } from "../tiles/index.js";
 
@@ -39,6 +51,8 @@ export type RunConfig = {
   startPosition: Coord;
   maxHp: number;
   baseAttack: number;
+  /** Exact number of moves the player must chart before executing. Defaults to 6. */
+  programLength?: number;
 };
 
 export type GameFeatures = {
@@ -71,6 +85,10 @@ export function isRunModeEnabled(definition: GameDefinition): boolean {
   return definition.features?.runMode === true;
 }
 
+export function runProgramLength(definition: GameDefinition): number {
+  return definition.run?.programLength ?? 6;
+}
+
 export type GameState = {
   definition: GameDefinition;
   board: Board;
@@ -86,6 +104,7 @@ export type GameAction =
   | { type: "flipTile"; coord: Coord }
   | { type: "movePiece"; pieceId: string; destination: Coord }
   | { type: "step"; pieceId: string; destination: Coord }
+  | { type: "runProgram"; pieceId: string; steps: Direction[] }
   | { type: "softReset" }
   | { type: "reset" };
 
@@ -253,36 +272,105 @@ function applyStep(state: GameState, pieceId: string, destination: Coord): GameS
     );
   }
 
+  const fromCell = state.board.cells[coordKey(piece.position)];
+  const destCell = state.board.cells[coordKey(destination)];
+  if (
+    fromCell &&
+    destCell &&
+    isCrossingBlocked(fromCell.walls, destCell.walls, piece.position, destination)
+  ) {
+    // Reveal the destination, stay put, path ends — walls are not safe terrain.
+    const key = coordKey(destination);
+    const cells = revealCell(state.board.cells, key);
+    const exit = sideToward(piece.position, destination);
+    const blockedOnOrigin =
+      exit !== null && tileHasWall(fromCell.walls, exit);
+    const message = blockedOnOrigin
+      ? "You hit a wall on this tile — path over"
+      : "You hit a wall on the next tile — path over";
+    return {
+      ...state,
+      board: { ...state.board, cells },
+      run: markLost(state.run, message),
+    };
+  }
+
   const key = coordKey(destination);
   let cells = revealCell(state.board.cells, key);
   const cell = cells[key];
   const tileType = resolveTileType(state.board.tileTypes, cell.typeId);
   const effect = tileEffect(tileType);
 
-  // Wall: reveal but do not move.
+  // Full-cell wall (thicket/river): reveal, stay put, path ends.
   if (effect.kind === "wall") {
     return {
       ...state,
       board: { ...state.board, cells },
+      run: markLost(state.run, `You hit a ${tileType.label} — path over`),
+    };
+  }
+
+  // Only meadow/forest (empty) are safe. Anything else ends the path as a loss.
+  if (!isSafePathEffect(effect.kind)) {
+    const pieces = movePiece(
+      state.pieces,
+      pieceId,
+      destination,
+      state.board.grid,
+    );
+    return {
+      ...state,
+      board: { ...state.board, cells },
+      pieces,
+      run: markLost(state.run, pathOverMessage(tileType.label)),
     };
   }
 
   const pieces = movePiece(state.pieces, pieceId, destination, state.board.grid);
-  const resolved = resolveStepEffects(
-    state,
-    destination,
-    cells,
-    state.run,
-    state.discoveredItemIds,
-  );
-
   return {
     ...state,
-    board: { ...state.board, cells: resolved.cells },
+    board: { ...state.board, cells },
     pieces,
-    run: resolved.run,
-    discoveredItemIds: resolved.discovered,
+    run: clearBump(state.run),
   };
+}
+
+/**
+ * Execute a locked-in list of orthogonal moves in order. Stops early if the
+ * run ends (won/lost). Out-of-bounds moves are wasted (hero stays put).
+ */
+function applyRunProgram(
+  state: GameState,
+  pieceId: string,
+  steps: Direction[],
+): GameState {
+  if (!isRunModeEnabled(state.definition) || state.run.status !== "playing") {
+    return state;
+  }
+
+  const expected = runProgramLength(state.definition);
+  if (steps.length !== expected) {
+    throw new Error(
+      `Program must contain exactly ${expected} steps, got ${steps.length}`,
+    );
+  }
+
+  let current = state;
+  for (const direction of steps) {
+    if (current.run.status !== "playing") {
+      break;
+    }
+    const piece = current.pieces.find((p) => p.id === pieceId);
+    if (!piece) {
+      throw new Error(`Unknown piece id: ${pieceId}`);
+    }
+    const destination = destinationFrom(piece.position, direction);
+    if (!isInBounds(current.board.grid, destination)) {
+      continue;
+    }
+    current = applyStep(current, pieceId, destination);
+  }
+  return current;
 }
 
 function applySoftReset(state: GameState): GameState {
@@ -417,6 +505,8 @@ export function applyAction(state: GameState, action: GameAction): GameState {
     }
     case "step":
       return applyStep(state, action.pieceId, action.destination);
+    case "runProgram":
+      return applyRunProgram(state, action.pieceId, action.steps);
     case "softReset":
       return applySoftReset(state);
     case "reset":

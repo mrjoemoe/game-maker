@@ -30,7 +30,29 @@ describe("board", () => {
       typeId: "water",
       isFaceUp: false,
       resolved: false,
+      walls: [],
     });
     expect(getCell(board, { x: 0, y: 0 }).typeId).toBe("grass");
+  });
+
+  it("generates side walls with mostly empty tiles", () => {
+    const board = createBoard({
+      grid: { width: 7, height: 7 },
+      tileTypes: baseTypes,
+      defaultTileTypeId: "grass",
+      sideWalls: {
+        seed: 7,
+        weights: { none: 0.7, one: 0.25, two: 0.05 },
+      },
+    });
+    const counts = { 0: 0, 1: 0, 2: 0, other: 0 };
+    for (const cell of Object.values(board.cells)) {
+      const n = cell.walls?.length ?? 0;
+      if (n === 0 || n === 1 || n === 2) counts[n] += 1;
+      else counts.other += 1;
+    }
+    expect(counts.other).toBe(0);
+    expect(counts[0]).toBeGreaterThan(counts[1]);
+    expect(counts[1]).toBeGreaterThanOrEqual(counts[2]);
   });
 });

@@ -53,18 +53,14 @@ When tile flipping is disabled for the active prototype, the playtest UI SHALL N
 - **THEN** the Flip tiles control is not available as an active flip mode
 
 ### Requirement: Run-mode HUD and step interaction
-When the active prototype enables run mode, the playtest app SHALL let the player move the hero one orthogonal step at a time by clicking an adjacent cell or using arrow keys, and SHALL display current/max HP, the item inventory, and the attempt count.
-
-#### Scenario: Step by clicking a neighbor
-- **WHEN** the player clicks a cell orthogonally adjacent to the hero
-- **THEN** the app dispatches a step toward that cell
+When the active prototype enables run mode, the playtest app SHALL display current/max HP, the item inventory, the attempt count, and run status messaging.
 
 #### Scenario: HUD reflects run state
-- **WHEN** the hero takes damage or collects an item
-- **THEN** the HUD updates the HP display and inventory
+- **WHEN** the run status or bump message changes
+- **THEN** the HUD updates to show HP, inventory, and any path-over reason
 
 ### Requirement: Win/lose banner and retry
-When a run ends, the app SHALL show a win or lose banner and offer a try-again control that soft resets the run while preserving the revealed map.
+When a run ends, the app SHALL show a win or lose banner (including the path-over reason when present) and offer a try-again control that soft resets the run while preserving the revealed map.
 
 #### Scenario: Retry after losing
 - **WHEN** a run is lost and the player selects try again
@@ -76,3 +72,24 @@ Revealed tiles SHALL display an indicator of their effect (enemy, trap, powerup,
 #### Scenario: Defeated enemy shown as cleared
 - **WHEN** an enemy has been defeated on a cell
 - **THEN** that cell is rendered as a cleared enemy tile
+
+### Requirement: Path planner UI
+When run mode is enabled, the playtest app SHALL provide a side path planner to queue exactly `programLength` orthogonal moves and execute them in order, stopping when the run ends.
+
+#### Scenario: Run path executes queued moves
+- **WHEN** the player fills all program slots and activates run path
+- **THEN** the app applies those steps in order until the program finishes or the run ends
+
+### Requirement: Tile count tally
+When run mode is enabled, the playtest app SHALL show a side panel listing each tile type on the map with a count.
+
+#### Scenario: Tally lists meadow count
+- **WHEN** the goblin-woods board is loaded
+- **THEN** the tile tally shows how many meadow tiles exist on the board
+
+### Requirement: Visible side walls and path-over report
+Revealed tiles with side walls SHALL show visible wall indicators on those sides. When a run ends because the path is over, the UI SHALL display the engine’s path-over reason.
+
+#### Scenario: Lose banner shows path-over reason
+- **WHEN** the run is lost with a bump message
+- **THEN** the lose banner shows that message

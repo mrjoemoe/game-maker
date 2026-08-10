@@ -1,12 +1,19 @@
 import {
+  applyAction,
+  destinationFrom,
+  isInBounds,
   isRunModeEnabled,
   isTileFlipEnabled,
   pieceAt,
+  runProgramLength,
   type Coord,
+  type Direction,
 } from "@game-maker/engine";
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BoardView } from "./components/BoardView";
+import { PathPlanner } from "./components/PathPlanner";
 import { RunHud } from "./components/RunHud";
+import { TileTally } from "./components/TileTally";
 import { resolvePrototype } from "./prototypes/registry";
 import {
   cellClicked,
@@ -17,14 +24,31 @@ import "./app.css";
 
 const prototypeId = import.meta.env.VITE_PROTOTYPE as string | undefined;
 const active = resolvePrototype(prototypeId);
+const STEP_MS = 420;
 
 export function App() {
   const [state, dispatch] = useGameSession(active.definition);
   const flipEnabled = isTileFlipEnabled(state.game.definition);
   const runMode = isRunModeEnabled(state.game.definition);
   const heroId = state.game.definition.run?.heroPieceId;
+  const programLength = runProgramLength(state.game.definition);
+
+  const [path, setPath] = useState<Direction[]>([]);
+  const [executingIndex, setExecutingIndex] = useState<number | null>(null);
+  const executingRef = useRef(false);
+  const cancelRef = useRef(false);
+  const gameRef = useRef(state.game);
+  gameRef.current = state.game;
+
+  const clearPath = useCallback(() => {
+    setPath([]);
+    setExecutingIndex(null);
+  }, []);
 
   const onCellClick = (coord: Coord) => {
+    if (runMode) {
+      return;
+    }
     const piece = pieceAt(state.game.pieces, coord);
     for (const action of cellClicked(state, coord, piece?.id)) {
       dispatch(action);
@@ -38,48 +62,110 @@ export function App() {
     dispatch({ type: "setMode", mode });
   };
 
+  const softReset = () => {
+    cancelRef.current = true;
+    executingRef.current = false;
+    clearPath();
+    dispatch({ type: "game", action: { type: "softReset" } });
+  };
+
+  const hardReset = () => {
+    cancelRef.current = true;
+    executingRef.current = false;
+    clearPath();
+    dispatch({ type: "game", action: { type: "reset" } });
+  };
+
+  const runProgramAnimated = useCallback(async () => {
+    if (!heroId || executingRef.current || path.length !== programLength) {
+      return;
+    }
+    if (gameRef.current.run.status !== "playing") {
+      return;
+    }
+
+    const steps = [...path];
+    executingRef.current = true;
+    cancelRef.current = false;
+    let local = gameRef.current;
+
+    for (let i = 0; i < steps.length; i += 1) {
+      if (cancelRef.current || local.run.status !== "playing") {
+        break;
+      }
+      const hero = local.pieces.find((p) => p.id === heroId);
+      if (!hero) {
+        break;
+      }
+      setExecutingIndex(i);
+      const destination = destinationFrom(hero.position, steps[i]);
+      if (isInBounds(local.board.grid, destination)) {
+        try {
+          local = applyAction(local, {
+            type: "step",
+            pieceId: heroId,
+            destination,
+          });
+          dispatch({ type: "replaceGame", game: local });
+          gameRef.current = local;
+        } catch {
+          // Ignore invalid step and continue the program.
+        }
+      }
+      await new Promise((r) => setTimeout(r, STEP_MS));
+    }
+
+    executingRef.current = false;
+    setExecutingIndex(null);
+    setPath([]);
+  }, [heroId, path, programLength, dispatch]);
+
   useEffect(() => {
-    if (!runMode || !heroId) {
+    if (!runMode) {
       return;
     }
     const onKeyDown = (event: KeyboardEvent) => {
-      if (state.game.run.status !== "playing") {
+      if (executingRef.current || state.game.run.status !== "playing") {
         return;
       }
-      const hero = state.game.pieces.find((p) => p.id === heroId);
-      if (!hero) {
-        return;
-      }
-      const deltas: Record<string, Coord> = {
-        ArrowUp: { x: 0, y: -1 },
-        ArrowDown: { x: 0, y: 1 },
-        ArrowLeft: { x: -1, y: 0 },
-        ArrowRight: { x: 1, y: 0 },
-        w: { x: 0, y: -1 },
-        s: { x: 0, y: 1 },
-        a: { x: -1, y: 0 },
-        d: { x: 1, y: 0 },
+      const map: Record<string, Direction> = {
+        ArrowUp: "up",
+        ArrowDown: "down",
+        ArrowLeft: "left",
+        ArrowRight: "right",
+        w: "up",
+        s: "down",
+        a: "left",
+        d: "right",
       };
-      const delta = deltas[event.key];
-      if (!delta) {
+      if (event.key === "Backspace") {
+        event.preventDefault();
+        setPath((prev) => prev.slice(0, -1));
+        return;
+      }
+      if (event.key === "Enter" && path.length === programLength) {
+        event.preventDefault();
+        void runProgramAnimated();
+        return;
+      }
+      const direction = map[event.key];
+      if (!direction) {
         return;
       }
       event.preventDefault();
-      dispatch({
-        type: "game",
-        action: {
-          type: "step",
-          pieceId: heroId,
-          destination: {
-            x: hero.position.x + delta.x,
-            y: hero.position.y + delta.y,
-          },
-        },
-      });
+      setPath((prev) =>
+        prev.length >= programLength ? prev : [...prev, direction],
+      );
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [runMode, heroId, state.game, dispatch]);
+  }, [
+    runMode,
+    path.length,
+    programLength,
+    state.game.run.status,
+    runProgramAnimated,
+  ]);
 
   return (
     <div className="app">
@@ -95,7 +181,9 @@ export function App() {
       <section className="toolbar" aria-label="Playtest controls">
         {runMode ? (
           <div className="modes">
-            <span className="mode-label">Step through the woods</span>
+            <span className="mode-label">
+              Program {programLength} moves, then run
+            </span>
           </div>
         ) : (
           <div className="modes">
@@ -117,62 +205,65 @@ export function App() {
             ) : null}
           </div>
         )}
-        <button
-          type="button"
-          className="reset"
-          onClick={() => dispatch({ type: "game", action: { type: "reset" } })}
-        >
+        <button type="button" className="reset" onClick={hardReset}>
           {runMode ? "New map" : "Reset"}
         </button>
       </section>
 
       {runMode ? (
-        <RunHud
-          game={state.game}
-          onSoftReset={() =>
-            dispatch({ type: "game", action: { type: "softReset" } })
-          }
-        />
+        <RunHud game={state.game} onSoftReset={softReset} />
       ) : null}
 
-      <main className="stage">
+      <main className={`stage${runMode ? " stage-run" : ""}`}>
         <BoardView
           game={state.game}
           selectedPieceId={state.selectedPieceId}
           onCellClick={onCellClick}
         />
-        <aside className="hint">
-          {active.extensions.banner ? <p>{active.extensions.banner}</p> : null}
-          {runMode ? (
-            <>
-              <p>
-                Click an adjacent tile (or use arrow keys / WASD) to step. Tiles
-                reveal as you enter them.
-              </p>
-              <p>
-                Die, learn the map, try again — found gear carries over.
-              </p>
-            </>
-          ) : (
-            <>
-              <p>
-                Mode:{" "}
-                <strong>
-                  {state.mode === "flip" && flipEnabled ? "Flip" : "Move"}
-                </strong>
-              </p>
-              <p>
-                {state.mode === "flip" && flipEnabled
-                  ? "Click any cell to flip its tile face up or face down."
-                  : "Click a piece, then click a destination cell."}
-              </p>
-              {state.selectedPieceId ? (
-                <p>Selected: {state.selectedPieceId}</p>
-              ) : null}
-            </>
-          )}
-        </aside>
+        {runMode ? (
+          <div className="run-sidebar">
+            <PathPlanner
+              programLength={programLength}
+              steps={path}
+              executingIndex={executingIndex}
+              disabled={state.game.run.status !== "playing"}
+              onAppend={(direction) =>
+                setPath((prev) =>
+                  prev.length >= programLength ? prev : [...prev, direction],
+                )
+              }
+              onUndo={() => setPath((prev) => prev.slice(0, -1))}
+              onClear={clearPath}
+              onExecute={() => {
+                void runProgramAnimated();
+              }}
+            />
+            <TileTally game={state.game} />
+          </div>
+        ) : (
+          <aside className="hint">
+            {active.extensions.banner ? <p>{active.extensions.banner}</p> : null}
+            <p>
+              Mode:{" "}
+              <strong>
+                {state.mode === "flip" && flipEnabled ? "Flip" : "Move"}
+              </strong>
+            </p>
+            <p>
+              {state.mode === "flip" && flipEnabled
+                ? "Click any cell to flip its tile face up or face down."
+                : "Click a piece, then click a destination cell."}
+            </p>
+            {state.selectedPieceId ? (
+              <p>Selected: {state.selectedPieceId}</p>
+            ) : null}
+          </aside>
+        )}
       </main>
+
+      {runMode && active.extensions.banner ? (
+        <p className="run-banner-note">{active.extensions.banner}</p>
+      ) : null}
     </div>
   );
 }

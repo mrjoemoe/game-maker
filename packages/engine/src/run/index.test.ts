@@ -10,6 +10,7 @@ describe("run", () => {
       maxHp: 50,
       inventory: [],
       attempts: 1,
+      bump: null,
     });
   });
 

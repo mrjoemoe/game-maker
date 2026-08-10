@@ -11,6 +11,20 @@ export type TileEffect =
   | { kind: "powerup"; itemId: string }
   | { kind: "goal" };
 
+export type { TileSide, SideWallConfig, SideWallWeights } from "./sides.js";
+export {
+  TILE_SIDES,
+  createSeededRandom,
+  generateSideWalls,
+  isCrossingBlocked,
+  normalizeWalls,
+  oppositeSide,
+  sideToward,
+  tileHasWall,
+} from "./sides.js";
+
+import { normalizeWalls, type TileSide } from "./sides.js";
+
 export type TileTypeDefinition = {
   id: string;
   label: string;
@@ -26,6 +40,8 @@ export type TileState = {
   isFaceUp: boolean;
   /** True once a one-shot effect (enemy/powerup) on this cell has fired. */
   resolved?: boolean;
+  /** Orthogonal sides of this tile that are blocked by a wall (0–4). */
+  walls?: TileSide[];
 };
 
 export type TileTypeRegistry = Record<string, TileTypeDefinition>;
@@ -61,8 +77,9 @@ export function createTileState(
   typeId: string,
   isFaceUp = true,
   resolved = false,
+  walls: TileSide[] = [],
 ): TileState {
-  return { typeId, isFaceUp, resolved };
+  return { typeId, isFaceUp, resolved, walls: normalizeWalls(walls) };
 }
 
 export function flipTileState(tile: TileState): TileState {

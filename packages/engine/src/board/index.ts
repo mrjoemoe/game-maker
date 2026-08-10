@@ -8,7 +8,10 @@ import {
 import {
   createTileState,
   createTileTypeRegistry,
+  generateSideWalls,
   resolveTileType,
+  type SideWallConfig,
+  type TileSide,
   type TileState,
   type TileTypeDefinition,
   type TileTypeRegistry,
@@ -18,6 +21,8 @@ export type CellOverride = {
   coord: Coord;
   typeId?: string;
   isFaceUp?: boolean;
+  /** Explicit side walls for this cell (skips random generation for the cell). */
+  walls?: TileSide[];
 };
 
 export type BoardConfig = {
@@ -25,6 +30,11 @@ export type BoardConfig = {
   tileTypes: TileTypeDefinition[];
   defaultTileTypeId: string;
   overrides?: CellOverride[];
+  /**
+   * When set, most tiles get 0 side walls, some get 1, few get 2, in random
+   * orientations. Per-cell `walls` overrides win over generation.
+   */
+  sideWalls?: SideWallConfig;
 };
 
 export type Board = {
@@ -43,6 +53,8 @@ export function createBoard(config: BoardConfig): Board {
     cells[coordKey(coord)] = createTileState(config.defaultTileTypeId, true);
   }
 
+  const explicitWallKeys = new Set<string>();
+
   for (const override of config.overrides ?? []) {
     const key = coordKey(override.coord);
     if (!(key in cells)) {
@@ -52,10 +64,32 @@ export function createBoard(config: BoardConfig): Board {
     }
     const typeId = override.typeId ?? cells[key].typeId;
     resolveTileType(tileTypes, typeId);
+    const walls = override.walls ?? cells[key].walls ?? [];
+    if (override.walls) {
+      explicitWallKeys.add(key);
+    }
     cells[key] = createTileState(
       typeId,
       override.isFaceUp ?? cells[key].isFaceUp,
+      cells[key].resolved ?? false,
+      walls,
     );
+  }
+
+  if (config.sideWalls) {
+    const generated = generateSideWalls(Object.keys(cells), config.sideWalls);
+    for (const [key, walls] of Object.entries(generated)) {
+      if (explicitWallKeys.has(key)) {
+        continue;
+      }
+      const current = cells[key];
+      cells[key] = createTileState(
+        current.typeId,
+        current.isFaceUp,
+        current.resolved ?? false,
+        walls,
+      );
+    }
   }
 
   return { grid, tileTypes, cells };

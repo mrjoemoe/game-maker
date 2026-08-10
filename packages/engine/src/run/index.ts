@@ -6,6 +6,8 @@ export type RunState = {
   maxHp: number;
   inventory: string[];
   attempts: number;
+  /** Short reason the last step failed or ended the path, or null. */
+  bump: string | null;
 };
 
 export type CreateRunStateOptions = {
@@ -25,6 +27,7 @@ export function createRunState(options: CreateRunStateOptions): RunState {
     maxHp,
     inventory: [...(options.inventory ?? [])],
     attempts: options.attempts ?? 1,
+    bump: null,
   };
 }
 
@@ -52,4 +55,29 @@ export function markWon(run: RunState): RunState {
     return run;
   }
   return { ...run, status: "won" };
+}
+
+export function markLost(run: RunState, message: string): RunState {
+  return {
+    ...run,
+    status: "lost",
+    bump: message,
+  };
+}
+
+export function clearBump(run: RunState): RunState {
+  return run.bump === null ? run : { ...run, bump: null };
+}
+
+export function setBump(run: RunState, message: string): RunState {
+  return { ...run, bump: message };
+}
+
+/** Meadow/forest (empty effect) are the only safe path tiles. */
+export function isSafePathEffect(kind: string): boolean {
+  return kind === "empty";
+}
+
+export function pathOverMessage(tileLabel: string): string {
+  return `You found a ${tileLabel} — path over`;
 }

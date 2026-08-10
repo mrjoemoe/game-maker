@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyAction, createInitialState, type GameDefinition } from "./index.js";
 import { getCell } from "../board/index.js";
-import { coordKey } from "../grid/index.js";
 
 const definition: GameDefinition = {
   id: "test",
@@ -64,7 +63,7 @@ const runDefinition: GameDefinition = {
     defaultTileTypeId: "meadow",
     overrides: [
       { coord: { x: 1, y: 0 }, typeId: "wall" },
-      { coord: { x: 0, y: 1 }, typeId: "trap" },
+      { coord: { x: 0, y: 2 }, typeId: "trap" },
       { coord: { x: 1, y: 1 }, typeId: "goblin" },
       { coord: { x: 2, y: 1 }, typeId: "sword-tile" },
       { coord: { x: 2, y: 0 }, typeId: "villain" },
@@ -132,7 +131,19 @@ describe("run mode", () => {
     expect(state.run.attempts).toBe(1);
   });
 
-  it("reveals a wall without moving onto it", () => {
+  it("allows stepping onto meadow and keeps playing", () => {
+    let state = createInitialState(runDefinition);
+    state = applyAction(state, {
+      type: "step",
+      pieceId: "hero",
+      destination: { x: 0, y: 1 },
+    });
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
+    expect(state.run.status).toBe("playing");
+    expect(state.run.bump).toBeNull();
+  });
+
+  it("ends the path as a loss on a full-cell wall and reports it", () => {
     let state = createInitialState(runDefinition);
     state = applyAction(state, {
       type: "step",
@@ -141,51 +152,12 @@ describe("run mode", () => {
     });
     expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
     expect(getCell(state.board, { x: 1, y: 0 }).isFaceUp).toBe(true);
-  });
-
-  it("applies trap damage and can lose the run", () => {
-    let state = createInitialState(runDefinition);
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 0, y: 1 },
-    });
-    expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
-    expect(state.run.hp).toBe(60);
-    expect(state.run.status).toBe("playing");
-
-    // Walk into the trap again via soft path: go to goblin then... just re-enter trap
-    // from meadow at 0,0 after moving back - simpler: softReset then hit trap twice more
-    // Actually traps fire every visit. Move to goblin (lose fight), softReset, etc.
-    // Direct: damage again by stepping trap after leaving and returning.
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 0, y: 0 },
-    });
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 0, y: 1 },
-    });
-    expect(state.run.hp).toBe(20);
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 0, y: 0 },
-    });
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 0, y: 1 },
-    });
-    expect(state.run.hp).toBe(0);
     expect(state.run.status).toBe("lost");
+    expect(state.run.bump).toMatch(/Wall.*path over/i);
   });
 
-  it("loses combat without a sword and wins with one", () => {
+  it("ends the path as a loss on a trap and reports it", () => {
     let state = createInitialState(runDefinition);
-    // Path: down to trap, right to goblin
     state = applyAction(state, {
       type: "step",
       pieceId: "hero",
@@ -194,141 +166,65 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "step",
       pieceId: "hero",
-      destination: { x: 1, y: 1 },
+      destination: { x: 0, y: 2 },
     });
-    expect(state.run.hp).toBe(10); // 100 - 40 trap - 50 goblin
-    expect(getCell(state.board, { x: 1, y: 1 }).resolved).toBeFalsy();
-
-    // Soft reset, pick up sword via: right is wall, so go down, right, right to sword
-    state = applyAction(state, { type: "softReset" });
-    expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
-    expect(state.run.hp).toBe(100);
-    expect(state.run.attempts).toBe(2);
-    expect(getCell(state.board, { x: 0, y: 1 }).isFaceUp).toBe(true);
-
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 0, y: 1 },
-    });
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 1, y: 1 },
-    });
-    // Still lose fight (no sword yet) — go around: softReset again, get sword first
-    state = applyAction(state, { type: "softReset" });
-    // Path to sword without goblin: can't go right (wall). Down -> right -> right
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 0, y: 1 },
-    });
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 1, y: 1 },
-    });
-    // Still no sword. From (1,1) go right to sword
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 2, y: 1 },
-    });
-    expect(state.run.inventory).toContain("sword");
-    expect(getCell(state.board, { x: 2, y: 1 }).resolved).toBe(true);
-
-    // Soft reset keeps sword, then defeat goblin
-    state = applyAction(state, { type: "softReset" });
-    expect(state.run.inventory).toContain("sword");
-    expect(getCell(state.board, { x: 1, y: 1 }).resolved).toBe(false);
-    expect(getCell(state.board, { x: 2, y: 1 }).resolved).toBe(true);
-
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 0, y: 1 },
-    });
-    const hpBefore = state.run.hp;
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 1, y: 1 },
-    });
-    expect(state.run.hp).toBe(hpBefore); // won fight, no damage
-    expect(getCell(state.board, { x: 1, y: 1 }).resolved).toBe(true);
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 2 });
+    expect(state.run.status).toBe("lost");
+    expect(state.run.bump).toBe("You found a Trap — path over");
   });
 
-  it("wins on the goal tile", () => {
-    let state = createInitialState(runDefinition);
-    // Force a short path: move freely with movePiece is not run-mode step,
-    // so walk meadow path: down, right, right, down to castle — but goblin in way.
-    // Cheat: use soft path around — go down, right (fight lose), softReset with sword path.
-    // Simpler: manually place via successive steps after equipping sword.
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 0, y: 1 },
-    });
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 1, y: 1 },
-    });
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 2, y: 1 },
-    });
-    state = applyAction(state, { type: "softReset" });
-    // With sword: down, right (beat goblin), down (meadow 1,2), right (castle)
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 0, y: 1 },
-    });
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 1, y: 1 },
-    });
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 1, y: 2 },
-    });
+  it("ends the path when stepping onto the castle from an adjacent meadow", () => {
+    const nearCastle: GameDefinition = {
+      ...runDefinition,
+      run: {
+        ...runDefinition.run!,
+        startPosition: { x: 1, y: 2 },
+      },
+      initialPieces: [
+        { id: "hero", typeId: "hero", position: { x: 1, y: 2 } },
+      ],
+    };
+    let state = createInitialState(nearCastle);
     state = applyAction(state, {
       type: "step",
       pieceId: "hero",
       destination: { x: 2, y: 2 },
     });
-    expect(state.run.status).toBe("won");
-    expect(getCell(state.board, { x: 2, y: 2 }).isFaceUp).toBe(true);
+    expect(state.pieces[0].position).toEqual({ x: 2, y: 2 });
+    expect(state.run.status).toBe("lost");
+    expect(state.run.bump).toBe("You found a Castle — path over");
   });
 
-  it("full reset clears discoveries and reveals", () => {
+  it("stops a program early once the path is over", () => {
+    const programmed: GameDefinition = {
+      ...runDefinition,
+      run: { ...runDefinition.run!, programLength: 3 },
+    };
+    let state = createInitialState(programmed);
+    // down (meadow), down (trap → lose), up would be ignored
+    state = applyAction(state, {
+      type: "runProgram",
+      pieceId: "hero",
+      steps: ["down", "down", "up"],
+    });
+    expect(state.run.status).toBe("lost");
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 2 });
+    expect(state.run.bump).toMatch(/Trap.*path over/);
+  });
+
+  it("soft reset returns to start after a path-over loss", () => {
     let state = createInitialState(runDefinition);
     state = applyAction(state, {
       type: "step",
       pieceId: "hero",
-      destination: { x: 0, y: 1 },
+      destination: { x: 1, y: 0 },
     });
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 1, y: 1 },
-    });
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 2, y: 1 },
-    });
-    expect(state.discoveredItemIds).toContain("sword");
-    state = applyAction(state, { type: "reset" });
-    expect(state.discoveredItemIds).toEqual([]);
-    expect(state.run.attempts).toBe(1);
-    expect(getCell(state.board, { x: 0, y: 1 }).isFaceUp).toBe(false);
+    expect(state.run.status).toBe("lost");
+    state = applyAction(state, { type: "softReset" });
+    expect(state.run.status).toBe("playing");
     expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
+    expect(state.run.attempts).toBe(2);
+    expect(getCell(state.board, { x: 1, y: 0 }).isFaceUp).toBe(true);
   });
 
   it("rejects non-adjacent steps", () => {
@@ -342,60 +238,58 @@ describe("run mode", () => {
     ).toThrow(/orthogonal neighbor/);
   });
 
-  it("no-ops step when run is lost", () => {
-    let state = createInitialState(runDefinition);
-    // Drain HP via traps
-    for (let i = 0; i < 3; i += 1) {
-      state = applyAction(state, {
-        type: "step",
+  it("rejects programs of the wrong length", () => {
+    const programmed: GameDefinition = {
+      ...runDefinition,
+      run: { ...runDefinition.run!, programLength: 6 },
+    };
+    const state = createInitialState(programmed);
+    expect(() =>
+      applyAction(state, {
+        type: "runProgram",
         pieceId: "hero",
-        destination: { x: 0, y: 1 },
-      });
-      if (state.run.status === "lost") break;
-      state = applyAction(state, {
-        type: "step",
-        pieceId: "hero",
-        destination: { x: 0, y: 0 },
-      });
-    }
-    expect(state.run.status).toBe("lost");
-    const pos = { ...state.pieces[0].position };
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: pos.y === 0 ? { x: 0, y: 1 } : { x: 0, y: 0 },
-    });
-    expect(state.pieces[0].position).toEqual(pos);
+        steps: ["up", "up"],
+      }),
+    ).toThrow(/exactly 6 steps/);
   });
 
-  it("does not re-trigger a collected powerup", () => {
-    let state = createInitialState(runDefinition);
-    // Get to sword: down, right (take goblin hit), right
+  it("blocks a side wall, reveals the destination, and ends the path", () => {
+    const walled: GameDefinition = {
+      ...runDefinition,
+      board: {
+        ...runDefinition.board,
+        overrides: [
+          ...(runDefinition.board.overrides ?? []),
+          { coord: { x: 0, y: 0 }, walls: ["s"] },
+        ],
+      },
+    };
+    let state = createInitialState(walled);
     state = applyAction(state, {
       type: "step",
       pieceId: "hero",
       destination: { x: 0, y: 1 },
     });
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
+    expect(getCell(state.board, { x: 0, y: 1 }).isFaceUp).toBe(true);
+    expect(state.run.status).toBe("lost");
+    expect(state.run.bump).toMatch(/wall.*path over/i);
+  });
+
+  it("no-ops step when run is already lost", () => {
+    let state = createInitialState(runDefinition);
     state = applyAction(state, {
       type: "step",
       pieceId: "hero",
-      destination: { x: 1, y: 1 },
+      destination: { x: 1, y: 0 },
     });
+    expect(state.run.status).toBe("lost");
+    const pos = { ...state.pieces[0].position };
     state = applyAction(state, {
       type: "step",
       pieceId: "hero",
-      destination: { x: 2, y: 1 },
+      destination: { x: 0, y: 1 },
     });
-    expect(state.run.inventory).toEqual(["sword"]);
-    // Leave and re-enter
-    state = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 2, y: 2 },
-    });
-    // Won on castle — soft reset to keep playing powerup check
-    state = applyAction(state, { type: "softReset" });
-    // Powerup stays resolved across softReset
-    expect(state.board.cells[coordKey({ x: 2, y: 1 })].resolved).toBe(true);
+    expect(state.pieces[0].position).toEqual(pos);
   });
 });
