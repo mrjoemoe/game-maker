@@ -76,7 +76,10 @@ export function App() {
   };
 
   const runProgramAnimated = useCallback(async () => {
-    if (!heroId || executingRef.current || path.length !== programLength) {
+    if (!heroId || executingRef.current || path.length < 1) {
+      return;
+    }
+    if (path.length > programLength) {
       return;
     }
     if (gameRef.current.run.status !== "playing") {
@@ -130,7 +133,7 @@ export function App() {
         {runMode ? (
           <div className="modes">
             <span className="mode-label">
-              Program {programLength} action+move pairs, then run
+              Program up to {programLength} action+move pairs, then run
             </span>
           </div>
         ) : (

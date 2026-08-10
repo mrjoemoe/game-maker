@@ -78,15 +78,15 @@ Revealed tiles SHALL display an indicator of their effect (enemy, trap, powerup,
 - **THEN** that cell is rendered as a cleared enemy tile
 
 ### Requirement: Path planner UI
-When run mode is enabled, the playtest app SHALL provide a side path planner to queue exactly `programLength` action+move pairs and execute them in order (action then move), stopping when the run ends. The UI SHALL let the player choose each step’s action (`none`, take from Mage, or use an item) and move direction. Each slot SHALL display the action summary and move. When composing a later step, Use-item actions SHALL be enabled for items in the current inventory and for items taken via earlier queued `takeFromMage` steps in the same program.
+When run mode is enabled, the playtest app SHALL provide a side path planner to queue up to `programLength` action+move pairs and execute them in order (action then move), stopping when the run ends. The UI SHALL let the player choose each step’s action (`none`, take from Mage, or use an item) and move direction. Each slot SHALL display the action summary and move. When composing a later step, Use-item actions SHALL be enabled for items in the current inventory and for items taken via earlier queued `takeFromMage` steps in the same program. Run path SHALL be enabled when at least one complete pair is queued (not only when all slots are filled).
 
 #### Scenario: Run path executes queued moves
 - **WHEN** the player fills all program slots and activates run path
 - **THEN** the app applies those action+move pairs in order until the program finishes or the run ends
 
 #### Scenario: Full program required before run
-- **WHEN** fewer than `programLength` complete action+move pairs are set
-- **THEN** Run path stays disabled
+- **WHEN** fewer than `programLength` complete action+move pairs are set but at least one pair is queued
+- **THEN** Run path is enabled so the player can end the chart early
 
 #### Scenario: Slot shows use-item then north
 - **WHEN** the player sets a step to use the sword and move up
@@ -95,6 +95,10 @@ When run mode is enabled, the playtest app SHALL provide a side path planner to 
 #### Scenario: Take then use in the same plan
 - **WHEN** the player queues takeFromMage for an item in an earlier slot
 - **THEN** Use for that item is available when composing a later slot in the same program
+
+#### Scenario: Empty program cannot run
+- **WHEN** no action+move pairs are queued
+- **THEN** Run path stays disabled
 
 ### Requirement: Tile count tally
 When run mode is enabled, the playtest app SHALL show a side panel listing each tile type on the map with a count. When a tile type declares a `passItemId`, the tally row SHALL show that item (label and/or icon) as the gear used to pass it.

@@ -141,11 +141,15 @@ The engine SHALL provide a soft reset action that returns the hero to the start 
 - **THEN** the new board is built with a new side-wall seed (not necessarily the previous seed)
 
 ### Requirement: Programmed path length
-A run-mode definition MAY set `programLength` (default 6). The engine SHALL accept a `runProgram` of exactly that many orthogonal steps and SHALL stop applying further steps once the run is no longer playing.
+A run-mode definition MAY set `programLength` (default 6) as the maximum number of steps in one program. The engine SHALL accept a `runProgram` with between 1 and `programLength` steps (inclusive) and SHALL stop applying further steps once the run is no longer playing. Empty programs and programs longer than `programLength` SHALL be rejected.
 
 #### Scenario: Program stops after path-over
 - **WHEN** a programmed step ends the run as lost
 - **THEN** remaining steps in that program are not applied
+
+#### Scenario: Short program is accepted
+- **WHEN** a runProgram with fewer than `programLength` steps (but at least one) is applied
+- **THEN** those steps execute in order without requiring the remaining slots
 
 ### Requirement: Side walls on tiles
 Board cells MAY carry zero or more orthogonal side walls. Board config MAY generate side walls with weights favoring mostly none, some one-sided, and few two-sided walls in random orientations. Crossing a walled edge SHALL end the run as lost with a reported reason. When the block is on the hero’s current tile (exit side), the destination SHALL NOT be revealed. When the block is only on the destination’s entry side, the destination SHALL be revealed.
@@ -200,7 +204,7 @@ Mage tiles SHALL NOT open an interactive pending choice on step. Granting SHALL 
 - **THEN** the hero arrives on the Mage, the run stays playing, and no pending item choice is set
 
 ### Requirement: Action-then-move program steps
-A run program SHALL consist of exactly `programLength` steps, each pairing a program action with an orthogonal move. Each step SHALL apply the action first, then the move. If the action is invalid for the current situation, the run SHALL be lost with a reported reason and the move SHALL not apply.
+A run program SHALL consist of 1 to `programLength` steps, each pairing a program action with an orthogonal move. Each step SHALL apply the action first, then the move. If the action is invalid for the current situation, the run SHALL be lost with a reported reason and the move SHALL not apply.
 
 #### Scenario: Take from Mage while standing on Mage
 - **WHEN** the hero is on an unresolved Mage and the step action is takeFromMage with a valid item id

@@ -55,7 +55,7 @@ export type RunConfig = {
   startPosition: Coord;
   maxHp: number;
   baseAttack: number;
-  /** Exact number of action+move pairs the player must chart. Defaults to 6. */
+  /** Maximum action+move pairs per program. Defaults to 6. */
   programLength?: number;
 };
 
@@ -622,8 +622,9 @@ function applyProgramStep(
 }
 
 /**
- * Execute a locked-in list of action+move pairs. Stops early if the run ends.
- * Out-of-bounds moves are wasted (hero stays put) after a successful action.
+ * Execute a locked-in list of action+move pairs (1..programLength).
+ * Stops early if the run ends. Out-of-bounds moves are wasted after a
+ * successful action.
  */
 function applyRunProgram(
   state: GameState,
@@ -634,10 +635,10 @@ function applyRunProgram(
     return state;
   }
 
-  const expected = runProgramLength(state.definition);
-  if (steps.length !== expected) {
+  const maxSteps = runProgramLength(state.definition);
+  if (steps.length < 1 || steps.length > maxSteps) {
     throw new Error(
-      `Program must contain exactly ${expected} steps, got ${steps.length}`,
+      `Program must contain between 1 and ${maxSteps} steps, got ${steps.length}`,
     );
   }
 

@@ -242,7 +242,7 @@ describe("run mode", () => {
     ).toThrow(/orthogonal neighbor/);
   });
 
-  it("rejects programs of the wrong length", () => {
+  it("rejects empty or over-long programs", () => {
     const programmed: GameDefinition = {
       ...runDefinition,
       run: { ...runDefinition.run!, programLength: 6 },
@@ -252,12 +252,34 @@ describe("run mode", () => {
       applyAction(state, {
         type: "runProgram",
         pieceId: "hero",
-        steps: [
-          { action: { kind: "none" }, move: "up" },
-          { action: { kind: "none" }, move: "up" },
-        ],
+        steps: [],
       }),
-    ).toThrow(/exactly 6 steps/);
+    ).toThrow(/between 1 and 6 steps/);
+    expect(() =>
+      applyAction(state, {
+        type: "runProgram",
+        pieceId: "hero",
+        steps: Array.from({ length: 7 }, () => ({
+          action: { kind: "none" as const },
+          move: "up" as const,
+        })),
+      }),
+    ).toThrow(/between 1 and 6 steps/);
+  });
+
+  it("accepts a short program under programLength", () => {
+    const programmed: GameDefinition = {
+      ...runDefinition,
+      run: { ...runDefinition.run!, programLength: 6 },
+    };
+    let state = createInitialState(programmed);
+    state = applyAction(state, {
+      type: "runProgram",
+      pieceId: "hero",
+      steps: [{ action: { kind: "none" }, move: "down" }],
+    });
+    expect(state.run.status).toBe("playing");
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
   });
 
   it("blocks an origin side wall without revealing the destination", () => {

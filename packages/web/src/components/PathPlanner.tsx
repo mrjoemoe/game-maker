@@ -39,7 +39,7 @@ export function PathPlanner({
 
   const full = steps.length >= programLength;
   const canExecute =
-    steps.length === programLength && !disabled && executingIndex === null;
+    steps.length >= 1 && !disabled && executingIndex === null;
   const locked = disabled || full || executingIndex !== null;
   const sortedItems = [...items].sort((a, b) => a.label.localeCompare(b.label));
 
@@ -76,8 +76,8 @@ export function PathPlanner({
     <aside className="path-planner" aria-label="Path planner">
       <h2>Chart path</h2>
       <p className="path-lede">
-        Each step is an action, then a move. Wrong actions end the run — plan
-        the whole path before you go.
+        Chart up to {programLength} action+move pairs, then run — you can go
+        with fewer steps to end the chart early. Wrong actions end the run.
       </p>
 
       <ol className="path-slots">
@@ -228,7 +228,9 @@ export function PathPlanner({
           disabled={!canExecute}
           onClick={onExecute}
         >
-          Run path
+          {steps.length > 0 && steps.length < programLength
+            ? `Run ${steps.length} step${steps.length === 1 ? "" : "s"}`
+            : "Run path"}
         </button>
       </div>
     </aside>
