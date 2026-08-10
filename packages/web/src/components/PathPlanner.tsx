@@ -38,9 +38,13 @@ export function PathPlanner({
   });
 
   const full = steps.length >= programLength;
+  const chartEndedWithExtract = steps.some(
+    (step) => step.action.kind === "extract",
+  );
   const canExecute =
     steps.length >= 1 && !disabled && executingIndex === null;
-  const locked = disabled || full || executingIndex !== null;
+  const locked =
+    disabled || full || executingIndex !== null || chartEndedWithExtract;
   const sortedItems = [...items].sort((a, b) => a.label.localeCompare(b.label));
 
   // Project inventory across the queued plan: takes add, uses remove.
@@ -54,10 +58,10 @@ export function PathPlanner({
   }
 
   const actionSummary = (action: ProgramAction): string => {
-    const item =
-      action.kind === "none"
-        ? undefined
-        : items.find((i) => i.id === action.itemId);
+    if (action.kind === "none" || action.kind === "extract") {
+      return programActionLabel(action);
+    }
+    const item = items.find((i) => i.id === action.itemId);
     return programActionLabel(action, item?.label);
   };
 
@@ -72,6 +76,9 @@ export function PathPlanner({
       return;
     }
     onAppend({ action: draftAction, move });
+    if (draftAction.kind === "extract") {
+      setDraftAction({ kind: "none" });
+    }
   };
 
   return (
@@ -79,7 +86,8 @@ export function PathPlanner({
       <h2>Chart path</h2>
       <p className="path-lede">
         Chart up to {programLength} action+move pairs, then run — you can go
-        with fewer steps to end the chart early. Wrong actions end the run.
+        with fewer steps to end the chart early. Extract ends the chart (move on
+        that step is unused). Wrong actions end the run.
       </p>
 
       <ol className="path-slots">
@@ -97,7 +105,11 @@ export function PathPlanner({
                   {step ? actionSummary(step.action) : "Action —"}
                 </span>
                 <span className="slot-dir">
-                  {step ? directionLabel(step.move) : "Move —"}
+                  {step
+                    ? step.action.kind === "extract"
+                      ? "Leave"
+                      : directionLabel(step.move)
+                    : "Move —"}
                 </span>
               </span>
             </li>
@@ -117,6 +129,19 @@ export function PathPlanner({
             onClick={() => setDraftAction({ kind: "none" })}
           >
             No action
+          </button>
+          <button
+            type="button"
+            className={
+              draftAction.kind === "extract"
+                ? "action-choice active"
+                : "action-choice"
+            }
+            disabled={locked}
+            title="Must be standing on an extraction tile; ends the chart"
+            onClick={() => setDraftAction({ kind: "extract" })}
+          >
+            🚪 Extract
           </button>
           {sortedItems.map((item) => (
             <button
@@ -163,7 +188,11 @@ export function PathPlanner({
           })}
         </div>
 
-        <p className="path-compose-label">2. Move</p>
+        <p className="path-compose-label">
+          {draftAction.kind === "extract"
+            ? "2. Confirm leave (direction unused)"
+            : "2. Move"}
+        </p>
         <div className="path-pad" role="group" aria-label="Add move">
           <button
             type="button"
@@ -205,7 +234,19 @@ export function PathPlanner({
           </div>
         </div>
         <p className="path-draft">
-          Next: <strong>{actionSummary(draftAction)}</strong>, then direction
+          {chartEndedWithExtract ? (
+            <>
+              Chart ends with <strong>Extract</strong> — Undo or Clear to change
+              it.
+            </>
+          ) : (
+            <>
+              Next: <strong>{actionSummary(draftAction)}</strong>
+              {draftAction.kind === "extract"
+                ? ", then confirm leave"
+                : ", then direction"}
+            </>
+          )}
         </p>
       </div>
 

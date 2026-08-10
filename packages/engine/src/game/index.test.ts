@@ -485,7 +485,7 @@ describe("run mode", () => {
     expect(state.run.bump).toMatch(/No Mage/i);
   });
 
-  it("extracts to bank run inventory into the stash", () => {
+  it("extracts via program action while on extraction", () => {
     const withExtract: GameDefinition = {
       ...runDefinition,
       board: {
@@ -508,14 +508,38 @@ describe("run mode", () => {
       ...state,
       run: { ...state.run, inventory: ["sword"] },
     };
+    // Step onto extraction — safe, still playing.
     state = applyAction(state, {
       type: "step",
       pieceId: "hero",
       destination: { x: 0, y: 1 },
     });
+    expect(state.run.status).toBe("playing");
+    expect(state.stashItemIds).toEqual([]);
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
+
+    // Extract action banks and ends; move is unused.
+    state = applyAction(state, {
+      type: "programStep",
+      pieceId: "hero",
+      step: { action: { kind: "extract" }, move: "down" },
+    });
     expect(state.run.status).toBe("extracted");
     expect(state.run.inventory).toEqual([]);
     expect(state.stashItemIds).toEqual(["sword"]);
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
+  });
+
+  it("fails extract when not on an extraction tile", () => {
+    let state = createInitialState(runDefinition);
+    state = applyAction(state, {
+      type: "programStep",
+      pieceId: "hero",
+      step: { action: { kind: "extract" }, move: "down" },
+    });
+    expect(state.run.status).toBe("lost");
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
+    expect(state.run.bump).toMatch(/extraction/i);
   });
 
   it("commits loadout from stash and loses it on fail", () => {

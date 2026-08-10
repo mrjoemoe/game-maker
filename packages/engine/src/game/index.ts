@@ -281,25 +281,7 @@ function applyStep(
     tileType.passItemId === usedItemId &&
     state.run.inventory.includes(usedItemId!);
 
-  // Extraction: move, bank inventory into stash, end as extracted (not a win).
-  if (effect.kind === "extraction") {
-    const pieces = movePiece(
-      state.pieces,
-      pieceId,
-      destination,
-      state.board.grid,
-    );
-    const banked = bankRunInventory(state, clearBump(state.run));
-    return {
-      ...state,
-      board: { ...state.board, cells },
-      pieces,
-      run: markExtracted(banked.run),
-      stashItemIds: banked.stashItemIds,
-    };
-  }
-
-  // Mage / empty are safe terrain (take gear via program action, not by stepping).
+  // Extraction is safe terrain; bank via program extract action (like Mage).
   if (effect.kind === "mage" || isSafePathEffect(effect.kind)) {
     const pieces = movePiece(
       state.pieces,
@@ -522,6 +504,35 @@ function applyUseItemAction(
   };
 }
 
+function applyExtractAction(state: GameState, pieceId: string): GameState {
+  const piece = state.pieces.find((p) => p.id === pieceId);
+  if (!piece) {
+    throw new Error(`Unknown piece id: ${pieceId}`);
+  }
+  const key = coordKey(piece.position);
+  const cell = state.board.cells[key];
+  if (!cell) {
+    return {
+      ...state,
+      run: markLost(state.run, "No extraction point here — path over"),
+    };
+  }
+  const tileType = resolveTileType(state.board.tileTypes, cell.typeId);
+  if (tileEffect(tileType).kind !== "extraction") {
+    return {
+      ...state,
+      run: markLost(state.run, "No extraction point here — path over"),
+    };
+  }
+
+  const banked = bankRunInventory(state, clearBump(state.run));
+  return {
+    ...state,
+    run: markExtracted(banked.run),
+    stashItemIds: banked.stashItemIds,
+  };
+}
+
 function applyProgramAction(
   state: GameState,
   pieceId: string,
@@ -535,6 +546,8 @@ function applyProgramAction(
       return applyTakeFromMage(state, pieceId, action.itemId);
     case "useItem":
       return applyUseItemAction(state, pieceId, action.itemId, move);
+    case "extract":
+      return applyExtractAction(state, pieceId);
     default: {
       const _exhaustive: never = action;
       return _exhaustive;

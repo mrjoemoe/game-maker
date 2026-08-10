@@ -165,7 +165,7 @@ Board cells MAY carry zero or more orthogonal side walls. Board config MAY gener
 - **THEN** the destination stays face down, the hero does not move, and the run is lost with a this-tile wall path-over message
 
 ### Requirement: Safe path tiles only
-In run mode, stepping onto a tile whose effect is not empty, mage, or extraction SHALL end the run as lost and report why (e.g. found a Castle — path over), unless that step’s action used the tile’s `passItemId`. Full-cell wall tiles without a matching used pass item SHALL reveal, keep the hero in place, and end the run as lost. Mage and extraction tiles are safe to step onto (extraction then banks and ends the attempt).
+In run mode, stepping onto a tile whose effect is not empty, mage, or extraction SHALL end the run as lost and report why (e.g. found a Castle — path over), unless that step’s action used the tile’s `passItemId`. Full-cell wall tiles without a matching used pass item SHALL reveal, keep the hero in place, and end the run as lost. Mage and extraction tiles are safe to step onto. Extraction banking requires a later extract action.
 
 #### Scenario: Castle ends the path
 - **WHEN** the hero steps onto a goal/castle tile without using its pass item that step
@@ -173,7 +173,7 @@ In run mode, stepping onto a tile whose effect is not empty, mage, or extraction
 
 #### Scenario: Extraction does not path-over
 - **WHEN** the hero steps onto an extraction tile
-- **THEN** the run does not become lost from that tile’s effect alone; extraction banking applies
+- **THEN** the run stays playing and does not become lost from that tile’s effect alone
 
 ### Requirement: Pass item traverses rough tiles
 A tile type MAY declare `passItemId`. When the hero uses that item as the step action and then moves onto the matching tile, the engine SHALL treat the tile as traversable: reveal it, move the hero onto it, keep the run playing (goal wins and banks), and consume the used item from the run inventory. Merely holding the item without using it that step SHALL NOT bypass the hazard. Side-wall crossings SHALL NOT be cleared by pass items.
@@ -210,7 +210,7 @@ Mage tiles SHALL NOT open an interactive pending choice on step. Granting SHALL 
 - **THEN** the hero arrives on the Mage, the run stays playing, and no pending item choice is set
 
 ### Requirement: Action-then-move program steps
-A run program SHALL consist of 1 to `programLength` steps, each pairing a program action with an orthogonal move. Each step SHALL apply the action first, then the move. If the action is invalid for the current situation, the run SHALL be lost with a reported reason and the move SHALL not apply. Successful `useItem` actions SHALL consume the item from the run inventory.
+A run program SHALL consist of 1 to `programLength` steps, each pairing a program action with an orthogonal move. Each step SHALL apply the action first, then the move. If the action is invalid for the current situation, the run SHALL be lost with a reported reason and the move SHALL not apply. Successful `useItem` actions SHALL consume the item from the run inventory. A successful `extract` action SHALL end the run as extracted so the move does not apply.
 
 #### Scenario: Take from Mage while standing on Mage
 - **WHEN** the hero is on an unresolved Mage and the step action is takeFromMage with a valid item id
@@ -227,6 +227,10 @@ A run program SHALL consist of 1 to `programLength` steps, each pairing a progra
 #### Scenario: Use item that does not match the destination fails
 - **WHEN** the hero uses an item whose pass/break effect does not apply to the upcoming move
 - **THEN** the run is lost before or without a successful traverse
+
+#### Scenario: Extract ends before the move
+- **WHEN** the hero is on extraction and the step action is extract with any move
+- **THEN** the run becomes extracted and the move is not applied
 
 ### Requirement: Sledgehammer breaks side walls
 An item MAY declare `breaksSideWalls`. Using that item as a step action SHALL clear side walls on the edge being crossed when that crossing is blocked and SHALL consume the item from the run inventory; using it when the crossing is not blocked SHALL fail the run.
@@ -251,14 +255,18 @@ When run mode is enabled, game state SHALL include a persistent `stashItemIds` l
 - **THEN** those items are not returned to the stash and the next soft-reset attempt starts with an empty run inventory until a new loadout is committed
 
 ### Requirement: Extraction banks run inventory
-A tile type MAY declare effect kind `extraction`. Stepping onto an extraction tile while the run is playing SHALL move the hero onto it, reveal it if needed, merge the current run inventory into the stash, clear the run inventory, and set run status to `extracted` (not won). Extraction SHALL NOT require a pass item. Extraction is not the win condition.
+A tile type MAY declare effect kind `extraction`. Stepping onto an extraction tile SHALL be a safe move (like Mage): reveal if needed, move the hero onto it, and keep the run playing. Banking and ending as `extracted` SHALL occur only via the `extract` program action while standing on that tile. Extraction is not the win condition.
+
+#### Scenario: Step onto extraction stays playing
+- **WHEN** the hero steps onto an extraction tile without an extract action on that step
+- **THEN** the hero arrives on the tile, the run stays playing, and the stash is unchanged
 
 #### Scenario: Extract with gathered gear
-- **WHEN** the hero steps onto an extraction tile while holding items in the run inventory
+- **WHEN** the hero stands on extraction and programs extract while holding items
 - **THEN** those items are in the stash, the run inventory is empty, and the run status is extracted
 
 #### Scenario: Extract empty-handed
-- **WHEN** the hero steps onto an extraction tile with an empty run inventory
+- **WHEN** the hero stands on extraction and programs extract with an empty run inventory
 - **THEN** the stash is unchanged and the run status is extracted
 
 ### Requirement: Win at goal banks run inventory
@@ -285,4 +293,15 @@ When a board places extraction tiles on the four corner cells, those cells SHALL
 #### Scenario: Corners start revealed
 - **WHEN** a run-mode board with corner extraction is created
 - **THEN** the four corner cells are face up and have the extraction effect
+
+### Requirement: Extract program action
+A run program MAY include an `extract` action. While standing on an extraction tile, `extract` SHALL merge the run inventory into the stash, clear the run inventory, set status to `extracted`, and SHALL NOT apply the step’s move. Off an extraction tile, `extract` SHALL lose the run with a reported reason and SHALL NOT move.
+
+#### Scenario: Extract while on extraction
+- **WHEN** the hero is on an extraction tile and the step action is extract
+- **THEN** carried items are banked to the stash, status is extracted, and the hero does not move for that step
+
+#### Scenario: Extract off extraction fails
+- **WHEN** the hero is not on an extraction tile and the step action is extract
+- **THEN** the run is lost and the hero does not move
 

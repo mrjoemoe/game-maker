@@ -80,7 +80,7 @@ Revealed tiles SHALL display an indicator of their effect (enemy, trap, powerup,
 - **THEN** those corners show an extraction indicator
 
 ### Requirement: Path planner UI
-When run mode is enabled, the playtest app SHALL provide a side path planner to queue up to `programLength` action+move pairs and execute them in order (action then move), stopping when the run ends. The UI SHALL let the player choose each step’s action (`none`, take from Mage, or use an item) and move direction. Each slot SHALL display the action summary and move. When composing a later step, Use-item actions SHALL be enabled for items in the current inventory and for items taken via earlier queued `takeFromMage` steps in the same program. Run path SHALL be enabled when at least one complete pair is queued (not only when all slots are filled).
+When run mode is enabled, the playtest app SHALL provide a side path planner to queue up to `programLength` action+move pairs and execute them in order (action then move), stopping when the run ends. The UI SHALL let the player choose each step’s action (`none`, take from Mage, use an item, or extract) and move direction. Each slot SHALL display the action summary and move. When composing a later step, Use-item actions SHALL be enabled for items in the current inventory and for items taken via earlier queued `takeFromMage` steps in the same program, minus items used in earlier queued `useItem` steps. Run path SHALL be enabled when at least one complete pair is queued (not only when all slots are filled). A queued Extract step SHALL prevent appending further steps.
 
 #### Scenario: Run path executes queued moves
 - **WHEN** the player fills all program slots and activates run path
@@ -101,6 +101,10 @@ When run mode is enabled, the playtest app SHALL provide a side path planner to 
 #### Scenario: Empty program cannot run
 - **WHEN** no action+move pairs are queued
 - **THEN** Run path stays disabled
+
+#### Scenario: Extract locks further slots
+- **WHEN** the player queues Extract as a step action
+- **THEN** additional steps cannot be appended until Undo or Clear
 
 ### Requirement: Tile count tally
 When run mode is enabled, the playtest app SHALL show a side panel listing each tile type on the map with a count. When a tile type declares a `passItemId`, the tally row SHALL show that item (label and/or icon) as the gear used to pass it.
@@ -162,4 +166,15 @@ When a run ends with status extracted, the app SHALL show an extracted banner (d
 #### Scenario: Retry after extract
 - **WHEN** a run is extracted and the player selects try again
 - **THEN** the hero returns to start with the map still revealed, banked items remain in the stash, and a new loadout can be chosen
+
+### Requirement: Extract action ends the chart
+When composing a path, the playtest app SHALL offer an Extract program action. After a step whose action is Extract is queued, the UI SHALL NOT allow selecting further steps (append stays disabled until Undo/Clear removes that terminal Extract).
+
+#### Scenario: Extract is available as an action
+- **WHEN** the player composes a path step
+- **THEN** Extract is listed among step actions
+
+#### Scenario: No steps after Extract
+- **WHEN** the player queues a step with the Extract action
+- **THEN** further action/move append controls stay disabled until that step is undone or the path is cleared
 

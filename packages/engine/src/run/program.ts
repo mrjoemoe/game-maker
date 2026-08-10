@@ -4,7 +4,8 @@ import type { Direction } from "../grid/directions.js";
 export type ProgramAction =
   | { kind: "none" }
   | { kind: "takeFromMage"; itemId: string }
-  | { kind: "useItem"; itemId: string };
+  | { kind: "useItem"; itemId: string }
+  | { kind: "extract" };
 
 /** One committed plan step: action, then orthogonal move. */
 export type ProgramStep = {
@@ -20,6 +21,8 @@ export function programActionLabel(action: ProgramAction, itemLabel?: string): s
       return `Take ${itemLabel ?? action.itemId} from Mage`;
     case "useItem":
       return `Use ${itemLabel ?? action.itemId}`;
+    case "extract":
+      return "Extract";
     default: {
       const _exhaustive: never = action;
       return _exhaustive;
