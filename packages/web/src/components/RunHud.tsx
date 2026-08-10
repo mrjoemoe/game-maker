@@ -6,9 +6,22 @@ type RunHudProps = {
 };
 
 export function RunHud({ game, onSoftReset }: RunHudProps) {
-  const { run } = game;
+  const { run, stashItemIds } = game;
   const hpPct = Math.max(0, Math.min(100, (run.hp / run.maxHp) * 100));
   const ended = run.status !== "playing";
+
+  const bannerMessage = (): string => {
+    switch (run.status) {
+      case "won":
+        return "You reached the castle! Remaining gear was banked to your stash.";
+      case "extracted":
+        return "Extracted — carried gear is banked in your stash.";
+      case "lost":
+        return run.bump ?? "Path over — gear on your person is lost.";
+      default:
+        return "";
+    }
+  };
 
   return (
     <div className="run-hud">
@@ -17,6 +30,8 @@ export function RunHud({ game, onSoftReset }: RunHudProps) {
         <span>
           HP {run.hp}/{run.maxHp}
         </span>
+        <span>Stash {stashItemIds.length}</span>
+        <span>Carrying {run.inventory.length}</span>
       </div>
       <div
         className="hp-bar"
@@ -35,11 +50,7 @@ export function RunHud({ game, onSoftReset }: RunHudProps) {
       ) : null}
       {ended ? (
         <div className={`run-banner ${run.status}`}>
-          <p>
-            {run.status === "won"
-              ? "You reached the castle!"
-              : (run.bump ?? "Path over — you lose.")}
-          </p>
+          <p>{bannerMessage()}</p>
           <button type="button" onClick={onSoftReset}>
             Try again
           </button>

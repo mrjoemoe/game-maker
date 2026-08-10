@@ -39,6 +39,7 @@ export function App() {
 
   const [path, setPath] = useState<ProgramStep[]>([]);
   const [executingIndex, setExecutingIndex] = useState<number | null>(null);
+  const [selectedLoadout, setSelectedLoadout] = useState<string[]>([]);
   const executingRef = useRef(false);
   const cancelRef = useRef(false);
   const gameRef = useRef(state.game);
@@ -70,6 +71,7 @@ export function App() {
     cancelRef.current = true;
     executingRef.current = false;
     clearPath();
+    setSelectedLoadout([]);
     dispatch({ type: "game", action: { type: "softReset" } });
   };
 
@@ -77,7 +79,24 @@ export function App() {
     cancelRef.current = true;
     executingRef.current = false;
     clearPath();
+    setSelectedLoadout([]);
     dispatch({ type: "game", action: { type: "reset" } });
+  };
+
+  const toggleLoadout = (itemId: string) => {
+    setSelectedLoadout((prev) =>
+      prev.includes(itemId)
+        ? prev.filter((id) => id !== itemId)
+        : [...prev, itemId],
+    );
+  };
+
+  const commitLoadout = () => {
+    dispatch({
+      type: "game",
+      action: { type: "commitLoadout", itemIds: selectedLoadout },
+    });
+    setSelectedLoadout([]);
   };
 
   const runProgramAnimated = useCallback(async () => {
@@ -220,7 +239,12 @@ export function App() {
                     void runProgramAnimated();
                   }}
                 />
-                <InventoryPanel game={state.game} />
+                <InventoryPanel
+                  game={state.game}
+                  selectedLoadout={selectedLoadout}
+                  onToggleLoadout={toggleLoadout}
+                  onCommitLoadout={commitLoadout}
+                />
                 <TileTally game={state.game} />
               </div>
             ) : (

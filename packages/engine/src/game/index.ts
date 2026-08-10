@@ -6,7 +6,6 @@ import {
 import { coordKey, isInBounds, neighbors, type Coord } from "../grid/index.js";
 import {
   createItemRegistry,
-  totalAttack,
   totalMaxHp,
   type ItemDefinition,
   type ItemRegistry,
@@ -19,15 +18,16 @@ import {
   type PieceTypeRegistry,
 } from "../pieces/index.js";
 import {
-  applyDamage,
   clearBump,
   collectItem,
+  consumeItem,
   createRunState,
   isSafePathEffect,
+  markExtracted,
   markLost,
   markWon,
+  mergeIntoStash,
   pathOverMessage,
-  setBump,
   type ProgramAction,
   type ProgramStep,
   type RunState,
@@ -100,8 +100,8 @@ export type GameState = {
   pieces: PieceInstance[];
   items: ItemRegistry;
   run: RunState;
-  /** Items found across attempts; seeded into inventory on softReset. */
-  discoveredItemIds: string[];
+  /** Persistent stash between attempts; only updated on extract or win. */
+  stashItemIds: string[];
 };
 
 export type GameAction =
@@ -110,6 +110,7 @@ export type GameAction =
   | { type: "step"; pieceId: string; destination: Coord; usedItemId?: string }
   | { type: "programStep"; pieceId: string; step: ProgramStep }
   | { type: "runProgram"; pieceId: string; steps: ProgramStep[] }
+  | { type: "commitLoadout"; itemIds: string[] }
   | { type: "softReset" }
   | { type: "reset" };
 
@@ -156,102 +157,26 @@ function markResolved(cells: Record<string, TileState>, key: string): Record<str
   };
 }
 
-function addDiscovered(ids: string[], itemId: string): string[] {
-  return ids.includes(itemId) ? ids : [...ids, itemId];
-}
-
-function grantItem(
-  run: RunState,
-  discovered: string[],
-  itemId: string,
-  items: ItemRegistry,
-): { run: RunState; discovered: string[] } {
+function grantItem(run: RunState, itemId: string, items: ItemRegistry): RunState {
   if (!items[itemId]) {
     throw new Error(`Unknown item id: ${itemId}`);
   }
+  return collectItem(run, itemId);
+}
+
+function bankRunInventory(state: GameState, run: RunState): {
+  run: RunState;
+  stashItemIds: string[];
+} {
   return {
-    run: collectItem(run, itemId),
-    discovered: addDiscovered(discovered, itemId),
+    run: { ...run, inventory: [] },
+    stashItemIds: mergeIntoStash(state.stashItemIds, run.inventory),
   };
 }
 
 function effectiveMaxHp(state: GameState, inventory: string[]): number {
   const runConfig = defaultRunConfig(state.definition);
   return totalMaxHp(state.items, inventory, runConfig.maxHp);
-}
-
-function resolveStepEffects(
-  state: GameState,
-  destination: Coord,
-  cells: Record<string, TileState>,
-  run: RunState,
-  discovered: string[],
-): { cells: Record<string, TileState>; run: RunState; discovered: string[] } {
-  const key = coordKey(destination);
-  const cell = cells[key];
-  if (!cell) {
-    return { cells, run, discovered };
-  }
-
-  const tileType = resolveTileType(state.board.tileTypes, cell.typeId);
-  const effect = tileEffect(tileType);
-
-  if (cell.resolved && (effect.kind === "enemy" || effect.kind === "powerup")) {
-    return { cells, run, discovered };
-  }
-
-  switch (effect.kind) {
-    case "empty":
-    case "wall":
-      return { cells, run, discovered };
-    case "trap": {
-      const nextRun = applyDamage(run, effect.damage);
-      return { cells, run: nextRun, discovered };
-    }
-    case "enemy": {
-      const runConfig = defaultRunConfig(state.definition);
-      const attack = totalAttack(state.items, run.inventory, runConfig.baseAttack);
-      if (attack >= effect.power) {
-        let nextCells = markResolved(cells, key);
-        let nextRun = run;
-        let nextDiscovered = discovered;
-        if (effect.rewardItemId) {
-          const granted = grantItem(nextRun, nextDiscovered, effect.rewardItemId, state.items);
-          nextRun = granted.run;
-          nextDiscovered = granted.discovered;
-          nextRun = {
-            ...nextRun,
-            maxHp: effectiveMaxHp(state, nextRun.inventory),
-            hp: Math.min(nextRun.hp, effectiveMaxHp(state, nextRun.inventory)),
-          };
-        }
-        return { cells: nextCells, run: nextRun, discovered: nextDiscovered };
-      }
-      return { cells, run: applyDamage(run, effect.damage), discovered };
-    }
-    case "powerup": {
-      const granted = grantItem(run, discovered, effect.itemId, state.items);
-      const maxHp = effectiveMaxHp(state, granted.run.inventory);
-      return {
-        cells: markResolved(cells, key),
-        run: {
-          ...granted.run,
-          maxHp,
-          // Collecting a maxHp bonus tops up current HP to the new max.
-          hp: Math.max(granted.run.hp, maxHp),
-        },
-        discovered: granted.discovered,
-      };
-    }
-    case "mage":
-      return { cells, run, discovered };
-    case "goal":
-      return { cells, run: markWon(run), discovered };
-    default: {
-      const _exhaustive: never = effect;
-      return _exhaustive;
-    }
-  }
 }
 
 function removeWallSide(
@@ -350,12 +275,31 @@ function applyStep(
   const cell = cells[key];
   const tileType = resolveTileType(state.board.tileTypes, cell.typeId);
   const effect = tileEffect(tileType);
+  // Item must still be held (pass items are consumed on successful traverse).
   const armedPass =
     Boolean(usedItemId) &&
     tileType.passItemId === usedItemId &&
     state.run.inventory.includes(usedItemId!);
 
-  // Mage is safe terrain (take gear via program action, not by stepping).
+  // Extraction: move, bank inventory into stash, end as extracted (not a win).
+  if (effect.kind === "extraction") {
+    const pieces = movePiece(
+      state.pieces,
+      pieceId,
+      destination,
+      state.board.grid,
+    );
+    const banked = bankRunInventory(state, clearBump(state.run));
+    return {
+      ...state,
+      board: { ...state.board, cells },
+      pieces,
+      run: markExtracted(banked.run),
+      stashItemIds: banked.stashItemIds,
+    };
+  }
+
+  // Mage / empty are safe terrain (take gear via program action, not by stepping).
   if (effect.kind === "mage" || isSafePathEffect(effect.kind)) {
     const pieces = movePiece(
       state.pieces,
@@ -371,7 +315,7 @@ function applyStep(
     };
   }
 
-  // Explicitly used pass item: traverse rough terrain (goal wins).
+  // Explicitly used pass item: traverse rough terrain (goal wins + banks).
   if (armedPass && (effect.kind === "wall" || !isSafePathEffect(effect.kind))) {
     const pieces = movePiece(
       state.pieces,
@@ -379,11 +323,25 @@ function applyStep(
       destination,
       state.board.grid,
     );
+    let run = clearBump(state.run);
+    if (usedItemId) {
+      run = consumeItem(run, usedItemId);
+    }
+    if (effect.kind === "goal") {
+      const banked = bankRunInventory(state, markWon(run));
+      return {
+        ...state,
+        board: { ...state.board, cells },
+        pieces,
+        run: banked.run,
+        stashItemIds: banked.stashItemIds,
+      };
+    }
     return {
       ...state,
       board: { ...state.board, cells },
       pieces,
-      run: effect.kind === "goal" ? markWon(state.run) : clearBump(state.run),
+      run,
     };
   }
 
@@ -439,13 +397,8 @@ function applyTakeFromMage(
     throw new Error(`Unknown item id: ${itemId}`);
   }
 
-  const granted = grantItem(
-    state.run,
-    state.discoveredItemIds,
-    itemId,
-    state.items,
-  );
-  const maxHp = effectiveMaxHp(state, granted.run.inventory);
+  const granted = grantItem(state.run, itemId, state.items);
+  const maxHp = effectiveMaxHp(state, granted.inventory);
   return {
     ...state,
     board: {
@@ -453,12 +406,11 @@ function applyTakeFromMage(
       cells: markResolved(state.board.cells, key),
     },
     run: {
-      ...granted.run,
+      ...granted,
       maxHp,
-      hp: Math.max(granted.run.hp, maxHp),
+      hp: Math.max(granted.hp, maxHp),
       bump: null,
     },
-    discoveredItemIds: granted.discovered,
   };
 }
 
@@ -527,7 +479,7 @@ function applyUseItemAction(
     return {
       ...state,
       board: { ...state.board, cells },
-      run: clearBump(state.run),
+      run: clearBump(consumeItem(state.run, itemId)),
     };
   }
 
@@ -652,20 +604,61 @@ function applyRunProgram(
   return current;
 }
 
+function applyCommitLoadout(state: GameState, itemIds: string[]): GameState {
+  if (!isRunModeEnabled(state.definition) || state.run.status !== "playing") {
+    return state;
+  }
+  if (state.run.inventory.length > 0) {
+    return state;
+  }
+
+  const uniqueRequested = [...new Set(itemIds)];
+  for (const id of uniqueRequested) {
+    if (!state.items[id]) {
+      throw new Error(`Unknown item id: ${id}`);
+    }
+    if (!state.stashItemIds.includes(id)) {
+      return state;
+    }
+  }
+
+  let stash = [...state.stashItemIds];
+  for (const id of uniqueRequested) {
+    const index = stash.indexOf(id);
+    if (index < 0) {
+      return state;
+    }
+    stash = [...stash.slice(0, index), ...stash.slice(index + 1)];
+  }
+
+  const inventory = [...uniqueRequested];
+  const maxHp = effectiveMaxHp(state, inventory);
+  return {
+    ...state,
+    stashItemIds: stash,
+    run: {
+      ...state.run,
+      inventory,
+      maxHp,
+      hp: Math.min(state.run.hp, maxHp),
+    },
+  };
+}
+
 function applySoftReset(state: GameState): GameState {
   if (!isRunModeEnabled(state.definition)) {
     return state;
   }
 
   const runConfig = requireRunConfig(state.definition);
-  const inventory = [...state.discoveredItemIds];
+  const inventory: string[] = [];
   const maxHp = totalMaxHp(state.items, inventory, runConfig.maxHp);
 
   const cells: Record<string, TileState> = {};
   for (const [key, cell] of Object.entries(state.board.cells)) {
     const tileType = resolveTileType(state.board.tileTypes, cell.typeId);
     const effect = tileEffect(tileType);
-    // Enemies respawn; other resolved one-shots (powerups) stay collected.
+    // Enemies respawn; other resolved one-shots (powerups, mage) stay collected.
     if (effect.kind === "enemy" && cell.resolved) {
       cells[key] = { ...cell, resolved: false };
     } else {
@@ -686,7 +679,7 @@ function applySoftReset(state: GameState): GameState {
       inventory,
       attempts: state.run.attempts + 1,
     }),
-    discoveredItemIds: state.discoveredItemIds,
+    stashItemIds: state.stashItemIds,
   };
 }
 
@@ -717,15 +710,17 @@ export function createInitialState(definition: GameDefinition): GameState {
     getCell(board, runConfig.startPosition);
   }
 
-  // In run mode, start with the map hidden except the start cell.
+  // In run mode, start with the map hidden except the start cell and extractions.
   let cells = board.cells;
   if (isRunModeEnabled(definition)) {
     const startKey = coordKey(runConfig.startPosition);
     const next: Record<string, TileState> = {};
     for (const [key, cell] of Object.entries(cells)) {
+      const type = resolveTileType(board.tileTypes, cell.typeId);
+      const isExtraction = tileEffect(type).kind === "extraction";
       next[key] = {
         ...cell,
-        isFaceUp: key === startKey,
+        isFaceUp: key === startKey || isExtraction,
         resolved: false,
       };
     }
@@ -743,7 +738,7 @@ export function createInitialState(definition: GameDefinition): GameState {
     })),
     items,
     run: createRunState({ maxHp: runConfig.maxHp }),
-    discoveredItemIds: [],
+    stashItemIds: [],
   };
 }
 
@@ -810,6 +805,8 @@ export function applyAction(state: GameState, action: GameAction): GameState {
       return applyProgramStep(state, action.pieceId, action.step);
     case "runProgram":
       return applyRunProgram(state, action.pieceId, action.steps);
+    case "commitLoadout":
+      return applyCommitLoadout(state, action.itemIds);
     case "softReset":
       return applySoftReset(state);
     case "reset": {

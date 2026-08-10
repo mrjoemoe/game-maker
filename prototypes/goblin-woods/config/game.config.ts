@@ -1,9 +1,19 @@
 import type { GameDefinition } from "@game-maker/engine";
 
+const WIDTH = 7;
+const HEIGHT = 7;
+const START = { x: 3, y: 6 } as const;
+
+const CORNERS = [
+  { x: 0, y: 0 },
+  { x: WIDTH - 1, y: 0 },
+  { x: 0, y: HEIGHT - 1 },
+  { x: WIDTH - 1, y: HEIGHT - 1 },
+] as const;
+
 /**
- * Goblin Woods — chart a 6-move path through a hidden forest.
- * Start at the bottom center; castle waits near the top. Learn the map
- * across failed runs, then program smarter routes with found gear.
+ * Goblin Woods — chart a path through a hidden forest.
+ * Stash gear by extracting at the corners; win by reaching the castle with sneak.
  */
 export const goblinWoods: GameDefinition = {
   id: "goblin-woods",
@@ -32,13 +42,13 @@ export const goblinWoods: GameDefinition = {
   ],
   run: {
     heroPieceId: "hero",
-    startPosition: { x: 3, y: 6 },
+    startPosition: { ...START },
     maxHp: 100,
     baseAttack: 1,
     programLength: 6,
   },
   board: {
-    grid: { width: 7, height: 7 },
+    grid: { width: WIDTH, height: HEIGHT },
     tileTypes: [
       { id: "meadow", label: "Meadow", color: "#8fbc6b", effect: { kind: "empty" } },
       { id: "forest", label: "Forest", color: "#4f7a3e", effect: { kind: "empty" } },
@@ -47,6 +57,12 @@ export const goblinWoods: GameDefinition = {
         label: "Mage",
         color: "#7b6b9e",
         effect: { kind: "mage" },
+      },
+      {
+        id: "extraction",
+        label: "Extraction",
+        color: "#5a7a8c",
+        effect: { kind: "extraction" },
       },
       {
         id: "thicket",
@@ -129,7 +145,13 @@ export const goblinWoods: GameDefinition = {
     },
     overrides: [
       // Start on the Mage (opening tile)
-      { coord: { x: 3, y: 6 }, typeId: "mage", walls: [] },
+      { coord: { ...START }, typeId: "mage", walls: [] },
+
+      // Four corners are always extraction (face-up forced at createInitialState)
+      { coord: { x: 0, y: 0 }, typeId: "extraction", walls: [] },
+      { coord: { x: WIDTH - 1, y: 0 }, typeId: "extraction", walls: [] },
+      { coord: { x: 0, y: HEIGHT - 1 }, typeId: "extraction", walls: [] },
+      { coord: { x: WIDTH - 1, y: HEIGHT - 1 }, typeId: "extraction", walls: [] },
 
       // Cosmetic forest
       { coord: { x: 1, y: 5 }, typeId: "forest" },
@@ -148,7 +170,7 @@ export const goblinWoods: GameDefinition = {
       { coord: { x: 4, y: 5 }, typeId: "snare" },
       { coord: { x: 1, y: 2 }, typeId: "pit" },
 
-      // Enemies escalate toward the castle
+      // Enemies escalate toward the north
       { coord: { x: 2, y: 4 }, typeId: "goblin" },
       { coord: { x: 4, y: 3 }, typeId: "brute" },
       { coord: { x: 3, y: 1 }, typeId: "villain" },
@@ -156,13 +178,17 @@ export const goblinWoods: GameDefinition = {
       // Gear off the main line
       { coord: { x: 0, y: 4 }, typeId: "sword-cache" },
       { coord: { x: 6, y: 3 }, typeId: "shield-cache" },
-
-      // Goal near top center
-      { coord: { x: 3, y: 0 }, typeId: "castle" },
+    ],
+    randomPlacements: [
+      {
+        typeId: "castle",
+        onTypeId: "meadow",
+        exclude: [{ ...START }, ...CORNERS.map((c) => ({ ...c }))],
+      },
     ],
   },
   pieceTypes: [{ id: "hero", label: "Hero", color: "#c47a2c", icon: "H" }],
-  initialPieces: [{ id: "hero", typeId: "hero", position: { x: 3, y: 6 } }],
+  initialPieces: [{ id: "hero", typeId: "hero", position: { ...START } }],
 };
 
 export default goblinWoods;

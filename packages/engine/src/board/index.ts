@@ -8,6 +8,7 @@ import {
 import {
   createTileState,
   createTileTypeRegistry,
+  createSeededRandom,
   generateSideWalls,
   resolveTileType,
   type SideWallConfig,
@@ -25,6 +26,15 @@ export type CellOverride = {
   walls?: TileSide[];
 };
 
+/** Place a tile type on one random eligible cell (seeded via sideWalls.seed). */
+export type RandomTilePlacement = {
+  typeId: string;
+  /** Only replace cells currently of this type. Defaults to defaultTileTypeId. */
+  onTypeId?: string;
+  /** Cells that must not receive this placement. */
+  exclude?: Coord[];
+};
+
 export type BoardConfig = {
   grid: GridConfig;
   tileTypes: TileTypeDefinition[];
@@ -35,6 +45,8 @@ export type BoardConfig = {
    * orientations. Per-cell `walls` overrides win over generation.
    */
   sideWalls?: SideWallConfig;
+  /** Optional seeded one-off placements (e.g. random castle). Applied last. */
+  randomPlacements?: RandomTilePlacement[];
 };
 
 export type Board = {
@@ -88,6 +100,39 @@ export function createBoard(config: BoardConfig): Board {
         current.isFaceUp,
         current.resolved ?? false,
         walls,
+      );
+    }
+  }
+
+  if (config.randomPlacements && config.randomPlacements.length > 0) {
+    const seed = config.sideWalls?.seed ?? 0;
+    const rng = createSeededRandom((seed ^ 0xc4571e) >>> 0);
+    for (const placement of config.randomPlacements) {
+      resolveTileType(tileTypes, placement.typeId);
+      const onTypeId = placement.onTypeId ?? config.defaultTileTypeId;
+      const excluded = new Set(
+        (placement.exclude ?? []).map((c) => coordKey(c)),
+      );
+      const candidates = allCoords(grid).filter((coord) => {
+        const key = coordKey(coord);
+        if (excluded.has(key)) {
+          return false;
+        }
+        return cells[key]?.typeId === onTypeId;
+      });
+      if (candidates.length === 0) {
+        throw new Error(
+          `No eligible cells to place random tile "${placement.typeId}"`,
+        );
+      }
+      const pick = candidates[Math.floor(rng() * candidates.length)]!;
+      const key = coordKey(pick);
+      const current = cells[key]!;
+      cells[key] = createTileState(
+        placement.typeId,
+        current.isFaceUp,
+        current.resolved ?? false,
+        current.walls ?? [],
       );
     }
   }

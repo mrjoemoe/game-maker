@@ -1,4 +1,4 @@
-export type RunStatus = "playing" | "won" | "lost";
+export type RunStatus = "playing" | "won" | "lost" | "extracted";
 
 export type RunState = {
   status: RunStatus;
@@ -50,11 +50,33 @@ export function collectItem(run: RunState, itemId: string): RunState {
   };
 }
 
+/** Remove the first matching item id from the run inventory. */
+export function consumeItem(run: RunState, itemId: string): RunState {
+  const index = run.inventory.indexOf(itemId);
+  if (index < 0) {
+    return run;
+  }
+  return {
+    ...run,
+    inventory: [
+      ...run.inventory.slice(0, index),
+      ...run.inventory.slice(index + 1),
+    ],
+  };
+}
+
 export function markWon(run: RunState): RunState {
   if (run.status !== "playing") {
     return run;
   }
   return { ...run, status: "won" };
+}
+
+export function markExtracted(run: RunState): RunState {
+  if (run.status !== "playing") {
+    return run;
+  }
+  return { ...run, status: "extracted", bump: null };
 }
 
 export function markLost(run: RunState, message: string): RunState {
@@ -73,13 +95,24 @@ export function setBump(run: RunState, message: string): RunState {
   return { ...run, bump: message };
 }
 
-/** Meadow/forest (empty) and mage tiles are safe path tiles. */
+/** Meadow/forest (empty), mage, and extraction tiles are safe path tiles. */
 export function isSafePathEffect(kind: string): boolean {
-  return kind === "empty" || kind === "mage";
+  return kind === "empty" || kind === "mage" || kind === "extraction";
 }
 
 export function pathOverMessage(tileLabel: string): string {
   return `You found a ${tileLabel} — path over`;
+}
+
+/** Merge item ids into a stash without duplicates. */
+export function mergeIntoStash(stash: string[], inventory: string[]): string[] {
+  const next = [...stash];
+  for (const id of inventory) {
+    if (!next.includes(id)) {
+      next.push(id);
+    }
+  }
+  return next;
 }
 
 export {

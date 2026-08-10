@@ -43,11 +43,13 @@ export function PathPlanner({
   const locked = disabled || full || executingIndex !== null;
   const sortedItems = [...items].sort((a, b) => a.label.localeCompare(b.label));
 
-  // Items already held, plus gear taken in earlier queued steps of this plan.
+  // Project inventory across the queued plan: takes add, uses remove.
   const availableIds = new Set(inventory);
   for (const step of steps) {
     if (step.action.kind === "takeFromMage") {
       availableIds.add(step.action.itemId);
+    } else if (step.action.kind === "useItem") {
+      availableIds.delete(step.action.itemId);
     }
   }
 

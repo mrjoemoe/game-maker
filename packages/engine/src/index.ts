@@ -46,6 +46,7 @@ export {
   type Board,
   type BoardConfig,
   type CellOverride,
+  type RandomTilePlacement,
 } from "./board/index.js";
 
 export {
@@ -70,10 +71,13 @@ export {
   applyDamage,
   clearBump,
   collectItem,
+  consumeItem,
   createRunState,
   isSafePathEffect,
+  markExtracted,
   markLost,
   markWon,
+  mergeIntoStash,
   pathOverMessage,
   programActionLabel,
   setBump,

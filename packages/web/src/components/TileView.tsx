@@ -36,6 +36,8 @@ function effectIcon(tileType: TileTypeDefinition, resolved?: boolean): string | 
       return resolved ? "✨" : "🧙";
     case "goal":
       return "🏰";
+    case "extraction":
+      return "🚪";
     default:
       return null;
   }

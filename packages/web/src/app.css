@@ -667,6 +667,11 @@
   border: 1px solid #cc0000;
 }
 
+.run-banner.extracted {
+  background: #d0e2f3;
+  border: 1px solid #3d85c6;
+}
+
 .run-banner button {
   border: 1px solid var(--line);
   background: var(--panel);
@@ -674,6 +679,36 @@
   padding: 0.45rem 0.8rem;
   border-radius: 0.4rem;
   white-space: nowrap;
+}
+
+.inventory-stash-heading {
+  margin-top: 1.25rem;
+}
+
+.loadout-toggle {
+  margin-left: auto;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.3rem;
+  font-size: 0.8rem;
+}
+
+.loadout-toggle.active {
+  background: #d0e2f3;
+  border-color: #3d85c6;
+}
+
+.loadout-commit {
+  margin-top: 0.75rem;
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.4rem;
+  font-weight: 650;
 }
 
 .tile-icon {

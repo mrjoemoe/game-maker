@@ -424,7 +424,7 @@ describe("run mode", () => {
     let state = createInitialState(withPass);
     state = {
       ...state,
-      run: { ...state.run, inventory: ["sneak"] },
+      run: { ...state.run, inventory: ["sneak", "sword"] },
     };
     state = applyAction(state, {
       type: "programStep",
@@ -433,9 +433,11 @@ describe("run mode", () => {
     });
     expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
     expect(state.run.status).toBe("won");
+    expect(state.run.inventory).toEqual([]);
+    expect(state.stashItemIds).toEqual(["sword"]);
   });
 
-  it("takes from Mage via program action and persists across soft reset", () => {
+  it("takes from Mage into run inventory only; soft reset without extract loses it", () => {
     const withMage: GameDefinition = {
       ...runDefinition,
       board: {
@@ -449,6 +451,7 @@ describe("run mode", () => {
     };
     let state = createInitialState(withMage);
     expect(state.run.inventory).toEqual([]);
+    expect(state.stashItemIds).toEqual([]);
 
     state = applyAction(state, {
       type: "programStep",
@@ -459,13 +462,14 @@ describe("run mode", () => {
       },
     });
     expect(state.run.inventory).toEqual(["sword"]);
-    expect(state.discoveredItemIds).toEqual(["sword"]);
+    expect(state.stashItemIds).toEqual([]);
     expect(getCell(state.board, { x: 0, y: 0 }).resolved).toBe(true);
     expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
     expect(state.run.status).toBe("playing");
 
     state = applyAction(state, { type: "softReset" });
-    expect(state.run.inventory).toEqual(["sword"]);
+    expect(state.run.inventory).toEqual([]);
+    expect(state.stashItemIds).toEqual([]);
     expect(getCell(state.board, { x: 0, y: 0 }).resolved).toBe(true);
 
     // Taking again on a resolved Mage fails.
@@ -479,6 +483,87 @@ describe("run mode", () => {
     });
     expect(state.run.status).toBe("lost");
     expect(state.run.bump).toMatch(/No Mage/i);
+  });
+
+  it("extracts to bank run inventory into the stash", () => {
+    const withExtract: GameDefinition = {
+      ...runDefinition,
+      board: {
+        ...runDefinition.board,
+        tileTypes: [
+          ...runDefinition.board.tileTypes,
+          {
+            id: "extraction",
+            label: "Extraction",
+            color: "#567",
+            effect: { kind: "extraction" },
+          },
+        ],
+        overrides: [{ coord: { x: 0, y: 1 }, typeId: "extraction" }],
+      },
+    };
+    let state = createInitialState(withExtract);
+    expect(getCell(state.board, { x: 0, y: 1 }).isFaceUp).toBe(true);
+    state = {
+      ...state,
+      run: { ...state.run, inventory: ["sword"] },
+    };
+    state = applyAction(state, {
+      type: "step",
+      pieceId: "hero",
+      destination: { x: 0, y: 1 },
+    });
+    expect(state.run.status).toBe("extracted");
+    expect(state.run.inventory).toEqual([]);
+    expect(state.stashItemIds).toEqual(["sword"]);
+  });
+
+  it("commits loadout from stash and loses it on fail", () => {
+    let state = createInitialState(runDefinition);
+    state = { ...state, stashItemIds: ["sword", "shield"] };
+    state = applyAction(state, {
+      type: "commitLoadout",
+      itemIds: ["sword"],
+    });
+    expect(state.run.inventory).toEqual(["sword"]);
+    expect(state.stashItemIds).toEqual(["shield"]);
+
+    state = applyAction(state, {
+      type: "step",
+      pieceId: "hero",
+      destination: { x: 1, y: 0 },
+    });
+    expect(state.run.status).toBe("lost");
+
+    state = applyAction(state, { type: "softReset" });
+    expect(state.run.inventory).toEqual([]);
+    expect(state.stashItemIds).toEqual(["shield"]);
+  });
+
+  it("consumes a pass item on successful traverse", () => {
+    const withPass: GameDefinition = {
+      ...runDefinition,
+      items: [...(runDefinition.items ?? []), { id: "axe", label: "Axe" }],
+      board: {
+        ...runDefinition.board,
+        tileTypes: runDefinition.board.tileTypes.map((t) =>
+          t.id === "wall" ? { ...t, passItemId: "axe" } : t,
+        ),
+      },
+    };
+    let state = createInitialState(withPass);
+    state = {
+      ...state,
+      run: { ...state.run, inventory: ["axe", "sword"] },
+    };
+    state = applyAction(state, {
+      type: "programStep",
+      pieceId: "hero",
+      step: { action: { kind: "useItem", itemId: "axe" }, move: "right" },
+    });
+    expect(state.run.status).toBe("playing");
+    expect(state.pieces[0].position).toEqual({ x: 1, y: 0 });
+    expect(state.run.inventory).toEqual(["sword"]);
   });
 
   it("breaks a side wall with a sledgehammer use action", () => {
@@ -512,6 +597,7 @@ describe("run mode", () => {
     expect(state.run.status).toBe("playing");
     expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
     expect(getCell(state.board, { x: 0, y: 0 }).walls ?? []).not.toContain("s");
+    expect(state.run.inventory).toEqual([]);
   });
 
   it("does not peek past an origin wall when using a pass item", () => {
