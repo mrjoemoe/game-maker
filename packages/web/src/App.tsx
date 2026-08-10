@@ -1,18 +1,15 @@
 import {
   applyAction,
-  destinationFrom,
-  isInBounds,
   isRunModeEnabled,
   isTileFlipEnabled,
   pieceAt,
   runProgramLength,
   type Coord,
-  type Direction,
+  type ProgramStep,
 } from "@game-maker/engine";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { BoardView } from "./components/BoardView";
 import { InventoryPanel } from "./components/InventoryPanel";
-import { MagePicker } from "./components/MagePicker";
 import { PathPlanner } from "./components/PathPlanner";
 import { RunHud } from "./components/RunHud";
 import { TileTally } from "./components/TileTally";
@@ -34,9 +31,8 @@ export function App() {
   const runMode = isRunModeEnabled(state.game.definition);
   const heroId = state.game.definition.run?.heroPieceId;
   const programLength = runProgramLength(state.game.definition);
-  const awaitingItemChoice = Boolean(state.game.run.pendingItemChoice);
 
-  const [path, setPath] = useState<Direction[]>([]);
+  const [path, setPath] = useState<ProgramStep[]>([]);
   const [executingIndex, setExecutingIndex] = useState<number | null>(null);
   const executingRef = useRef(false);
   const cancelRef = useRef(false);
@@ -79,19 +75,11 @@ export function App() {
     dispatch({ type: "game", action: { type: "reset" } });
   };
 
-  const chooseItem = (itemId: string) => {
-    dispatch({ type: "game", action: { type: "chooseItem", itemId } });
-    clearPath();
-  };
-
   const runProgramAnimated = useCallback(async () => {
     if (!heroId || executingRef.current || path.length !== programLength) {
       return;
     }
-    if (
-      gameRef.current.run.status !== "playing" ||
-      gameRef.current.run.pendingItemChoice
-    ) {
+    if (gameRef.current.run.status !== "playing") {
       return;
     }
 
@@ -101,33 +89,20 @@ export function App() {
     let local = gameRef.current;
 
     for (let i = 0; i < steps.length; i += 1) {
-      if (
-        cancelRef.current ||
-        local.run.status !== "playing" ||
-        local.run.pendingItemChoice
-      ) {
-        break;
-      }
-      const hero = local.pieces.find((p) => p.id === heroId);
-      if (!hero) {
+      if (cancelRef.current || local.run.status !== "playing") {
         break;
       }
       setExecutingIndex(i);
-      const destination = destinationFrom(hero.position, steps[i]);
-      if (isInBounds(local.board.grid, destination)) {
-        try {
-          local = applyAction(local, {
-            type: "step",
-            pieceId: heroId,
-            destination,
-          });
-          dispatch({ type: "replaceGame", game: local });
-          gameRef.current = local;
-        } catch {
-          // Ignore invalid step and continue the program.
-        }
-      }
-      if (local.run.pendingItemChoice) {
+      try {
+        local = applyAction(local, {
+          type: "programStep",
+          pieceId: heroId,
+          step: steps[i],
+        });
+        dispatch({ type: "replaceGame", game: local });
+        gameRef.current = local;
+      } catch {
+        // Ignore invalid step and stop.
         break;
       }
       await new Promise((r) => setTimeout(r, STEP_MS));
@@ -137,58 +112,6 @@ export function App() {
     setExecutingIndex(null);
     setPath([]);
   }, [heroId, path, programLength, dispatch]);
-
-  useEffect(() => {
-    if (!runMode) {
-      return;
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (
-        executingRef.current ||
-        state.game.run.status !== "playing" ||
-        state.game.run.pendingItemChoice
-      ) {
-        return;
-      }
-      const map: Record<string, Direction> = {
-        ArrowUp: "up",
-        ArrowDown: "down",
-        ArrowLeft: "left",
-        ArrowRight: "right",
-        w: "up",
-        s: "down",
-        a: "left",
-        d: "right",
-      };
-      if (event.key === "Backspace") {
-        event.preventDefault();
-        setPath((prev) => prev.slice(0, -1));
-        return;
-      }
-      if (event.key === "Enter" && path.length === programLength) {
-        event.preventDefault();
-        void runProgramAnimated();
-        return;
-      }
-      const direction = map[event.key];
-      if (!direction) {
-        return;
-      }
-      event.preventDefault();
-      setPath((prev) =>
-        prev.length >= programLength ? prev : [...prev, direction],
-      );
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [
-    runMode,
-    path.length,
-    programLength,
-    state.game.run.status,
-    state.game.run.pendingItemChoice,
-    runProgramAnimated,
-  ]);
 
   const allItems = Object.values(state.game.items);
 
@@ -207,7 +130,7 @@ export function App() {
         {runMode ? (
           <div className="modes">
             <span className="mode-label">
-              Program {programLength} moves, then run
+              Program {programLength} action+move pairs, then run
             </span>
           </div>
         ) : (
@@ -250,13 +173,13 @@ export function App() {
             <PathPlanner
               programLength={programLength}
               steps={path}
+              items={allItems}
+              inventory={state.game.run.inventory}
               executingIndex={executingIndex}
-              disabled={
-                state.game.run.status !== "playing" || awaitingItemChoice
-              }
-              onAppend={(direction) =>
+              disabled={state.game.run.status !== "playing"}
+              onAppend={(step) =>
                 setPath((prev) =>
-                  prev.length >= programLength ? prev : [...prev, direction],
+                  prev.length >= programLength ? prev : [...prev, step],
                 )
               }
               onUndo={() => setPath((prev) => prev.slice(0, -1))}
@@ -291,10 +214,6 @@ export function App() {
 
       {runMode && active.extensions.banner ? (
         <p className="run-banner-note">{active.extensions.banner}</p>
-      ) : null}
-
-      {runMode && awaitingItemChoice ? (
-        <MagePicker items={allItems} onChoose={chooseItem} />
       ) : null}
     </div>
   );

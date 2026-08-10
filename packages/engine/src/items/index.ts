@@ -6,6 +6,8 @@ export type ItemDefinition = {
   attackBonus?: number;
   /** Added to the hero's base max HP while held. */
   maxHpBonus?: number;
+  /** When used as a step action, clears side walls on the upcoming crossing. */
+  breaksSideWalls?: boolean;
 };
 
 export type ItemRegistry = Record<string, ItemDefinition>;

@@ -205,7 +205,11 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "runProgram",
       pieceId: "hero",
-      steps: ["down", "down", "up"],
+      steps: [
+        { action: { kind: "none" }, move: "down" },
+        { action: { kind: "none" }, move: "down" },
+        { action: { kind: "none" }, move: "up" },
+      ],
     });
     expect(state.run.status).toBe("lost");
     expect(state.pieces[0].position).toEqual({ x: 0, y: 2 });
@@ -248,7 +252,10 @@ describe("run mode", () => {
       applyAction(state, {
         type: "runProgram",
         pieceId: "hero",
-        steps: ["up", "up"],
+        steps: [
+          { action: { kind: "none" }, move: "up" },
+          { action: { kind: "none" }, move: "up" },
+        ],
       }),
     ).toThrow(/exactly 6 steps/);
   });
@@ -293,7 +300,7 @@ describe("run mode", () => {
     expect(state.pieces[0].position).toEqual(pos);
   });
 
-  it("crosses a wall when holding its pass item", () => {
+  it("crosses a wall only when the pass item is used that step", () => {
     const withPass: GameDefinition = {
       ...runDefinition,
       items: [...(runDefinition.items ?? []), { id: "axe", label: "Axe" }],
@@ -309,17 +316,24 @@ describe("run mode", () => {
       ...state,
       run: { ...state.run, inventory: ["axe"] },
     };
-    state = applyAction(state, {
+    // Holding alone is not enough.
+    const blocked = applyAction(state, {
       type: "step",
       pieceId: "hero",
       destination: { x: 1, y: 0 },
     });
+    expect(blocked.run.status).toBe("lost");
+
+    state = applyAction(state, {
+      type: "programStep",
+      pieceId: "hero",
+      step: { action: { kind: "useItem", itemId: "axe" }, move: "right" },
+    });
     expect(state.pieces[0].position).toEqual({ x: 1, y: 0 });
     expect(state.run.status).toBe("playing");
-    expect(getCell(state.board, { x: 1, y: 0 }).isFaceUp).toBe(true);
   });
 
-  it("still paths over a hazard without its pass item", () => {
+  it("still paths over a hazard without using its pass item", () => {
     const withPass: GameDefinition = {
       ...runDefinition,
       items: [...(runDefinition.items ?? []), { id: "boots", label: "Boots" }],
@@ -331,6 +345,10 @@ describe("run mode", () => {
       },
     };
     let state = createInitialState(withPass);
+    state = {
+      ...state,
+      run: { ...state.run, inventory: ["boots"] },
+    };
     state = applyAction(state, {
       type: "step",
       pieceId: "hero",
@@ -346,7 +364,7 @@ describe("run mode", () => {
     expect(state.run.bump).toMatch(/Trap.*path over/);
   });
 
-  it("wins on goal when holding its pass item", () => {
+  it("wins on goal when using its pass item that step", () => {
     const withPass: GameDefinition = {
       ...runDefinition,
       items: [...(runDefinition.items ?? []), { id: "sneak", label: "Sneak" }],
@@ -355,9 +373,7 @@ describe("run mode", () => {
         tileTypes: runDefinition.board.tileTypes.map((t) =>
           t.id === "castle" ? { ...t, passItemId: "sneak" } : t,
         ),
-        overrides: [
-          { coord: { x: 0, y: 1 }, typeId: "castle" },
-        ],
+        overrides: [{ coord: { x: 0, y: 1 }, typeId: "castle" }],
       },
     };
     let state = createInitialState(withPass);
@@ -366,15 +382,15 @@ describe("run mode", () => {
       run: { ...state.run, inventory: ["sneak"] },
     };
     state = applyAction(state, {
-      type: "step",
+      type: "programStep",
       pieceId: "hero",
-      destination: { x: 0, y: 1 },
+      step: { action: { kind: "useItem", itemId: "sneak" }, move: "down" },
     });
     expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
     expect(state.run.status).toBe("won");
   });
 
-  it("opens a Mage item choice and persists the pick across soft reset", () => {
+  it("takes from Mage via program action and persists across soft reset", () => {
     const withMage: GameDefinition = {
       ...runDefinition,
       board: {
@@ -383,48 +399,87 @@ describe("run mode", () => {
           ...runDefinition.board.tileTypes,
           { id: "mage", label: "Mage", color: "#6a5acd", effect: { kind: "mage" } },
         ],
-        overrides: [{ coord: { x: 0, y: 1 }, typeId: "mage" }],
+        overrides: [{ coord: { x: 0, y: 0 }, typeId: "mage" }],
       },
     };
     let state = createInitialState(withMage);
     expect(state.run.inventory).toEqual([]);
 
     state = applyAction(state, {
-      type: "step",
+      type: "programStep",
       pieceId: "hero",
-      destination: { x: 0, y: 1 },
+      step: {
+        action: { kind: "takeFromMage", itemId: "sword" },
+        move: "down",
+      },
     });
-    expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
-    expect(state.run.status).toBe("playing");
-    expect(state.run.pendingItemChoice?.cellKey).toBe("0,1");
-
-    // Further steps are blocked until a choice is made.
-    const blocked = applyAction(state, {
-      type: "step",
-      pieceId: "hero",
-      destination: { x: 0, y: 2 },
-    });
-    expect(blocked.pieces[0].position).toEqual({ x: 0, y: 1 });
-    expect(blocked.run.pendingItemChoice).not.toBeNull();
-
-    state = applyAction(state, { type: "chooseItem", itemId: "sword" });
     expect(state.run.inventory).toEqual(["sword"]);
     expect(state.discoveredItemIds).toEqual(["sword"]);
-    expect(state.run.pendingItemChoice).toBeNull();
-    expect(getCell(state.board, { x: 0, y: 1 }).resolved).toBe(true);
+    expect(getCell(state.board, { x: 0, y: 0 }).resolved).toBe(true);
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
+    expect(state.run.status).toBe("playing");
 
     state = applyAction(state, { type: "softReset" });
     expect(state.run.inventory).toEqual(["sword"]);
-    expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
-    expect(getCell(state.board, { x: 0, y: 1 }).resolved).toBe(true);
+    expect(getCell(state.board, { x: 0, y: 0 }).resolved).toBe(true);
 
-    // Resolved Mage is a safe pass-through with no new choice.
+    // Taking again on a resolved Mage fails.
     state = applyAction(state, {
-      type: "step",
+      type: "programStep",
       pieceId: "hero",
-      destination: { x: 0, y: 1 },
+      step: {
+        action: { kind: "takeFromMage", itemId: "shield" },
+        move: "down",
+      },
     });
-    expect(state.run.pendingItemChoice).toBeNull();
+    expect(state.run.status).toBe("lost");
+    expect(state.run.bump).toMatch(/No Mage/i);
+  });
+
+  it("breaks a side wall with a sledgehammer use action", () => {
+    const withHammer: GameDefinition = {
+      ...runDefinition,
+      items: [
+        ...(runDefinition.items ?? []),
+        { id: "sledgehammer", label: "Sledgehammer", breaksSideWalls: true },
+      ],
+      board: {
+        ...runDefinition.board,
+        overrides: [
+          ...(runDefinition.board.overrides ?? []),
+          { coord: { x: 0, y: 0 }, walls: ["s"] },
+        ],
+      },
+    };
+    let state = createInitialState(withHammer);
+    state = {
+      ...state,
+      run: { ...state.run, inventory: ["sledgehammer"] },
+    };
+    state = applyAction(state, {
+      type: "programStep",
+      pieceId: "hero",
+      step: {
+        action: { kind: "useItem", itemId: "sledgehammer" },
+        move: "down",
+      },
+    });
     expect(state.run.status).toBe("playing");
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
+    expect(getCell(state.board, { x: 0, y: 0 }).walls ?? []).not.toContain("s");
+  });
+
+  it("fails takeFromMage when not on a Mage", () => {
+    let state = createInitialState(runDefinition);
+    state = applyAction(state, {
+      type: "programStep",
+      pieceId: "hero",
+      step: {
+        action: { kind: "takeFromMage", itemId: "sword" },
+        move: "down",
+      },
+    });
+    expect(state.run.status).toBe("lost");
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
   });
 });

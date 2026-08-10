@@ -28,16 +28,19 @@ import {
   markWon,
   pathOverMessage,
   setBump,
+  type ProgramAction,
+  type ProgramStep,
   type RunState,
 } from "../run/index.js";
 import {
-  canPassWithItem,
   flipTileState,
   isCrossingBlocked,
+  oppositeSide,
   resolveTileType,
   sideToward,
   tileEffect,
   tileHasWall,
+  type TileSide,
   type TileState,
 } from "../tiles/index.js";
 
@@ -52,7 +55,7 @@ export type RunConfig = {
   startPosition: Coord;
   maxHp: number;
   baseAttack: number;
-  /** Exact number of moves the player must chart before executing. Defaults to 6. */
+  /** Exact number of action+move pairs the player must chart. Defaults to 6. */
   programLength?: number;
 };
 
@@ -104,9 +107,9 @@ export type GameState = {
 export type GameAction =
   | { type: "flipTile"; coord: Coord }
   | { type: "movePiece"; pieceId: string; destination: Coord }
-  | { type: "step"; pieceId: string; destination: Coord }
-  | { type: "runProgram"; pieceId: string; steps: Direction[] }
-  | { type: "chooseItem"; itemId: string }
+  | { type: "step"; pieceId: string; destination: Coord; usedItemId?: string }
+  | { type: "programStep"; pieceId: string; step: ProgramStep }
+  | { type: "runProgram"; pieceId: string; steps: ProgramStep[] }
   | { type: "softReset" }
   | { type: "reset" };
 
@@ -251,13 +254,50 @@ function resolveStepEffects(
   }
 }
 
-function applyStep(state: GameState, pieceId: string, destination: Coord): GameState {
-  if (!isRunModeEnabled(state.definition) || state.run.status !== "playing") {
-    return state;
-  }
+function removeWallSide(
+  walls: TileSide[] | undefined,
+  side: TileSide,
+): TileSide[] {
+  return (walls ?? []).filter((w) => w !== side);
+}
 
-  // Must finish a Mage (or similar) item pick before moving again.
-  if (state.run.pendingItemChoice) {
+function clearCrossingWalls(
+  cells: Record<string, TileState>,
+  from: Coord,
+  to: Coord,
+): Record<string, TileState> {
+  const exit = sideToward(from, to);
+  if (!exit) {
+    return cells;
+  }
+  const entry = oppositeSide(exit);
+  const fromKey = coordKey(from);
+  const toKey = coordKey(to);
+  const fromCell = cells[fromKey];
+  const toCell = cells[toKey];
+  if (!fromCell || !toCell) {
+    return cells;
+  }
+  return {
+    ...cells,
+    [fromKey]: {
+      ...fromCell,
+      walls: removeWallSide(fromCell.walls, exit),
+    },
+    [toKey]: {
+      ...toCell,
+      walls: removeWallSide(toCell.walls, entry),
+    },
+  };
+}
+
+function applyStep(
+  state: GameState,
+  pieceId: string,
+  destination: Coord,
+  usedItemId?: string,
+): GameState {
+  if (!isRunModeEnabled(state.definition) || state.run.status !== "playing") {
     return state;
   }
 
@@ -288,7 +328,6 @@ function applyStep(state: GameState, pieceId: string, destination: Coord): GameS
     destCell &&
     isCrossingBlocked(fromCell.walls, destCell.walls, piece.position, destination)
   ) {
-    // Reveal the destination, stay put, path ends — walls are not safe terrain.
     const key = coordKey(destination);
     const cells = revealCell(state.board.cells, key);
     const exit = sideToward(piece.position, destination);
@@ -309,10 +348,13 @@ function applyStep(state: GameState, pieceId: string, destination: Coord): GameS
   const cell = cells[key];
   const tileType = resolveTileType(state.board.tileTypes, cell.typeId);
   const effect = tileEffect(tileType);
-  const holdingPassItem = canPassWithItem(tileType, state.run.inventory);
+  const armedPass =
+    Boolean(usedItemId) &&
+    tileType.passItemId === usedItemId &&
+    state.run.inventory.includes(usedItemId!);
 
-  // Mage: move on; unresolved opens an item choice, resolved is safe pass-through.
-  if (effect.kind === "mage") {
+  // Mage is safe terrain (take gear via program action, not by stepping).
+  if (effect.kind === "mage" || isSafePathEffect(effect.kind)) {
     const pieces = movePiece(
       state.pieces,
       pieceId,
@@ -323,15 +365,12 @@ function applyStep(state: GameState, pieceId: string, destination: Coord): GameS
       ...state,
       board: { ...state.board, cells },
       pieces,
-      run: {
-        ...clearBump(state.run),
-        pendingItemChoice: cell.resolved ? null : { cellKey: key },
-      },
+      run: clearBump(state.run),
     };
   }
 
-  // Pass item: traverse rough terrain (goal wins).
-  if (holdingPassItem && (effect.kind === "wall" || !isSafePathEffect(effect.kind))) {
+  // Explicitly used pass item: traverse rough terrain (goal wins).
+  if (armedPass && (effect.kind === "wall" || !isSafePathEffect(effect.kind))) {
     const pieces = movePiece(
       state.pieces,
       pieceId,
@@ -355,38 +394,44 @@ function applyStep(state: GameState, pieceId: string, destination: Coord): GameS
     };
   }
 
-  // Only meadow/forest (empty) are safe. Anything else ends the path as a loss.
-  if (!isSafePathEffect(effect.kind)) {
-    const pieces = movePiece(
-      state.pieces,
-      pieceId,
-      destination,
-      state.board.grid,
-    );
-    return {
-      ...state,
-      board: { ...state.board, cells },
-      pieces,
-      run: markLost(state.run, pathOverMessage(tileType.label)),
-    };
-  }
-
-  const pieces = movePiece(state.pieces, pieceId, destination, state.board.grid);
+  // Hazards / caches / goal without the matching used item: path over.
+  const pieces = movePiece(
+    state.pieces,
+    pieceId,
+    destination,
+    state.board.grid,
+  );
   return {
     ...state,
     board: { ...state.board, cells },
     pieces,
-    run: clearBump(state.run),
+    run: markLost(state.run, pathOverMessage(tileType.label)),
   };
 }
 
-function applyChooseItem(state: GameState, itemId: string): GameState {
-  if (!isRunModeEnabled(state.definition) || state.run.status !== "playing") {
-    return state;
+function applyTakeFromMage(
+  state: GameState,
+  pieceId: string,
+  itemId: string,
+): GameState {
+  const piece = state.pieces.find((p) => p.id === pieceId);
+  if (!piece) {
+    throw new Error(`Unknown piece id: ${pieceId}`);
   }
-  const pending = state.run.pendingItemChoice;
-  if (!pending) {
-    return state;
+  const key = coordKey(piece.position);
+  const cell = state.board.cells[key];
+  if (!cell) {
+    return {
+      ...state,
+      run: markLost(state.run, "No Mage here to take from — path over"),
+    };
+  }
+  const tileType = resolveTileType(state.board.tileTypes, cell.typeId);
+  if (tileEffect(tileType).kind !== "mage" || cell.resolved) {
+    return {
+      ...state,
+      run: markLost(state.run, "No Mage here to take from — path over"),
+    };
   }
   if (!state.items[itemId]) {
     throw new Error(`Unknown item id: ${itemId}`);
@@ -399,30 +444,164 @@ function applyChooseItem(state: GameState, itemId: string): GameState {
     state.items,
   );
   const maxHp = effectiveMaxHp(state, granted.run.inventory);
-  const cells = markResolved(state.board.cells, pending.cellKey);
-
   return {
     ...state,
-    board: { ...state.board, cells },
+    board: {
+      ...state.board,
+      cells: markResolved(state.board.cells, key),
+    },
     run: {
       ...granted.run,
       maxHp,
       hp: Math.max(granted.run.hp, maxHp),
-      pendingItemChoice: null,
       bump: null,
     },
     discoveredItemIds: granted.discovered,
   };
 }
 
+function applyUseItemAction(
+  state: GameState,
+  pieceId: string,
+  itemId: string,
+  move: Direction,
+): GameState {
+  if (!state.run.inventory.includes(itemId)) {
+    return {
+      ...state,
+      run: markLost(state.run, `You don't have that item — path over`),
+    };
+  }
+  const item = state.items[itemId];
+  if (!item) {
+    throw new Error(`Unknown item id: ${itemId}`);
+  }
+
+  const piece = state.pieces.find((p) => p.id === pieceId);
+  if (!piece) {
+    throw new Error(`Unknown piece id: ${pieceId}`);
+  }
+  const destination = destinationFrom(piece.position, move);
+  if (!isInBounds(state.board.grid, destination)) {
+    return {
+      ...state,
+      run: markLost(state.run, `That action doesn't fit this move — path over`),
+    };
+  }
+
+  const fromCell = state.board.cells[coordKey(piece.position)];
+  const destCell = state.board.cells[coordKey(destination)];
+  if (!fromCell || !destCell) {
+    return {
+      ...state,
+      run: markLost(state.run, `That action doesn't fit this move — path over`),
+    };
+  }
+
+  // Reveal destination so the action is judged against the real tile.
+  let cells = revealCell(state.board.cells, coordKey(destination));
+  const revealedDest = cells[coordKey(destination)];
+  const destType = resolveTileType(state.board.tileTypes, revealedDest.typeId);
+
+  if (item.breaksSideWalls) {
+    const blocked = isCrossingBlocked(
+      fromCell.walls,
+      revealedDest.walls,
+      piece.position,
+      destination,
+    );
+    if (!blocked) {
+      return {
+        ...state,
+        board: { ...state.board, cells },
+        run: markLost(state.run, "Sledgehammer found no wall — path over"),
+      };
+    }
+    cells = clearCrossingWalls(cells, piece.position, destination);
+    return {
+      ...state,
+      board: { ...state.board, cells },
+      run: clearBump(state.run),
+    };
+  }
+
+  if (destType.passItemId === itemId) {
+    return {
+      ...state,
+      board: { ...state.board, cells },
+      run: clearBump(state.run),
+    };
+  }
+
+  return {
+    ...state,
+    board: { ...state.board, cells },
+    run: markLost(
+      state.run,
+      `Wrong item for the ${destType.label} — path over`,
+    ),
+  };
+}
+
+function applyProgramAction(
+  state: GameState,
+  pieceId: string,
+  action: ProgramAction,
+  move: Direction,
+): GameState {
+  switch (action.kind) {
+    case "none":
+      return state;
+    case "takeFromMage":
+      return applyTakeFromMage(state, pieceId, action.itemId);
+    case "useItem":
+      return applyUseItemAction(state, pieceId, action.itemId, move);
+    default: {
+      const _exhaustive: never = action;
+      return _exhaustive;
+    }
+  }
+}
+
 /**
- * Execute a locked-in list of orthogonal moves in order. Stops early if the
- * run ends (won/lost). Out-of-bounds moves are wasted (hero stays put).
+ * One plan step: resolve the action on the current tile, then attempt the move.
+ */
+function applyProgramStep(
+  state: GameState,
+  pieceId: string,
+  step: ProgramStep,
+): GameState {
+  if (!isRunModeEnabled(state.definition) || state.run.status !== "playing") {
+    return state;
+  }
+
+  let current = applyProgramAction(state, pieceId, step.action, step.move);
+  if (current.run.status !== "playing") {
+    return current;
+  }
+
+  const piece = current.pieces.find((p) => p.id === pieceId);
+  if (!piece) {
+    throw new Error(`Unknown piece id: ${pieceId}`);
+  }
+  const destination = destinationFrom(piece.position, step.move);
+  if (!isInBounds(current.board.grid, destination)) {
+    return current;
+  }
+
+  const usedItemId =
+    step.action.kind === "useItem" ? step.action.itemId : undefined;
+  return applyStep(current, pieceId, destination, usedItemId);
+}
+
+/**
+ * Execute a locked-in list of action+move pairs. Stops early if the run ends.
+ * Out-of-bounds moves are wasted (hero stays put) after a successful action.
  */
 function applyRunProgram(
   state: GameState,
   pieceId: string,
-  steps: Direction[],
+  steps: ProgramStep[],
 ): GameState {
   if (!isRunModeEnabled(state.definition) || state.run.status !== "playing") {
     return state;
@@ -436,19 +615,11 @@ function applyRunProgram(
   }
 
   let current = state;
-  for (const direction of steps) {
-    if (current.run.status !== "playing" || current.run.pendingItemChoice) {
+  for (const step of steps) {
+    if (current.run.status !== "playing") {
       break;
     }
-    const piece = current.pieces.find((p) => p.id === pieceId);
-    if (!piece) {
-      throw new Error(`Unknown piece id: ${pieceId}`);
-    }
-    const destination = destinationFrom(piece.position, direction);
-    if (!isInBounds(current.board.grid, destination)) {
-      continue;
-    }
-    current = applyStep(current, pieceId, destination);
+    current = applyProgramStep(current, pieceId, step);
   }
   return current;
 }
@@ -584,11 +755,16 @@ export function applyAction(state: GameState, action: GameAction): GameState {
       };
     }
     case "step":
-      return applyStep(state, action.pieceId, action.destination);
+      return applyStep(
+        state,
+        action.pieceId,
+        action.destination,
+        action.usedItemId,
+      );
+    case "programStep":
+      return applyProgramStep(state, action.pieceId, action.step);
     case "runProgram":
       return applyRunProgram(state, action.pieceId, action.steps);
-    case "chooseItem":
-      return applyChooseItem(state, action.itemId);
     case "softReset":
       return applySoftReset(state);
     case "reset":

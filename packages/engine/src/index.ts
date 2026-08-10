@@ -75,9 +75,11 @@ export {
   markLost,
   markWon,
   pathOverMessage,
+  programActionLabel,
   setBump,
   type CreateRunStateOptions,
-  type PendingItemChoice,
+  type ProgramAction,
+  type ProgramStep,
   type RunState,
   type RunStatus,
 } from "./run/index.js";

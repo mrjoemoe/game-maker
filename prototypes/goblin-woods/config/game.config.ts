@@ -23,6 +23,12 @@ export const goblinWoods: GameDefinition = {
     { id: "spear", label: "Spear", icon: "🔱" },
     { id: "charm", label: "Charm", icon: "🔮" },
     { id: "sneak", label: "Sneak", icon: "🥷" },
+    {
+      id: "sledgehammer",
+      label: "Sledgehammer",
+      icon: "🔨",
+      breaksSideWalls: true,
+    },
   ],
   run: {
     heroPieceId: "hero",
@@ -122,8 +128,8 @@ export const goblinWoods: GameDefinition = {
       weights: { none: 0.7, one: 0.25, two: 0.05 },
     },
     overrides: [
-      // Opening Mage — first tile north of start
-      { coord: { x: 3, y: 5 }, typeId: "mage", walls: [] },
+      // Start on the Mage (opening tile)
+      { coord: { x: 3, y: 6 }, typeId: "mage", walls: [] },
 
       // Cosmetic forest
       { coord: { x: 1, y: 5 }, typeId: "forest" },
@@ -153,9 +159,6 @@ export const goblinWoods: GameDefinition = {
 
       // Goal near top center
       { coord: { x: 3, y: 0 }, typeId: "castle" },
-
-      // Keep the starting meadow free of side walls so the first plan isn't blocked in place
-      { coord: { x: 3, y: 6 }, walls: [] },
     ],
   },
   pieceTypes: [{ id: "hero", label: "Hero", color: "#c47a2c", icon: "H" }],

@@ -1,10 +1,5 @@
 export type RunStatus = "playing" | "won" | "lost";
 
-/** Coord key of a Mage (or similar) cell awaiting an item pick. */
-export type PendingItemChoice = {
-  cellKey: string;
-};
-
 export type RunState = {
   status: RunStatus;
   hp: number;
@@ -13,15 +8,12 @@ export type RunState = {
   attempts: number;
   /** Short reason the last step failed or ended the path, or null. */
   bump: string | null;
-  /** Set when the hero must pick an item before continuing. */
-  pendingItemChoice: PendingItemChoice | null;
 };
 
 export type CreateRunStateOptions = {
   maxHp: number;
   inventory?: string[];
   attempts?: number;
-  pendingItemChoice?: PendingItemChoice | null;
 };
 
 export function createRunState(options: CreateRunStateOptions): RunState {
@@ -36,7 +28,6 @@ export function createRunState(options: CreateRunStateOptions): RunState {
     inventory: [...(options.inventory ?? [])],
     attempts: options.attempts ?? 1,
     bump: null,
-    pendingItemChoice: options.pendingItemChoice ?? null,
   };
 }
 
@@ -82,11 +73,17 @@ export function setBump(run: RunState, message: string): RunState {
   return { ...run, bump: message };
 }
 
-/** Meadow/forest (empty effect) are the only inherently safe path tiles. */
+/** Meadow/forest (empty) and mage tiles are safe path tiles. */
 export function isSafePathEffect(kind: string): boolean {
-  return kind === "empty";
+  return kind === "empty" || kind === "mage";
 }
 
 export function pathOverMessage(tileLabel: string): string {
   return `You found a ${tileLabel} — path over`;
 }
+
+export {
+  programActionLabel,
+  type ProgramAction,
+  type ProgramStep,
+} from "./program.js";

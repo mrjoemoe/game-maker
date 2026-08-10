@@ -1,15 +1,21 @@
 import {
-  DIRECTIONS,
   directionLabel,
+  programActionLabel,
   type Direction,
+  type ItemDefinition,
+  type ProgramAction,
+  type ProgramStep,
 } from "@game-maker/engine";
+import { useState } from "react";
 
 type PathPlannerProps = {
   programLength: number;
-  steps: Direction[];
+  steps: ProgramStep[];
+  items: ItemDefinition[];
+  inventory: string[];
   executingIndex: number | null;
   disabled: boolean;
-  onAppend: (direction: Direction) => void;
+  onAppend: (step: ProgramStep) => void;
   onUndo: () => void;
   onClear: () => void;
   onExecute: () => void;
@@ -18,6 +24,8 @@ type PathPlannerProps = {
 export function PathPlanner({
   programLength,
   steps,
+  items,
+  inventory,
   executingIndex,
   disabled,
   onAppend,
@@ -25,15 +33,40 @@ export function PathPlanner({
   onClear,
   onExecute,
 }: PathPlannerProps) {
+  const [draftAction, setDraftAction] = useState<ProgramAction>({
+    kind: "none",
+  });
+
   const full = steps.length >= programLength;
-  const canExecute = steps.length === programLength && !disabled && executingIndex === null;
+  const canExecute =
+    steps.length === programLength && !disabled && executingIndex === null;
+  const locked = disabled || full || executingIndex !== null;
+  const sortedItems = [...items].sort((a, b) => a.label.localeCompare(b.label));
+
+  const actionSummary = (action: ProgramAction): string => {
+    const item =
+      action.kind === "none"
+        ? undefined
+        : items.find((i) => i.id === action.itemId);
+    return programActionLabel(action, item?.label);
+  };
+
+  const commitMove = (move: Direction) => {
+    if (locked) {
+      return;
+    }
+    if (draftAction.kind === "useItem" && !inventory.includes(draftAction.itemId)) {
+      return;
+    }
+    onAppend({ action: draftAction, move });
+  };
 
   return (
     <aside className="path-planner" aria-label="Path planner">
       <h2>Chart path</h2>
       <p className="path-lede">
-        Lock in {programLength} moves, then run them. Plan carefully — you
-        commit before the tiles resolve.
+        Each step is an action, then a move. Wrong actions end the run — plan
+        the whole path before you go.
       </p>
 
       <ol className="path-slots">
@@ -46,51 +79,117 @@ export function PathPlanner({
               className={`path-slot${step ? " filled" : ""}${active ? " active" : ""}`}
             >
               <span className="slot-index">{i + 1}</span>
-              <span className="slot-dir">{step ? directionLabel(step) : "—"}</span>
+              <span className="slot-body">
+                <span className="slot-action">
+                  {step ? actionSummary(step.action) : "Action —"}
+                </span>
+                <span className="slot-dir">
+                  {step ? directionLabel(step.move) : "Move —"}
+                </span>
+              </span>
             </li>
           );
         })}
       </ol>
 
-      <div className="path-pad" role="group" aria-label="Add move">
-        <button
-          type="button"
-          className="pad-btn pad-up"
-          disabled={disabled || full || executingIndex !== null}
-          onClick={() => onAppend("up")}
-          aria-label="Up"
-        >
-          ↑
-        </button>
-        <div className="pad-row">
+      <div className="path-compose">
+        <p className="path-compose-label">1. Action for next step</p>
+        <div className="path-action-choices" role="group" aria-label="Step action">
           <button
             type="button"
-            className="pad-btn"
-            disabled={disabled || full || executingIndex !== null}
-            onClick={() => onAppend("left")}
-            aria-label="Left"
+            className={
+              draftAction.kind === "none" ? "action-choice active" : "action-choice"
+            }
+            disabled={locked}
+            onClick={() => setDraftAction({ kind: "none" })}
           >
-            ←
+            No action
           </button>
-          <button
-            type="button"
-            className="pad-btn"
-            disabled={disabled || full || executingIndex !== null}
-            onClick={() => onAppend("down")}
-            aria-label="Down"
-          >
-            ↓
-          </button>
-          <button
-            type="button"
-            className="pad-btn"
-            disabled={disabled || full || executingIndex !== null}
-            onClick={() => onAppend("right")}
-            aria-label="Right"
-          >
-            →
-          </button>
+          {sortedItems.map((item) => (
+            <button
+              key={`take-${item.id}`}
+              type="button"
+              className={
+                draftAction.kind === "takeFromMage" &&
+                draftAction.itemId === item.id
+                  ? "action-choice active"
+                  : "action-choice"
+              }
+              disabled={locked}
+              onClick={() =>
+                setDraftAction({ kind: "takeFromMage", itemId: item.id })
+              }
+            >
+              {item.icon ? `${item.icon} ` : ""}Take {item.label}
+            </button>
+          ))}
+          {sortedItems.map((item) => {
+            const held = inventory.includes(item.id);
+            return (
+              <button
+                key={`use-${item.id}`}
+                type="button"
+                className={
+                  draftAction.kind === "useItem" && draftAction.itemId === item.id
+                    ? "action-choice active"
+                    : "action-choice"
+                }
+                disabled={locked || !held}
+                title={held ? `Use ${item.label}` : `Need ${item.label} in inventory`}
+                onClick={() =>
+                  setDraftAction({ kind: "useItem", itemId: item.id })
+                }
+              >
+                {item.icon ? `${item.icon} ` : ""}Use {item.label}
+              </button>
+            );
+          })}
         </div>
+
+        <p className="path-compose-label">2. Move</p>
+        <div className="path-pad" role="group" aria-label="Add move">
+          <button
+            type="button"
+            className="pad-btn pad-up"
+            disabled={locked}
+            onClick={() => commitMove("up")}
+            aria-label="Up"
+          >
+            ↑
+          </button>
+          <div className="pad-row">
+            <button
+              type="button"
+              className="pad-btn"
+              disabled={locked}
+              onClick={() => commitMove("left")}
+              aria-label="Left"
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              className="pad-btn"
+              disabled={locked}
+              onClick={() => commitMove("down")}
+              aria-label="Down"
+            >
+              ↓
+            </button>
+            <button
+              type="button"
+              className="pad-btn"
+              disabled={locked}
+              onClick={() => commitMove("right")}
+              aria-label="Right"
+            >
+              →
+            </button>
+          </div>
+        </div>
+        <p className="path-draft">
+          Next: <strong>{actionSummary(draftAction)}</strong>, then direction
+        </p>
       </div>
 
       <div className="path-actions">
@@ -117,11 +216,6 @@ export function PathPlanner({
           Run path
         </button>
       </div>
-
-      <p className="path-hint">
-        {DIRECTIONS.map((d) => directionLabel(d)).join(" ")} — fill all{" "}
-        {programLength} slots to go.
-      </p>
     </aside>
   );
 }

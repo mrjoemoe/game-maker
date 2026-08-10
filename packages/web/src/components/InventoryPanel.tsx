@@ -18,7 +18,7 @@ export function InventoryPanel({ game }: InventoryPanelProps) {
       <h2>Inventory</h2>
       <p className="inventory-lede">Gear you carry across attempts on this map.</p>
       {items.length === 0 ? (
-        <p className="inventory-empty">Empty — visit the Mage to choose your first item.</p>
+        <p className="inventory-empty">Empty — take an item from the Mage as a programmed action.</p>
       ) : (
         <ul className="inventory-list">
           {items.map((item) => (

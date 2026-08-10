@@ -74,11 +74,19 @@ Revealed tiles SHALL display an indicator of their effect (enemy, trap, powerup,
 - **THEN** that cell is rendered as a cleared enemy tile
 
 ### Requirement: Path planner UI
-When run mode is enabled, the playtest app SHALL provide a side path planner to queue exactly `programLength` orthogonal moves and execute them in order, stopping when the run ends.
+When run mode is enabled, the playtest app SHALL provide a side path planner to queue exactly `programLength` action+move pairs and execute them in order (action then move), stopping when the run ends. The UI SHALL let the player choose each step’s action (`none`, take from Mage, or use an item) and move direction. Each slot SHALL display the action summary and move.
 
 #### Scenario: Run path executes queued moves
 - **WHEN** the player fills all program slots and activates run path
-- **THEN** the app applies those steps in order until the program finishes or the run ends
+- **THEN** the app applies those action+move pairs in order until the program finishes or the run ends
+
+#### Scenario: Full program required before run
+- **WHEN** fewer than `programLength` complete action+move pairs are set
+- **THEN** Run path stays disabled
+
+#### Scenario: Slot shows use-item then north
+- **WHEN** the player sets a step to use the sword and move up
+- **THEN** that slot shows both the use-sword action and the up move
 
 ### Requirement: Tile count tally
 When run mode is enabled, the playtest app SHALL show a side panel listing each tile type on the map with a count. When a tile type declares a `passItemId`, the tally row SHALL show that item (label and/or icon) as the gear used to pass it.
@@ -106,8 +114,8 @@ When run mode is enabled, the playtest app SHALL show a side inventory panel lis
 - **THEN** the side inventory shows that no gear is held yet
 
 ### Requirement: Mage item picker
-When the run has a pending Mage item choice, the playtest app SHALL show a picker listing every item in the game definition and SHALL dispatch the chosen item. Path execution SHALL stop when a Mage choice becomes pending.
+The playtest app SHALL NOT show an interactive Mage item-picker modal. Taking an item from the Mage SHALL be done by programming a takeFromMage action while on the Mage tile.
 
 #### Scenario: Picker appears on Mage
-- **WHEN** the hero steps onto an unresolved Mage
-- **THEN** an item picker is shown and the programmed path does not continue until after a choice
+- **WHEN** the hero steps onto an unresolved Mage during path execution
+- **THEN** no item-picker dialog is shown

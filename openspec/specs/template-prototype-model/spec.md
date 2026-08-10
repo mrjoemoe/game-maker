@@ -60,8 +60,12 @@ The Goblin Woods prototype SHALL assign a pass item to each rough terrain tile t
 - **THEN** the pit tile type's `passItemId` is the makeshift-bridge item
 
 ### Requirement: Goblin Woods Mage first tile
-The Goblin Woods prototype SHALL include a Mage tile type and place it as the first tile north of the hero start so the opening step can visit the Mage.
+The Goblin Woods hero start cell SHALL be a Mage tile (revealed at run start). The prototype SHALL include a sledgehammer item with `breaksSideWalls` available from the Mage item list. A separate Mage north of start is not required.
 
 #### Scenario: Mage sits north of start
 - **WHEN** the Goblin Woods board is loaded
-- **THEN** the cell directly north of the start position is a Mage tile
+- **THEN** the start position itself is the Mage tile (the opening tile the hero occupies)
+
+#### Scenario: Start cell is Mage
+- **WHEN** the Goblin Woods board is loaded
+- **THEN** the start position’s tile type is Mage
