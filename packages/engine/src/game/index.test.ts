@@ -862,4 +862,117 @@ describe("run mode", () => {
     expect(state.coins).toBe(2);
     expect(state.run.inventory).toEqual([]);
   });
+
+  it("travels between discovered portals and skips the move", () => {
+    const withPortals: GameDefinition = {
+      ...runDefinition,
+      board: {
+        ...runDefinition.board,
+        tileTypes: [
+          ...runDefinition.board.tileTypes,
+          {
+            id: "portal-1",
+            label: "Portal 1",
+            color: "#65a",
+            effect: { kind: "portal", portalId: 1 },
+          },
+          {
+            id: "portal-2",
+            label: "Portal 2",
+            color: "#65a",
+            effect: { kind: "portal", portalId: 2 },
+          },
+        ],
+        overrides: [
+          { coord: { x: 0, y: 0 }, typeId: "portal-1", isFaceUp: true },
+          { coord: { x: 2, y: 0 }, typeId: "portal-2", isFaceUp: true },
+        ],
+      },
+    };
+    let state = createInitialState(withPortals);
+    state = {
+      ...state,
+      board: {
+        ...state.board,
+        cells: {
+          ...state.board.cells,
+          "2,0": { ...state.board.cells["2,0"]!, isFaceUp: true },
+        },
+      },
+    };
+    state = applyAction(state, {
+      type: "programStep",
+      pieceId: "hero",
+      step: {
+        action: { kind: "travelToPortal", portalId: 2 },
+        move: "down",
+      },
+    });
+    expect(state.run.status).toBe("playing");
+    expect(state.pieces[0].position).toEqual({ x: 2, y: 0 });
+    expect(state.run.bump).toMatch(/Traveled to Portal 2/);
+  });
+
+  it("fails travel to a hidden portal", () => {
+    const withPortals: GameDefinition = {
+      ...runDefinition,
+      board: {
+        ...runDefinition.board,
+        tileTypes: [
+          ...runDefinition.board.tileTypes,
+          {
+            id: "portal-1",
+            label: "Portal 1",
+            color: "#65a",
+            effect: { kind: "portal", portalId: 1 },
+          },
+          {
+            id: "portal-2",
+            label: "Portal 2",
+            color: "#65a",
+            effect: { kind: "portal", portalId: 2 },
+          },
+        ],
+        overrides: [
+          { coord: { x: 0, y: 0 }, typeId: "portal-1", isFaceUp: true },
+          { coord: { x: 2, y: 0 }, typeId: "portal-2", isFaceUp: false },
+        ],
+      },
+    };
+    let state = createInitialState(withPortals);
+    // Force portal-2 face-down after run-mode face-up rules.
+    state = {
+      ...state,
+      board: {
+        ...state.board,
+        cells: {
+          ...state.board.cells,
+          "2,0": { ...state.board.cells["2,0"]!, isFaceUp: false },
+        },
+      },
+    };
+    state = applyAction(state, {
+      type: "programStep",
+      pieceId: "hero",
+      step: {
+        action: { kind: "travelToPortal", portalId: 2 },
+        move: "down",
+      },
+    });
+    expect(state.run.status).toBe("lost");
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
+  });
+
+  it("fails travel when not on a portal", () => {
+    let state = createInitialState(runDefinition);
+    state = applyAction(state, {
+      type: "programStep",
+      pieceId: "hero",
+      step: {
+        action: { kind: "travelToPortal", portalId: 1 },
+        move: "down",
+      },
+    });
+    expect(state.run.status).toBe("lost");
+  });
 });

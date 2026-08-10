@@ -95,13 +95,14 @@ export function setBump(run: RunState, message: string): RunState {
   return { ...run, bump: message };
 }
 
-/** Meadow/forest (empty), mage, extraction, and shop tiles are safe path tiles. */
+/** Meadow/forest (empty), mage, extraction, shop, and portal tiles are safe path tiles. */
 export function isSafePathEffect(kind: string): boolean {
   return (
     kind === "empty" ||
     kind === "mage" ||
     kind === "extraction" ||
-    kind === "shop"
+    kind === "shop" ||
+    kind === "portal"
   );
 }
 
@@ -121,6 +122,7 @@ export function mergeIntoStash(stash: string[], inventory: string[]): string[] {
 }
 
 export {
+  PORTAL_IDS,
   programActionLabel,
   SHOP_ITEM_COST,
   type ProgramAction,

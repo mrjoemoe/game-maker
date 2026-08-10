@@ -74,6 +74,30 @@ export const goblinWoods: GameDefinition = {
         effect: { kind: "shop" },
       },
       {
+        id: "portal-1",
+        label: "Portal 1",
+        color: "#6b5b95",
+        effect: { kind: "portal", portalId: 1 },
+      },
+      {
+        id: "portal-2",
+        label: "Portal 2",
+        color: "#6b5b95",
+        effect: { kind: "portal", portalId: 2 },
+      },
+      {
+        id: "portal-3",
+        label: "Portal 3",
+        color: "#6b5b95",
+        effect: { kind: "portal", portalId: 3 },
+      },
+      {
+        id: "portal-4",
+        label: "Portal 4",
+        color: "#6b5b95",
+        effect: { kind: "portal", portalId: 4 },
+      },
+      {
         id: "thicket",
         label: "Thicket",
         color: "#3d4f2f",
@@ -152,6 +176,10 @@ export const goblinWoods: GameDefinition = {
     randomPlacements: [
       { typeId: "forest", count: 8, exclude: RANDOM_EXCLUDE },
       { typeId: "shop", count: 3, exclude: RANDOM_EXCLUDE },
+      { typeId: "portal-1", count: 1, exclude: RANDOM_EXCLUDE },
+      { typeId: "portal-2", count: 1, exclude: RANDOM_EXCLUDE },
+      { typeId: "portal-3", count: 1, exclude: RANDOM_EXCLUDE },
+      { typeId: "portal-4", count: 1, exclude: RANDOM_EXCLUDE },
       { typeId: "thicket", count: 1, exclude: RANDOM_EXCLUDE },
       { typeId: "river", count: 1, exclude: RANDOM_EXCLUDE },
       { typeId: "pit", count: 2, exclude: RANDOM_EXCLUDE },

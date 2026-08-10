@@ -1,5 +1,6 @@
 import {
   directionLabel,
+  PORTAL_IDS,
   programActionLabel,
   SHOP_ITEM_COST,
   type Direction,
@@ -66,7 +67,11 @@ export function PathPlanner({
   const canAffordBuy = projectedCoins >= SHOP_ITEM_COST;
 
   const actionSummary = (action: ProgramAction): string => {
-    if (action.kind === "none" || action.kind === "extract") {
+    if (
+      action.kind === "none" ||
+      action.kind === "extract" ||
+      action.kind === "travelToPortal"
+    ) {
       return programActionLabel(action);
     }
     const item = items.find((i) => i.id === action.itemId);
@@ -97,7 +102,8 @@ export function PathPlanner({
       <h2>Chart path</h2>
       <p className="path-lede">
         Chart up to {programLength} action+move pairs, then run. Buy costs{" "}
-        {SHOP_ITEM_COST} coins at a shop. Extract ends the chart.
+        {SHOP_ITEM_COST} coins at a shop. Travel teleports between discovered
+        portals. Extract ends the chart.
       </p>
 
       <ol className="path-slots">
@@ -118,7 +124,9 @@ export function PathPlanner({
                   {step
                     ? step.action.kind === "extract"
                       ? "Leave"
-                      : directionLabel(step.move)
+                      : step.action.kind === "travelToPortal"
+                        ? "Warp"
+                        : directionLabel(step.move)
                     : "Move —"}
                 </span>
               </span>
@@ -153,6 +161,25 @@ export function PathPlanner({
           >
             🚪 Extract
           </button>
+          {PORTAL_IDS.map((portalId) => (
+            <button
+              key={`portal-${portalId}`}
+              type="button"
+              className={
+                draftAction.kind === "travelToPortal" &&
+                draftAction.portalId === portalId
+                  ? "action-choice active"
+                  : "action-choice"
+              }
+              disabled={locked}
+              title={`Must stand on a portal; destination Portal ${portalId} must already be discovered`}
+              onClick={() =>
+                setDraftAction({ kind: "travelToPortal", portalId })
+              }
+            >
+              🌀 Travel to Portal {portalId}
+            </button>
+          ))}
           {sortedItems.map((item) => (
             <button
               key={`take-${item.id}`}

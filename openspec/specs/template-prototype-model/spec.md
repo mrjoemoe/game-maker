@@ -127,3 +127,10 @@ Goblin Woods SHALL enable coin weights 40/30/20/10 for 0/1/2/3 coins and SHALL p
 - **WHEN** the Goblin Woods board is loaded
 - **THEN** exactly three cells have the shop type
 
+### Requirement: Goblin Woods portals
+Goblin Woods SHALL place exactly four portal tiles (Portal 1–4) on random meadow cells excluding start and corners. The rulebook SHALL describe portal travel.
+
+#### Scenario: Four numbered portals
+- **WHEN** the Goblin Woods board is loaded
+- **THEN** exactly one cell of each portal-1 through portal-4 type exists
+

@@ -12,7 +12,8 @@ export type TileEffect =
   | { kind: "mage" }
   | { kind: "goal" }
   | { kind: "extraction" }
-  | { kind: "shop" };
+  | { kind: "shop" }
+  | { kind: "portal"; portalId: number };
 
 export type { TileSide, SideWallConfig, SideWallWeights } from "./sides.js";
 export {

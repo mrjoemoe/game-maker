@@ -40,6 +40,8 @@ function effectIcon(tileType: TileTypeDefinition, resolved?: boolean): string | 
       return "🚪";
     case "shop":
       return "🏪";
+    case "portal":
+      return `🌀${effect.portalId}`;
     default:
       return null;
   }

@@ -82,6 +82,7 @@ export {
   programActionLabel,
   setBump,
   SHOP_ITEM_COST,
+  PORTAL_IDS,
   type CreateRunStateOptions,
   type ProgramAction,
   type ProgramStep,

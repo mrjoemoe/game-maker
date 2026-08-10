@@ -197,3 +197,10 @@ The path planner SHALL offer Buy-from-shop actions for each catalog item (cost 3
 - **WHEN** a face-up cell still has coins and is not covered by UI that hides the badge
 - **THEN** the tile shows the remaining coin count
 
+### Requirement: Portal travel actions in the planner
+The path planner SHALL offer Travel to Portal 1–4 actions. Queued travel steps SHALL display as travel (not an orthogonal leave direction) in the chart.
+
+#### Scenario: Travel actions listed
+- **WHEN** the player composes a path step
+- **THEN** Travel to Portal 1, 2, 3, and 4 are available as actions
+

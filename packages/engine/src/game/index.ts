@@ -648,6 +648,93 @@ function applyBuyFromShop(
   };
 }
 
+function findPortalCell(
+  state: GameState,
+  portalId: number,
+): { key: string; cell: TileState } | null {
+  for (const [key, cell] of Object.entries(state.board.cells)) {
+    const type = resolveTileType(state.board.tileTypes, cell.typeId);
+    const effect = tileEffect(type);
+    if (effect.kind === "portal" && effect.portalId === portalId) {
+      return { key, cell };
+    }
+  }
+  return null;
+}
+
+function applyTravelToPortal(
+  state: GameState,
+  pieceId: string,
+  portalId: number,
+): GameState {
+  const piece = state.pieces.find((p) => p.id === pieceId);
+  if (!piece) {
+    throw new Error(`Unknown piece id: ${pieceId}`);
+  }
+  const fromKey = coordKey(piece.position);
+  const fromCell = state.board.cells[fromKey];
+  if (!fromCell) {
+    return {
+      ...state,
+      run: markLost(state.run, "No portal here — path over"),
+    };
+  }
+  const fromType = resolveTileType(state.board.tileTypes, fromCell.typeId);
+  const fromEffect = tileEffect(fromType);
+  if (fromEffect.kind !== "portal") {
+    return {
+      ...state,
+      run: markLost(state.run, "No portal here — path over"),
+    };
+  }
+  if (fromEffect.portalId === portalId) {
+    return {
+      ...state,
+      run: markLost(state.run, "Already at that portal — path over"),
+    };
+  }
+
+  const dest = findPortalCell(state, portalId);
+  if (!dest) {
+    return {
+      ...state,
+      run: markLost(state.run, `Portal ${portalId} not found — path over`),
+    };
+  }
+  if (!dest.cell.isFaceUp) {
+    return {
+      ...state,
+      run: markLost(
+        state.run,
+        `Portal ${portalId} is still hidden — path over`,
+      ),
+    };
+  }
+
+  const [xStr, yStr] = dest.key.split(",");
+  const destination = { x: Number(xStr), y: Number(yStr) };
+  const pieces = movePiece(
+    state.pieces,
+    pieceId,
+    destination,
+    state.board.grid,
+  );
+  const gathered = collectCellCoins(state.board.cells, dest.key, state.coins);
+  const travelMsg = `Traveled to Portal ${portalId}`;
+  const noun = gathered.collected === 1 ? "coin" : "coins";
+  const bump =
+    gathered.collected > 0
+      ? `${travelMsg} · Collected ${gathered.collected} ${noun} — wallet ${gathered.coins}`
+      : travelMsg;
+  return {
+    ...state,
+    board: { ...state.board, cells: gathered.cells },
+    pieces,
+    coins: gathered.coins,
+    run: { ...clearBump(state.run), bump },
+  };
+}
+
 function applyProgramAction(
   state: GameState,
   pieceId: string,
@@ -665,6 +752,8 @@ function applyProgramAction(
       return applyUseItemAction(state, pieceId, action.itemId, move);
     case "extract":
       return applyExtractAction(state, pieceId);
+    case "travelToPortal":
+      return applyTravelToPortal(state, pieceId, action.portalId);
     default: {
       const _exhaustive: never = action;
       return _exhaustive;
@@ -674,6 +763,7 @@ function applyProgramAction(
 
 /**
  * One plan step: resolve the action on the current tile, then attempt the move.
+ * Travel teleports and skips the orthogonal move.
  */
 function applyProgramStep(
   state: GameState,
@@ -686,6 +776,9 @@ function applyProgramStep(
 
   let current = applyProgramAction(state, pieceId, step.action, step.move);
   if (current.run.status !== "playing") {
+    return current;
+  }
+  if (step.action.kind === "travelToPortal") {
     return current;
   }
 
