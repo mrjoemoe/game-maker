@@ -531,6 +531,55 @@ describe("run mode", () => {
     expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
   });
 
+  it("breaks into a fully walled castle with the sledgehammer and wins", () => {
+    const walledCastle: GameDefinition = {
+      ...runDefinition,
+      items: [
+        ...(runDefinition.items ?? []),
+        { id: "sledgehammer", label: "Sledgehammer", breaksSideWalls: true },
+      ],
+      board: {
+        ...runDefinition.board,
+        tileTypes: runDefinition.board.tileTypes.map((t) =>
+          t.id === "castle"
+            ? { ...t, passItemId: "sledgehammer" }
+            : t,
+        ),
+        overrides: [
+          { coord: { x: 0, y: 0 }, typeId: "meadow", walls: [] },
+          {
+            coord: { x: 0, y: 1 },
+            typeId: "castle",
+            walls: ["n", "e", "s", "w"],
+          },
+        ],
+      },
+    };
+    let state = createInitialState(walledCastle);
+    state = {
+      ...state,
+      run: { ...state.run, inventory: ["sledgehammer", "sword"] },
+    };
+    state = applyAction(state, {
+      type: "programStep",
+      pieceId: "hero",
+      step: {
+        action: { kind: "useItem", itemId: "sledgehammer" },
+        move: "down",
+      },
+    });
+    expect(state.run.status).toBe("won");
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
+    expect(state.run.inventory).toEqual([]);
+    expect(state.stashItemIds).toEqual(["sword"]);
+    // Only the crossed edge is cleared; other castle walls remain.
+    expect(getCell(state.board, { x: 0, y: 1 }).walls ?? []).toEqual([
+      "e",
+      "s",
+      "w",
+    ]);
+  });
+
   it("fails extract when not on an extraction tile", () => {
     let state = createInitialState(runDefinition);
     state = applyAction(state, {

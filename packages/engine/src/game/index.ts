@@ -289,11 +289,20 @@ function applyStep(
       destination,
       state.board.grid,
     );
+    let run = clearBump(state.run);
+    // Sledge used to clear walls onto safe ground: spend it here.
+    if (
+      usedItemId &&
+      state.items[usedItemId]?.breaksSideWalls &&
+      run.inventory.includes(usedItemId)
+    ) {
+      run = consumeItem(run, usedItemId);
+    }
     return {
       ...state,
       board: { ...state.board, cells },
       pieces,
-      run: clearBump(state.run),
+      run,
     };
   }
 
@@ -337,6 +346,14 @@ function applyStep(
   }
 
   // Hazards / caches / goal without the matching used item: path over.
+  let lostRun = state.run;
+  if (
+    usedItemId &&
+    state.items[usedItemId]?.breaksSideWalls &&
+    lostRun.inventory.includes(usedItemId)
+  ) {
+    lostRun = consumeItem(lostRun, usedItemId);
+  }
   const pieces = movePiece(
     state.pieces,
     pieceId,
@@ -347,7 +364,7 @@ function applyStep(
     ...state,
     board: { ...state.board, cells },
     pieces,
-    run: markLost(state.run, pathOverMessage(tileType.label)),
+    run: markLost(lostRun, pathOverMessage(tileType.label)),
   };
 }
 
@@ -461,7 +478,7 @@ function applyUseItemAction(
     return {
       ...state,
       board: { ...state.board, cells },
-      run: clearBump(consumeItem(state.run, itemId)),
+      run: clearBump(state.run),
     };
   }
 

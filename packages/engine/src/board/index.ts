@@ -33,6 +33,8 @@ export type RandomTilePlacement = {
   onTypeId?: string;
   /** Cells that must not receive this placement. */
   exclude?: Coord[];
+  /** When set, replaces walls on the placed cell. */
+  walls?: TileSide[];
 };
 
 export type BoardConfig = {
@@ -132,7 +134,7 @@ export function createBoard(config: BoardConfig): Board {
         placement.typeId,
         current.isFaceUp,
         current.resolved ?? false,
-        current.walls ?? [],
+        placement.walls ?? current.walls ?? [],
       );
     }
   }

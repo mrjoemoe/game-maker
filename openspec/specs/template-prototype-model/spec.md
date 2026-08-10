@@ -51,11 +51,15 @@ A prototype config SHALL be able to enable run mode and declare a run setup (her
 - **THEN** the prototype behaves as a normal flip/move tile-board game
 
 ### Requirement: Goblin Woods rough tiles declare pass items
-The Goblin Woods prototype SHALL assign a pass item to each rough terrain tile type (pit, river, thicket, snare, goblin, brute, villain, castle) and SHALL leave sword/shield cache tiles without a pass item. The prototype item list SHALL include those pass items (reusing Sword where applicable).
+The Goblin Woods prototype SHALL assign a pass item to each rough terrain tile type (pit, river, thicket, snare, goblin, brute, villain, castle) and SHALL leave sword/shield cache tiles without a pass item. The prototype item list SHALL include those pass items (reusing Sword where applicable). The castle’s pass item SHALL be the sledgehammer.
 
 #### Scenario: Pit requires makeshift bridge
 - **WHEN** the Goblin Woods definition is loaded
 - **THEN** the pit tile type's `passItemId` is the makeshift-bridge item
+
+#### Scenario: Castle requires sledgehammer
+- **WHEN** the Goblin Woods definition is loaded
+- **THEN** the castle tile type's `passItemId` is the sledgehammer item
 
 ### Requirement: Goblin Woods Mage first tile
 The Goblin Woods hero start cell SHALL be a Mage tile (revealed at run start). The prototype SHALL include a sledgehammer item with `breaksSideWalls` available from the Mage item list. A separate Mage north of start is not required.
@@ -83,7 +87,7 @@ The Goblin Woods board SHALL place extraction tiles on all four corner cells. Th
 - **THEN** cells (0,0), (width-1,0), (0,height-1), and (width-1,height-1) are extraction tiles and face up
 
 ### Requirement: Goblin Woods random castle
-The Goblin Woods board SHALL place exactly one castle (goal) tile at a randomly chosen eligible cell that is not the hero start and not a corner extraction cell. The castle SHALL NOT be fixed to a single hardcoded coordinate across new maps.
+The Goblin Woods board SHALL place exactly one castle (goal) tile at a randomly chosen eligible cell that is not the hero start and not a corner extraction cell. That castle cell SHALL have side walls on all four sides. The castle SHALL NOT be fixed to a single hardcoded coordinate across new maps.
 
 #### Scenario: Castle not on start or corner
 - **WHEN** the Goblin Woods board is loaded
@@ -92,4 +96,8 @@ The Goblin Woods board SHALL place exactly one castle (goal) tile at a randomly 
 #### Scenario: New map can move the castle
 - **WHEN** the player starts a new map after a full reset
 - **THEN** the castle cell may differ from the previous map’s castle cell (random placement)
+
+#### Scenario: Castle is fully walled
+- **WHEN** the Goblin Woods board is loaded
+- **THEN** the castle cell has side walls on north, east, south, and west
 
