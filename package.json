@@ -1,0 +1,24 @@
+{
+  "name": "game-maker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "openspec": "openspec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mrjoemoe/game-maker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mrjoemoe/game-maker/issues"
+  },
+  "homepage": "https://github.com/mrjoemoe/game-maker#readme",
+  "devDependencies": {
+    "@fission-ai/openspec": "^1.8.0"
+  }
+}
