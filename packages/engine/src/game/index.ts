@@ -779,7 +779,11 @@ function withRerolledSideWallSeed(definition: GameDefinition): GameDefinition {
   if (!definition.board.sideWalls) {
     return definition;
   }
-  const seed = (Math.random() * 0x1_0000_0000) >>> 0;
+  // Mix time into the roll so rapid New map clicks still diverge.
+  const seed =
+    (Math.floor(Math.random() * 0x1_0000_0000) ^
+      (Date.now() & 0xffff_ffff)) >>>
+    0;
   return {
     ...definition,
     board: {

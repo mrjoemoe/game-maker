@@ -55,4 +55,41 @@ describe("board", () => {
     expect(counts[0]).toBeGreaterThan(counts[1]);
     expect(counts[1]).toBeGreaterThanOrEqual(counts[2]);
   });
+
+  it("places multiple cells when randomPlacement count is set", () => {
+    const board = createBoard({
+      grid: { width: 4, height: 4 },
+      tileTypes: [
+        ...baseTypes,
+        { id: "pit", label: "Pit", color: "#333" },
+      ],
+      defaultTileTypeId: "grass",
+      sideWalls: { seed: 99, weights: { none: 1, one: 0, two: 0 } },
+      randomPlacements: [{ typeId: "pit", count: 3 }],
+    });
+    const pits = Object.values(board.cells).filter((c) => c.typeId === "pit");
+    expect(pits).toHaveLength(3);
+  });
+
+  it("changes random placements when the side-wall seed changes", () => {
+    const types = [
+      ...baseTypes,
+      { id: "pit", label: "Pit", color: "#333" },
+    ];
+    const fingerprint = (seed: number) => {
+      const board = createBoard({
+        grid: { width: 5, height: 5 },
+        tileTypes: types,
+        defaultTileTypeId: "grass",
+        sideWalls: { seed, weights: { none: 1, one: 0, two: 0 } },
+        randomPlacements: [{ typeId: "pit", count: 4 }],
+      });
+      return Object.entries(board.cells)
+        .filter(([, c]) => c.typeId === "pit")
+        .map(([k]) => k)
+        .sort()
+        .join("|");
+    };
+    expect(fingerprint(1)).not.toBe(fingerprint(2));
+  });
 });

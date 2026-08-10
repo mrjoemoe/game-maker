@@ -35,6 +35,8 @@ export type RandomTilePlacement = {
   exclude?: Coord[];
   /** When set, replaces walls on the placed cell. */
   walls?: TileSide[];
+  /** How many cells to place (default 1). */
+  count?: number;
 };
 
 export type BoardConfig = {
@@ -115,27 +117,30 @@ export function createBoard(config: BoardConfig): Board {
       const excluded = new Set(
         (placement.exclude ?? []).map((c) => coordKey(c)),
       );
-      const candidates = allCoords(grid).filter((coord) => {
-        const key = coordKey(coord);
-        if (excluded.has(key)) {
-          return false;
+      const count = Math.max(1, placement.count ?? 1);
+      for (let n = 0; n < count; n += 1) {
+        const candidates = allCoords(grid).filter((coord) => {
+          const key = coordKey(coord);
+          if (excluded.has(key)) {
+            return false;
+          }
+          return cells[key]?.typeId === onTypeId;
+        });
+        if (candidates.length === 0) {
+          throw new Error(
+            `No eligible cells to place random tile "${placement.typeId}" (${n}/${count})`,
+          );
         }
-        return cells[key]?.typeId === onTypeId;
-      });
-      if (candidates.length === 0) {
-        throw new Error(
-          `No eligible cells to place random tile "${placement.typeId}"`,
+        const pick = candidates[Math.floor(rng() * candidates.length)]!;
+        const key = coordKey(pick);
+        const current = cells[key]!;
+        cells[key] = createTileState(
+          placement.typeId,
+          current.isFaceUp,
+          current.resolved ?? false,
+          placement.walls ?? current.walls ?? [],
         );
       }
-      const pick = candidates[Math.floor(rng() * candidates.length)]!;
-      const key = coordKey(pick);
-      const current = cells[key]!;
-      cells[key] = createTileState(
-        placement.typeId,
-        current.isFaceUp,
-        current.resolved ?? false,
-        placement.walls ?? current.walls ?? [],
-      );
     }
   }
 

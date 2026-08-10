@@ -11,9 +11,12 @@ const CORNERS = [
   { x: WIDTH - 1, y: HEIGHT - 1 },
 ] as const;
 
+const RANDOM_EXCLUDE = [{ ...START }, ...CORNERS.map((c) => ({ ...c }))];
+
 /**
  * Goblin Woods — chart a path through a hidden forest.
- * Stash gear by extracting at the corners; win by reaching the castle with sneak.
+ * Stash gear by extracting at the corners; win the walled castle with a sledgehammer.
+ * New map re-rolls the seed so walls and content placements change.
  */
 export const goblinWoods: GameDefinition = {
   id: "goblin-woods",
@@ -144,46 +147,28 @@ export const goblinWoods: GameDefinition = {
       weights: { none: 0.7, one: 0.25, two: 0.05 },
     },
     overrides: [
-      // Start on the Mage (opening tile)
+      // Fixed anchors only — everything else is seeded random on New map.
       { coord: { ...START }, typeId: "mage", walls: [] },
-
-      // Four corners are always extraction (face-up forced at createInitialState)
       { coord: { x: 0, y: 0 }, typeId: "extraction", walls: [] },
       { coord: { x: WIDTH - 1, y: 0 }, typeId: "extraction", walls: [] },
       { coord: { x: 0, y: HEIGHT - 1 }, typeId: "extraction", walls: [] },
       { coord: { x: WIDTH - 1, y: HEIGHT - 1 }, typeId: "extraction", walls: [] },
-
-      // Cosmetic forest
-      { coord: { x: 1, y: 5 }, typeId: "forest" },
-      { coord: { x: 5, y: 5 }, typeId: "forest" },
-      { coord: { x: 2, y: 3 }, typeId: "forest" },
-      { coord: { x: 4, y: 2 }, typeId: "forest" },
-      { coord: { x: 0, y: 1 }, typeId: "forest" },
-      { coord: { x: 6, y: 1 }, typeId: "forest" },
-
-      // Walls — block center lane shortcuts
-      { coord: { x: 3, y: 4 }, typeId: "thicket" },
-      { coord: { x: 3, y: 3 }, typeId: "river" },
-
-      // Traps on tempting climbs
-      { coord: { x: 2, y: 5 }, typeId: "pit" },
-      { coord: { x: 4, y: 5 }, typeId: "snare" },
-      { coord: { x: 1, y: 2 }, typeId: "pit" },
-
-      // Enemies escalate toward the north
-      { coord: { x: 2, y: 4 }, typeId: "goblin" },
-      { coord: { x: 4, y: 3 }, typeId: "brute" },
-      { coord: { x: 3, y: 1 }, typeId: "villain" },
-
-      // Gear off the main line
-      { coord: { x: 0, y: 4 }, typeId: "sword-cache" },
-      { coord: { x: 6, y: 3 }, typeId: "shield-cache" },
     ],
     randomPlacements: [
+      { typeId: "forest", count: 6, exclude: RANDOM_EXCLUDE },
+      { typeId: "thicket", count: 1, exclude: RANDOM_EXCLUDE },
+      { typeId: "river", count: 1, exclude: RANDOM_EXCLUDE },
+      { typeId: "pit", count: 2, exclude: RANDOM_EXCLUDE },
+      { typeId: "snare", count: 1, exclude: RANDOM_EXCLUDE },
+      { typeId: "goblin", count: 1, exclude: RANDOM_EXCLUDE },
+      { typeId: "brute", count: 1, exclude: RANDOM_EXCLUDE },
+      { typeId: "villain", count: 1, exclude: RANDOM_EXCLUDE },
+      { typeId: "sword-cache", count: 1, exclude: RANDOM_EXCLUDE },
+      { typeId: "shield-cache", count: 1, exclude: RANDOM_EXCLUDE },
       {
         typeId: "castle",
-        onTypeId: "meadow",
-        exclude: [{ ...START }, ...CORNERS.map((c) => ({ ...c }))],
+        count: 1,
+        exclude: RANDOM_EXCLUDE,
         walls: ["n", "e", "s", "w"],
       },
     ],

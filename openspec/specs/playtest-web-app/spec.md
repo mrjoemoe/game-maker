@@ -30,7 +30,7 @@ The playtest web app SHALL allow selecting a piece and then selecting a destinat
 - **THEN** the piece appears at the destination and no longer at the previous cell
 
 ### Requirement: Reset control
-The playtest web app SHALL provide a control that resets the session to the game definition's initial board and piece layout. In run mode that control is labeled New map and SHALL produce a freshly generated side-wall layout when the prototype uses side-wall generation.
+The playtest web app SHALL provide a control that resets the session to the game definition's initial board and piece layout. In run mode that control is labeled New map and SHALL produce a freshly generated layout when the prototype uses seeded side walls / random placements (new seed → new walls and content placements).
 
 #### Scenario: Reset restores initial layout
 - **WHEN** the user activates reset after changing the board
