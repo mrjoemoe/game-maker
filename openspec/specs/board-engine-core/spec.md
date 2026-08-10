@@ -124,7 +124,7 @@ The engine SHALL provide a step action that moves the hero to an in-bounds ortho
 - **THEN** the hero moves onto that tile, the run is lost, and the bump message reports that the path is over because of that tile
 
 ### Requirement: Soft reset preserves learned map and items
-The engine SHALL provide a soft reset action that returns the hero to the start position, restores HP to max, clears the run inventory without changing the stash, increments the attempt count, and clears enemy resolved flags, while preserving revealed tile faces, Mage resolved state, and stash contents. A full reset action SHALL clear the stash, rebuild the board, and return run state to the initial definition; when run mode is enabled and the board uses generated side walls, full reset SHALL re-roll the side-wall seed so the new map’s wall layout can differ.
+The engine SHALL provide a soft reset action that returns the hero to the start position, restores HP to max, clears the run inventory without changing the stash, increments the attempt count, and clears enemy and Mage resolved flags, while preserving revealed tile faces, powerup resolved state, and stash contents. A full reset action SHALL clear the stash, rebuild the board, and return run state to the initial definition; when run mode is enabled and the board uses generated side walls, full reset SHALL re-roll the side-wall seed so the new map’s wall layout can differ.
 
 #### Scenario: Retry after defeat keeps the map
 - **WHEN** a run ends lost and a soft reset is applied
@@ -141,6 +141,10 @@ The engine SHALL provide a soft reset action that returns the hero to the start 
 #### Scenario: Soft reset after extract keeps banked stash
 - **WHEN** a run ends extracted with banked items and a soft reset is applied
 - **THEN** those items remain in the stash and the run inventory is empty pending a new loadout
+
+#### Scenario: Soft reset refreshes Mage
+- **WHEN** a Mage was resolved in a prior attempt and a soft reset is applied
+- **THEN** that Mage cell is unresolved again so takeFromMage can succeed on the new attempt
 
 ### Requirement: Programmed path length
 A run-mode definition MAY set `programLength` (default 6) as the maximum number of steps in one program. The engine SHALL accept a `runProgram` with between 1 and `programLength` steps (inclusive) and SHALL stop applying further steps once the run is no longer playing. Empty programs and programs longer than `programLength` SHALL be rejected.
@@ -191,7 +195,7 @@ A tile type MAY declare `passItemId`. When the hero uses that item as the step a
 - **THEN** the hero moves onto the tile, the run status becomes won, remaining run inventory is banked into the stash, and the used pass item is consumed (not banked)
 
 ### Requirement: Mage grants a chosen item
-Mage tiles SHALL NOT open an interactive pending choice on step. Granting SHALL occur only via a `takeFromMage` program action while standing on an unresolved Mage. Stepping onto a Mage tile SHALL be a safe move. Granted items SHALL enter the run inventory only; they SHALL NOT enter the stash until the hero extracts or wins. Soft reset SHALL preserve Mage resolved state and SHALL NOT place unextracted Mage grants into the next attempt’s inventory.
+Mage tiles SHALL NOT open an interactive pending choice on step. Granting SHALL occur only via a `takeFromMage` program action while standing on an unresolved Mage. Stepping onto a Mage tile SHALL be a safe move. Granted items SHALL enter the run inventory only; they SHALL NOT enter the stash until the hero extracts or wins. Soft reset SHALL clear Mage resolved state so each attempt can take from the Mage again. Within a single attempt, a successful take resolves the Mage until the next soft or full reset.
 
 #### Scenario: First visit to Mage opens a choice
 - **WHEN** the hero stands on an unresolved Mage and programs takeFromMage
@@ -201,9 +205,9 @@ Mage tiles SHALL NOT open an interactive pending choice on step. Granting SHALL 
 - **WHEN** takeFromMage succeeds for an item id
 - **THEN** that item is in the run inventory, not in the stash, and the Mage cell is resolved
 
-#### Scenario: Soft reset without extract loses Mage grant
+#### Scenario: Soft reset without extract loses Mage grant but refreshes Mage
 - **WHEN** a soft reset runs after an item was granted by the Mage but the run did not extract or win
-- **THEN** that item is not in the stash and the new attempt’s inventory does not include it unless loaded again from stash; the Mage remains resolved
+- **THEN** that item is not in the stash, the new attempt’s inventory does not include it unless loaded again from stash, and the Mage is unresolved again
 
 #### Scenario: Stepping onto Mage does not pause for a picker
 - **WHEN** the hero moves onto an unresolved Mage without a takeFromMage action on that step

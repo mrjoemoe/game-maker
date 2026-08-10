@@ -671,8 +671,11 @@ function applySoftReset(state: GameState): GameState {
   for (const [key, cell] of Object.entries(state.board.cells)) {
     const tileType = resolveTileType(state.board.tileTypes, cell.typeId);
     const effect = tileEffect(tileType);
-    // Enemies respawn; other resolved one-shots (powerups, mage) stay collected.
-    if (effect.kind === "enemy" && cell.resolved) {
+    // Enemies and Mage refresh each attempt; powerups stay collected.
+    if (
+      (effect.kind === "enemy" || effect.kind === "mage") &&
+      cell.resolved
+    ) {
       cells[key] = { ...cell, resolved: false };
     } else {
       cells[key] = cell;

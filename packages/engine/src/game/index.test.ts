@@ -437,7 +437,7 @@ describe("run mode", () => {
     expect(state.stashItemIds).toEqual(["sword"]);
   });
 
-  it("takes from Mage into run inventory only; soft reset without extract loses it", () => {
+  it("takes from Mage into run inventory only; soft reset refreshes Mage", () => {
     const withMage: GameDefinition = {
       ...runDefinition,
       board: {
@@ -470,9 +470,9 @@ describe("run mode", () => {
     state = applyAction(state, { type: "softReset" });
     expect(state.run.inventory).toEqual([]);
     expect(state.stashItemIds).toEqual([]);
-    expect(getCell(state.board, { x: 0, y: 0 }).resolved).toBe(true);
+    expect(getCell(state.board, { x: 0, y: 0 }).resolved).toBe(false);
 
-    // Taking again on a resolved Mage fails.
+    // Taking again after soft reset works.
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
@@ -481,8 +481,9 @@ describe("run mode", () => {
         move: "down",
       },
     });
-    expect(state.run.status).toBe("lost");
-    expect(state.run.bump).toMatch(/No Mage/i);
+    expect(state.run.status).toBe("playing");
+    expect(state.run.inventory).toEqual(["shield"]);
+    expect(getCell(state.board, { x: 0, y: 0 }).resolved).toBe(true);
   });
 
   it("extracts via program action while on extraction", () => {
