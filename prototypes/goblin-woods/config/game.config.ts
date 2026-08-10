@@ -128,18 +128,6 @@ export const goblinWoods: GameDefinition = {
         passItemId: "charm",
       },
       {
-        id: "sword-cache",
-        label: "Sword Cache",
-        color: "#b0a090",
-        effect: { kind: "powerup", itemId: "sword" },
-      },
-      {
-        id: "shield-cache",
-        label: "Shield Cache",
-        color: "#9aa8b0",
-        effect: { kind: "powerup", itemId: "shield" },
-      },
-      {
         id: "castle",
         label: "Castle",
         color: "#8d6e4c",
@@ -162,7 +150,7 @@ export const goblinWoods: GameDefinition = {
       { coord: { x: WIDTH - 1, y: HEIGHT - 1 }, typeId: "extraction", walls: [] },
     ],
     randomPlacements: [
-      { typeId: "forest", count: 6, exclude: RANDOM_EXCLUDE },
+      { typeId: "forest", count: 8, exclude: RANDOM_EXCLUDE },
       { typeId: "shop", count: 3, exclude: RANDOM_EXCLUDE },
       { typeId: "thicket", count: 1, exclude: RANDOM_EXCLUDE },
       { typeId: "river", count: 1, exclude: RANDOM_EXCLUDE },
@@ -171,8 +159,6 @@ export const goblinWoods: GameDefinition = {
       { typeId: "goblin", count: 1, exclude: RANDOM_EXCLUDE },
       { typeId: "brute", count: 1, exclude: RANDOM_EXCLUDE },
       { typeId: "villain", count: 1, exclude: RANDOM_EXCLUDE },
-      { typeId: "sword-cache", count: 1, exclude: RANDOM_EXCLUDE },
-      { typeId: "shield-cache", count: 1, exclude: RANDOM_EXCLUDE },
       {
         typeId: "castle",
         count: 1,

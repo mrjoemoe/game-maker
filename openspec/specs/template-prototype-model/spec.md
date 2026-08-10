@@ -51,7 +51,7 @@ A prototype config SHALL be able to enable run mode and declare a run setup (her
 - **THEN** the prototype behaves as a normal flip/move tile-board game
 
 ### Requirement: Goblin Woods rough tiles declare pass items
-The Goblin Woods prototype SHALL assign a pass item to each rough terrain tile type (pit, river, thicket, snare, goblin, brute, villain, castle) and SHALL leave sword/shield cache tiles without a pass item. The prototype item list SHALL include those pass items (reusing Sword where applicable). The castle’s pass item SHALL be the sledgehammer.
+The Goblin Woods prototype SHALL assign a pass item to each rough terrain tile type (pit, river, thicket, snare, goblin, brute, villain, castle). The prototype SHALL NOT include sword-cache or shield-cache tile types. The prototype item list SHALL include those pass items (reusing Sword where applicable). The castle’s pass item SHALL be the sledgehammer.
 
 #### Scenario: Pit requires makeshift bridge
 - **WHEN** the Goblin Woods definition is loaded
@@ -60,6 +60,10 @@ The Goblin Woods prototype SHALL assign a pass item to each rough terrain tile t
 #### Scenario: Castle requires sledgehammer
 - **WHEN** the Goblin Woods definition is loaded
 - **THEN** the castle tile type's `passItemId` is the sledgehammer item
+
+#### Scenario: No gear caches
+- **WHEN** the Goblin Woods definition is loaded
+- **THEN** no tile type id is sword-cache or shield-cache
 
 ### Requirement: Goblin Woods Mage first tile
 The Goblin Woods hero start cell SHALL be a Mage tile (revealed at run start). The prototype SHALL include a sledgehammer item with `breaksSideWalls` available from the Mage item list. A separate Mage north of start is not required.
@@ -102,7 +106,7 @@ The Goblin Woods board SHALL place exactly one castle (goal) tile at a randomly 
 - **THEN** the castle cell has side walls on north, east, south, and west
 
 ### Requirement: Goblin Woods random content layout
-Aside from the start Mage and four corner extraction tiles, Goblin Woods hazard, enemy, forest, cache, and castle tiles SHALL be placed via seeded random placements. A full reset / New map SHALL re-roll the board seed so those placements and side walls can differ from the previous map.
+Aside from the start Mage and four corner extraction tiles, Goblin Woods hazard, enemy, forest, shop, and castle tiles SHALL be placed via seeded random placements. A full reset / New map SHALL re-roll the board seed so those placements and side walls can differ from the previous map. Goblin Woods SHALL place eight forest tiles and SHALL NOT place sword or shield caches.
 
 #### Scenario: New map changes content layout
 - **WHEN** the player activates New map on Goblin Woods
@@ -111,6 +115,10 @@ Aside from the start Mage and four corner extraction tiles, Goblin Woods hazard,
 #### Scenario: Fixed anchors remain
 - **WHEN** a Goblin Woods map is created
 - **THEN** the start cell is Mage and the four corners are extraction
+
+#### Scenario: Eight forests no caches
+- **WHEN** the Goblin Woods board is loaded
+- **THEN** exactly eight cells have the forest type and zero cells are sword-cache or shield-cache
 
 ### Requirement: Goblin Woods shops and coin weights
 Goblin Woods SHALL enable coin weights 40/30/20/10 for 0/1/2/3 coins and SHALL place exactly three shop tiles on random meadow cells (excluding start and corners). The prototype rulebook SHALL describe coins and shop buying.

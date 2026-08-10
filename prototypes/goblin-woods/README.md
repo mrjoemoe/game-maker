@@ -2,7 +2,7 @@
 
 Fantasy forest die-and-retry prototype on the `tile-board` template (`runMode`).
 
-You start at the **bottom center** of a **7×7** grid and must **chart 6 moves** (↑↓←→) before running the path.
+You start at the **bottom center** of a **7×7** grid. Chart action+move paths, gather coins, buy or take gear, extract to stash, and win the walled castle with a sledgehammer.
 
 ## Launch
 
@@ -14,11 +14,11 @@ You start at the **bottom center** of a **7×7** grid and must **chart 6 moves**
 
 ## Loop
 
-1. The map starts hidden except your start meadow.
-2. Fill all 6 slots in the path planner (click pad or arrow keys / WASD).
-3. Press **Run path** (or Enter). Moves play out in order; tiles reveal as you enter them.
-4. Walls block but still reveal. Traps hurt. Goblins fight your attack power.
-5. Find the sword/shield caches so later attempts can beat tougher enemies.
-6. Reach the castle to win. On death, **Try again** keeps the revealed map and found gear.
+1. The map starts hidden except start (Mage) and the four extraction corners.
+2. Optionally commit a stash loadout, then chart steps in the path planner.
+3. Press **Run**. Moves play out; tiles reveal as you enter them.
+4. Collect coins on safe landings; buy at shops or take from the Mage.
+5. Extract at a corner to bank gear, or reach the castle with a sledgehammer to win.
+6. On death, **Try again** keeps the revealed map, stash, and coin wallet.
 
-Tiles may also have **side walls** on 0, 1, or 2 edges (mostly open). Crossing a walled edge wastes that programmed move.
+Tiles may also have **side walls** on 0, 1, or 2 edges (mostly open). Crossing a walled edge ends the path unless you use a sledgehammer.

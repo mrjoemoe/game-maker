@@ -51,7 +51,6 @@ If an action does not fit, the run **ends** (path over) and that step’s move d
 
 - **Meadow**, **Forest**, **Mage**, **Shop**, and **Extraction** are safe to step onto.
 - Other tiles end the path unless you **Use** the matching pass item that step.
-- **Sword/Shield caches** still end the path (no pass).
 
 ## Side walls
 
@@ -71,7 +70,6 @@ If an action does not fit, the run **ends** (path over) and that step’s move d
 | Brute | Spear |
 | Villain | Charm |
 | Castle | **Sledgehammer** (**wins**; castle has walls on all sides) |
-| Sword Cache / Shield Cache | — (path over) |
 
 Used items are **consumed**. Gear only returns to stash on **Extract** or **Castle win**.
 
@@ -84,5 +82,5 @@ Used items are **consumed**. Gear only returns to stash on **Extract** or **Cast
 ## Tips
 
 - Scout short paths to grab coins, then Extract early to bank starter gear.
-- Buy at shops when you need a pass item you did not take from the Mage.
+- Buy at shops (or take from the Mage) when you need a pass item.
 - Plan Extract as the last step of a chart — the planner locks further slots after it.
