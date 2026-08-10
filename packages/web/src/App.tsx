@@ -214,60 +214,71 @@ export function App() {
           ) : null}
 
           <main className={`stage${runMode ? " stage-run" : ""}`}>
-            <BoardView
-              game={state.game}
-              selectedPieceId={state.selectedPieceId}
-              onCellClick={onCellClick}
-            />
             {runMode ? (
-              <div className="run-sidebar">
-                <PathPlanner
-                  programLength={programLength}
-                  steps={path}
-                  items={allItems}
-                  inventory={state.game.run.inventory}
-                  coins={state.game.coins}
-                  executingIndex={executingIndex}
-                  disabled={state.game.run.status !== "playing"}
-                  onAppend={(step) =>
-                    setPath((prev) =>
-                      prev.length >= programLength ? prev : [...prev, step],
-                    )
-                  }
-                  onUndo={() => setPath((prev) => prev.slice(0, -1))}
-                  onClear={clearPath}
-                  onExecute={() => {
-                    void runProgramAnimated();
-                  }}
-                />
-                <InventoryPanel
-                  game={state.game}
-                  selectedLoadout={selectedLoadout}
-                  onToggleLoadout={toggleLoadout}
-                  onCommitLoadout={commitLoadout}
-                />
-                <TileTally game={state.game} />
-              </div>
+              <>
+                <div className="board-column">
+                  <BoardView
+                    game={state.game}
+                    selectedPieceId={state.selectedPieceId}
+                    onCellClick={onCellClick}
+                  />
+                  <InventoryPanel
+                    game={state.game}
+                    selectedLoadout={selectedLoadout}
+                    onToggleLoadout={toggleLoadout}
+                    onCommitLoadout={commitLoadout}
+                  />
+                </div>
+                <div className="run-sidebar">
+                  <PathPlanner
+                    programLength={programLength}
+                    steps={path}
+                    items={allItems}
+                    inventory={state.game.run.inventory}
+                    coins={state.game.coins}
+                    executingIndex={executingIndex}
+                    disabled={state.game.run.status !== "playing"}
+                    onAppend={(step) =>
+                      setPath((prev) =>
+                        prev.length >= programLength ? prev : [...prev, step],
+                      )
+                    }
+                    onUndo={() => setPath((prev) => prev.slice(0, -1))}
+                    onClear={clearPath}
+                    onExecute={() => {
+                      void runProgramAnimated();
+                    }}
+                  />
+                  <TileTally game={state.game} />
+                </div>
+              </>
             ) : (
-              <aside className="hint">
-                {active.extensions.banner ? (
-                  <p>{active.extensions.banner}</p>
-                ) : null}
-                <p>
-                  Mode:{" "}
-                  <strong>
-                    {state.mode === "flip" && flipEnabled ? "Flip" : "Move"}
-                  </strong>
-                </p>
-                <p>
-                  {state.mode === "flip" && flipEnabled
-                    ? "Click any cell to flip its tile face up or face down."
-                    : "Click a piece, then click a destination cell."}
-                </p>
-                {state.selectedPieceId ? (
-                  <p>Selected: {state.selectedPieceId}</p>
-                ) : null}
-              </aside>
+              <>
+                <BoardView
+                  game={state.game}
+                  selectedPieceId={state.selectedPieceId}
+                  onCellClick={onCellClick}
+                />
+                <aside className="hint">
+                  {active.extensions.banner ? (
+                    <p>{active.extensions.banner}</p>
+                  ) : null}
+                  <p>
+                    Mode:{" "}
+                    <strong>
+                      {state.mode === "flip" && flipEnabled ? "Flip" : "Move"}
+                    </strong>
+                  </p>
+                  <p>
+                    {state.mode === "flip" && flipEnabled
+                      ? "Click any cell to flip its tile face up or face down."
+                      : "Click a piece, then click a destination cell."}
+                  </p>
+                  {state.selectedPieceId ? (
+                    <p>Selected: {state.selectedPieceId}</p>
+                  ) : null}
+                </aside>
+              </>
             )}
           </main>
 
