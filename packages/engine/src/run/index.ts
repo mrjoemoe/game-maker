@@ -95,9 +95,14 @@ export function setBump(run: RunState, message: string): RunState {
   return { ...run, bump: message };
 }
 
-/** Meadow/forest (empty), mage, and extraction tiles are safe path tiles. */
+/** Meadow/forest (empty), mage, extraction, and shop tiles are safe path tiles. */
 export function isSafePathEffect(kind: string): boolean {
-  return kind === "empty" || kind === "mage" || kind === "extraction";
+  return (
+    kind === "empty" ||
+    kind === "mage" ||
+    kind === "extraction" ||
+    kind === "shop"
+  );
 }
 
 export function pathOverMessage(tileLabel: string): string {
@@ -117,6 +122,7 @@ export function mergeIntoStash(stash: string[], inventory: string[]): string[] {
 
 export {
   programActionLabel,
+  SHOP_ITEM_COST,
   type ProgramAction,
   type ProgramStep,
 } from "./program.js";

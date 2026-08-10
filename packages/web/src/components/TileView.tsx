@@ -38,6 +38,8 @@ function effectIcon(tileType: TileTypeDefinition, resolved?: boolean): string | 
       return "🏰";
     case "extraction":
       return "🚪";
+    case "shop":
+      return "🏪";
     default:
       return null;
   }
@@ -95,6 +97,11 @@ export function TileView({
         <span className="solid-wall-frame" aria-hidden="true" />
       ) : null}
       {icon ? <span className="tile-icon">{icon}</span> : null}
+      {tile.isFaceUp && (tile.coins ?? 0) > 0 ? (
+        <span className="tile-coins" aria-label={`${tile.coins} coins`}>
+          {"🪙".repeat(Math.min(3, tile.coins ?? 0))}
+        </span>
+      ) : null}
       <span className="tile-label">
         {tile.isFaceUp ? tileType.label : "Hidden"}
       </span>

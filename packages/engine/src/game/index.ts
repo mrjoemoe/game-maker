@@ -28,6 +28,7 @@ import {
   markWon,
   mergeIntoStash,
   pathOverMessage,
+  SHOP_ITEM_COST,
   type ProgramAction,
   type ProgramStep,
   type RunState,
@@ -102,6 +103,8 @@ export type GameState = {
   run: RunState;
   /** Persistent stash between attempts; only updated on extract or win. */
   stashItemIds: string[];
+  /** Persistent wallet; gathered coins are kept without extraction. */
+  coins: number;
 };
 
 export type GameAction =
@@ -171,6 +174,29 @@ function bankRunInventory(state: GameState, run: RunState): {
   return {
     run: { ...run, inventory: [] },
     stashItemIds: mergeIntoStash(state.stashItemIds, run.inventory),
+  };
+}
+
+/** Pick up remaining coins on a cell into the wallet and clear the cell. */
+function collectCellCoins(
+  cells: Record<string, TileState>,
+  key: string,
+  wallet: number,
+): { cells: Record<string, TileState>; coins: number } {
+  const cell = cells[key];
+  if (!cell) {
+    return { cells, coins: wallet };
+  }
+  const amount = cell.coins ?? 0;
+  if (amount <= 0) {
+    return { cells, coins: wallet };
+  }
+  return {
+    cells: {
+      ...cells,
+      [key]: { ...cell, coins: 0 },
+    },
+    coins: wallet + amount,
   };
 }
 
@@ -281,7 +307,7 @@ function applyStep(
     tileType.passItemId === usedItemId &&
     state.run.inventory.includes(usedItemId!);
 
-  // Extraction is safe terrain; bank via program extract action (like Mage).
+  // Extraction / shop / mage / empty are safe terrain.
   if (effect.kind === "mage" || isSafePathEffect(effect.kind)) {
     const pieces = movePiece(
       state.pieces,
@@ -290,7 +316,6 @@ function applyStep(
       state.board.grid,
     );
     let run = clearBump(state.run);
-    // Sledge used to clear walls onto safe ground: spend it here.
     if (
       usedItemId &&
       state.items[usedItemId]?.breaksSideWalls &&
@@ -298,11 +323,13 @@ function applyStep(
     ) {
       run = consumeItem(run, usedItemId);
     }
+    const gathered = collectCellCoins(cells, key, state.coins);
     return {
       ...state,
-      board: { ...state.board, cells },
+      board: { ...state.board, cells: gathered.cells },
       pieces,
       run,
+      coins: gathered.coins,
     };
   }
 
@@ -318,21 +345,27 @@ function applyStep(
     if (usedItemId) {
       run = consumeItem(run, usedItemId);
     }
+    const gathered = collectCellCoins(cells, key, state.coins);
     if (effect.kind === "goal") {
-      const banked = bankRunInventory(state, markWon(run));
+      const banked = bankRunInventory(
+        { ...state, coins: gathered.coins },
+        markWon(run),
+      );
       return {
         ...state,
-        board: { ...state.board, cells },
+        board: { ...state.board, cells: gathered.cells },
         pieces,
         run: banked.run,
         stashItemIds: banked.stashItemIds,
+        coins: gathered.coins,
       };
     }
     return {
       ...state,
-      board: { ...state.board, cells },
+      board: { ...state.board, cells: gathered.cells },
       pieces,
       run,
+      coins: gathered.coins,
     };
   }
 
@@ -550,6 +583,54 @@ function applyExtractAction(state: GameState, pieceId: string): GameState {
   };
 }
 
+function applyBuyFromShop(
+  state: GameState,
+  pieceId: string,
+  itemId: string,
+): GameState {
+  const piece = state.pieces.find((p) => p.id === pieceId);
+  if (!piece) {
+    throw new Error(`Unknown piece id: ${pieceId}`);
+  }
+  const key = coordKey(piece.position);
+  const cell = state.board.cells[key];
+  if (!cell) {
+    return {
+      ...state,
+      run: markLost(state.run, "No shop here — path over"),
+    };
+  }
+  const tileType = resolveTileType(state.board.tileTypes, cell.typeId);
+  if (tileEffect(tileType).kind !== "shop") {
+    return {
+      ...state,
+      run: markLost(state.run, "No shop here — path over"),
+    };
+  }
+  if (!state.items[itemId]) {
+    throw new Error(`Unknown item id: ${itemId}`);
+  }
+  if (state.coins < SHOP_ITEM_COST) {
+    return {
+      ...state,
+      run: markLost(state.run, "Not enough coins — path over"),
+    };
+  }
+
+  const granted = grantItem(state.run, itemId, state.items);
+  const maxHp = effectiveMaxHp(state, granted.inventory);
+  return {
+    ...state,
+    coins: state.coins - SHOP_ITEM_COST,
+    run: {
+      ...granted,
+      maxHp,
+      hp: Math.max(granted.hp, maxHp),
+      bump: null,
+    },
+  };
+}
+
 function applyProgramAction(
   state: GameState,
   pieceId: string,
@@ -561,6 +642,8 @@ function applyProgramAction(
       return state;
     case "takeFromMage":
       return applyTakeFromMage(state, pieceId, action.itemId);
+    case "buyFromShop":
+      return applyBuyFromShop(state, pieceId, action.itemId);
     case "useItem":
       return applyUseItemAction(state, pieceId, action.itemId, move);
     case "extract":
@@ -713,6 +796,7 @@ function applySoftReset(state: GameState): GameState {
       attempts: state.run.attempts + 1,
     }),
     stashItemIds: state.stashItemIds,
+    coins: state.coins,
   };
 }
 
@@ -772,6 +856,7 @@ export function createInitialState(definition: GameDefinition): GameState {
     items,
     run: createRunState({ maxHp: runConfig.maxHp }),
     stashItemIds: [],
+    coins: 0,
   };
 }
 

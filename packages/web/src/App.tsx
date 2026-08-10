@@ -226,6 +226,7 @@ export function App() {
                   steps={path}
                   items={allItems}
                   inventory={state.game.run.inventory}
+                  coins={state.game.coins}
                   executingIndex={executingIndex}
                   disabled={state.game.run.status !== "playing"}
                   onAppend={(step) =>

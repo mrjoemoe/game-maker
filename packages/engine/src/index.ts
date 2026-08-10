@@ -81,6 +81,7 @@ export {
   pathOverMessage,
   programActionLabel,
   setBump,
+  SHOP_ITEM_COST,
   type CreateRunStateOptions,
   type ProgramAction,
   type ProgramStep,

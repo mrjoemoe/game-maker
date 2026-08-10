@@ -4,6 +4,7 @@ import type { Direction } from "../grid/directions.js";
 export type ProgramAction =
   | { kind: "none" }
   | { kind: "takeFromMage"; itemId: string }
+  | { kind: "buyFromShop"; itemId: string }
   | { kind: "useItem"; itemId: string }
   | { kind: "extract" };
 
@@ -13,12 +14,17 @@ export type ProgramStep = {
   move: Direction;
 };
 
+/** Coin cost for each shop purchase. */
+export const SHOP_ITEM_COST = 3;
+
 export function programActionLabel(action: ProgramAction, itemLabel?: string): string {
   switch (action.kind) {
     case "none":
       return "No action";
     case "takeFromMage":
       return `Take ${itemLabel ?? action.itemId} from Mage`;
+    case "buyFromShop":
+      return `Buy ${itemLabel ?? action.itemId} (${SHOP_ITEM_COST}🪙)`;
     case "useItem":
       return `Use ${itemLabel ?? action.itemId}`;
     case "extract":

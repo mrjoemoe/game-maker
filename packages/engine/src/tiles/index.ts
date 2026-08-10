@@ -11,7 +11,8 @@ export type TileEffect =
   | { kind: "powerup"; itemId: string }
   | { kind: "mage" }
   | { kind: "goal" }
-  | { kind: "extraction" };
+  | { kind: "extraction" }
+  | { kind: "shop" };
 
 export type { TileSide, SideWallConfig, SideWallWeights } from "./sides.js";
 export {
@@ -57,6 +58,8 @@ export type TileState = {
   resolved?: boolean;
   /** Orthogonal sides of this tile that are blocked by a wall (0–4). */
   walls?: TileSide[];
+  /** Remaining coins on this cell (0–3 typical). */
+  coins?: number;
 };
 
 export type TileTypeRegistry = Record<string, TileTypeDefinition>;
@@ -93,8 +96,15 @@ export function createTileState(
   isFaceUp = true,
   resolved = false,
   walls: TileSide[] = [],
+  coins = 0,
 ): TileState {
-  return { typeId, isFaceUp, resolved, walls: normalizeWalls(walls) };
+  return {
+    typeId,
+    isFaceUp,
+    resolved,
+    walls: normalizeWalls(walls),
+    coins,
+  };
 }
 
 export function flipTileState(tile: TileState): TileState {

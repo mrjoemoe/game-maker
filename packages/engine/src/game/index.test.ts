@@ -740,4 +740,125 @@ describe("run mode", () => {
     expect(seeds.size).toBeGreaterThan(1);
     expect(seeds.has(42)).toBe(false);
   });
+
+  it("collects coins on safe landing and keeps them after soft reset", () => {
+    let state = createInitialState(runDefinition);
+    const key = "0,1";
+    state = {
+      ...state,
+      board: {
+        ...state.board,
+        cells: {
+          ...state.board.cells,
+          [key]: { ...state.board.cells[key]!, coins: 2 },
+        },
+      },
+    };
+    state = applyAction(state, {
+      type: "step",
+      pieceId: "hero",
+      destination: { x: 0, y: 1 },
+    });
+    expect(state.run.status).toBe("playing");
+    expect(state.coins).toBe(2);
+    expect(getCell(state.board, { x: 0, y: 1 }).coins).toBe(0);
+
+    state = applyAction(state, { type: "softReset" });
+    expect(state.coins).toBe(2);
+  });
+
+  it("does not collect coins on path-over", () => {
+    let state = createInitialState(runDefinition);
+    state = {
+      ...state,
+      board: {
+        ...state.board,
+        cells: {
+          ...state.board.cells,
+          "1,0": { ...state.board.cells["1,0"]!, coins: 3 },
+        },
+      },
+    };
+    state = applyAction(state, {
+      type: "step",
+      pieceId: "hero",
+      destination: { x: 1, y: 0 },
+    });
+    expect(state.run.status).toBe("lost");
+    expect(state.coins).toBe(0);
+    expect(getCell(state.board, { x: 1, y: 0 }).coins).toBe(3);
+  });
+
+  it("buys from a shop for coins into run inventory", () => {
+    const withShop: GameDefinition = {
+      ...runDefinition,
+      board: {
+        ...runDefinition.board,
+        tileTypes: [
+          ...runDefinition.board.tileTypes,
+          { id: "shop", label: "Shop", color: "#c4a", effect: { kind: "shop" } },
+        ],
+        overrides: [{ coord: { x: 0, y: 0 }, typeId: "shop" }],
+      },
+    };
+    let state = createInitialState(withShop);
+    state = { ...state, coins: 7 };
+    state = applyAction(state, {
+      type: "programStep",
+      pieceId: "hero",
+      step: {
+        action: { kind: "buyFromShop", itemId: "sword" },
+        move: "down",
+      },
+    });
+    expect(state.run.status).toBe("playing");
+    expect(state.coins).toBe(4);
+    expect(state.run.inventory).toEqual(["sword"]);
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
+
+    // Shop stays open for another buy after returning.
+    state = {
+      ...state,
+      pieces: state.pieces.map((p) =>
+        p.id === "hero" ? { ...p, position: { x: 0, y: 0 } } : p,
+      ),
+    };
+    state = applyAction(state, {
+      type: "programStep",
+      pieceId: "hero",
+      step: {
+        action: { kind: "buyFromShop", itemId: "shield" },
+        move: "down",
+      },
+    });
+    expect(state.coins).toBe(1);
+    expect(state.run.inventory).toEqual(["sword", "shield"]);
+  });
+
+  it("fails buyFromShop without enough coins", () => {
+    const withShop: GameDefinition = {
+      ...runDefinition,
+      board: {
+        ...runDefinition.board,
+        tileTypes: [
+          ...runDefinition.board.tileTypes,
+          { id: "shop", label: "Shop", color: "#c4a", effect: { kind: "shop" } },
+        ],
+        overrides: [{ coord: { x: 0, y: 0 }, typeId: "shop" }],
+      },
+    };
+    let state = createInitialState(withShop);
+    state = { ...state, coins: 2 };
+    state = applyAction(state, {
+      type: "programStep",
+      pieceId: "hero",
+      step: {
+        action: { kind: "buyFromShop", itemId: "sword" },
+        move: "down",
+      },
+    });
+    expect(state.run.status).toBe("lost");
+    expect(state.coins).toBe(2);
+    expect(state.run.inventory).toEqual([]);
+  });
 });

@@ -68,6 +68,12 @@ export const goblinWoods: GameDefinition = {
         effect: { kind: "extraction" },
       },
       {
+        id: "shop",
+        label: "Shop",
+        color: "#c4a35a",
+        effect: { kind: "shop" },
+      },
+      {
         id: "thicket",
         label: "Thicket",
         color: "#3d4f2f",
@@ -146,6 +152,7 @@ export const goblinWoods: GameDefinition = {
       seed: 42,
       weights: { none: 0.7, one: 0.25, two: 0.05 },
     },
+    coinWeights: { zero: 0.4, one: 0.3, two: 0.2, three: 0.1 },
     overrides: [
       // Fixed anchors only — everything else is seeded random on New map.
       { coord: { ...START }, typeId: "mage", walls: [] },
@@ -156,6 +163,7 @@ export const goblinWoods: GameDefinition = {
     ],
     randomPlacements: [
       { typeId: "forest", count: 6, exclude: RANDOM_EXCLUDE },
+      { typeId: "shop", count: 3, exclude: RANDOM_EXCLUDE },
       { typeId: "thicket", count: 1, exclude: RANDOM_EXCLUDE },
       { typeId: "river", count: 1, exclude: RANDOM_EXCLUDE },
       { typeId: "pit", count: 2, exclude: RANDOM_EXCLUDE },

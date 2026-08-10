@@ -51,7 +51,24 @@ export type BoardConfig = {
   sideWalls?: SideWallConfig;
   /** Optional seeded one-off placements (e.g. random castle). Applied last. */
   randomPlacements?: RandomTilePlacement[];
+  /**
+   * When set, after tiles/walls/placements, each cell gets a coin stack using
+   * these probabilities for 0/1/2/3 coins (must sum > 0).
+   */
+  coinWeights?: { zero: number; one: number; two: number; three: number };
 };
+
+function rollCoinCount(
+  random: () => number,
+  weights: { zero: number; one: number; two: number; three: number },
+): 0 | 1 | 2 | 3 {
+  const total = weights.zero + weights.one + weights.two + weights.three;
+  const roll = random() * total;
+  if (roll < weights.zero) return 0;
+  if (roll < weights.zero + weights.one) return 1;
+  if (roll < weights.zero + weights.one + weights.two) return 2;
+  return 3;
+}
 
 export type Board = {
   grid: GridConfig;
@@ -104,6 +121,7 @@ export function createBoard(config: BoardConfig): Board {
         current.isFaceUp,
         current.resolved ?? false,
         walls,
+        current.coins ?? 0,
       );
     }
   }
@@ -139,8 +157,21 @@ export function createBoard(config: BoardConfig): Board {
           current.isFaceUp,
           current.resolved ?? false,
           placement.walls ?? current.walls ?? [],
+          current.coins ?? 0,
         );
       }
+    }
+  }
+
+  if (config.coinWeights) {
+    const seed = config.sideWalls?.seed ?? 0;
+    const rng = createSeededRandom((seed ^ 0xc01a5) >>> 0);
+    for (const key of Object.keys(cells)) {
+      const current = cells[key]!;
+      cells[key] = {
+        ...current,
+        coins: rollCoinCount(rng, config.coinWeights),
+      };
     }
   }
 

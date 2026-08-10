@@ -719,6 +719,15 @@
   line-height: 1;
 }
 
+.tile-coins {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.35rem;
+  font-size: 0.7rem;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
 .tile.resolved {
   filter: saturate(0.55) brightness(0.92);
 }

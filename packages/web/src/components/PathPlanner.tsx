@@ -1,6 +1,7 @@
 import {
   directionLabel,
   programActionLabel,
+  SHOP_ITEM_COST,
   type Direction,
   type ItemDefinition,
   type ProgramAction,
@@ -13,6 +14,7 @@ type PathPlannerProps = {
   steps: ProgramStep[];
   items: ItemDefinition[];
   inventory: string[];
+  coins: number;
   executingIndex: number | null;
   disabled: boolean;
   onAppend: (step: ProgramStep) => void;
@@ -26,6 +28,7 @@ export function PathPlanner({
   steps,
   items,
   inventory,
+  coins,
   executingIndex,
   disabled,
   onAppend,
@@ -47,15 +50,20 @@ export function PathPlanner({
     disabled || full || executingIndex !== null || chartEndedWithExtract;
   const sortedItems = [...items].sort((a, b) => a.label.localeCompare(b.label));
 
-  // Project inventory across the queued plan: takes add, uses remove.
+  // Project inventory and coins across the queued plan.
   const availableIds = new Set(inventory);
+  let projectedCoins = coins;
   for (const step of steps) {
     if (step.action.kind === "takeFromMage") {
       availableIds.add(step.action.itemId);
+    } else if (step.action.kind === "buyFromShop") {
+      availableIds.add(step.action.itemId);
+      projectedCoins -= SHOP_ITEM_COST;
     } else if (step.action.kind === "useItem") {
       availableIds.delete(step.action.itemId);
     }
   }
+  const canAffordBuy = projectedCoins >= SHOP_ITEM_COST;
 
   const actionSummary = (action: ProgramAction): string => {
     if (action.kind === "none" || action.kind === "extract") {
@@ -75,6 +83,9 @@ export function PathPlanner({
     ) {
       return;
     }
+    if (draftAction.kind === "buyFromShop" && !canAffordBuy) {
+      return;
+    }
     onAppend({ action: draftAction, move });
     if (draftAction.kind === "extract") {
       setDraftAction({ kind: "none" });
@@ -85,9 +96,8 @@ export function PathPlanner({
     <aside className="path-planner" aria-label="Path planner">
       <h2>Chart path</h2>
       <p className="path-lede">
-        Chart up to {programLength} action+move pairs, then run — you can go
-        with fewer steps to end the chart early. Extract ends the chart (move on
-        that step is unused). Wrong actions end the run.
+        Chart up to {programLength} action+move pairs, then run. Buy costs{" "}
+        {SHOP_ITEM_COST} coins at a shop. Extract ends the chart.
       </p>
 
       <ol className="path-slots">
@@ -161,6 +171,29 @@ export function PathPlanner({
               {item.icon ? `${item.icon} ` : ""}Take {item.label}
             </button>
           ))}
+          {sortedItems.map((item) => (
+            <button
+              key={`buy-${item.id}`}
+              type="button"
+              className={
+                draftAction.kind === "buyFromShop" &&
+                draftAction.itemId === item.id
+                  ? "action-choice active"
+                  : "action-choice"
+              }
+              disabled={locked || !canAffordBuy}
+              title={
+                canAffordBuy
+                  ? `Buy ${item.label} for ${SHOP_ITEM_COST} coins at a shop`
+                  : `Need ${SHOP_ITEM_COST} coins`
+              }
+              onClick={() =>
+                setDraftAction({ kind: "buyFromShop", itemId: item.id })
+              }
+            >
+              {item.icon ? `${item.icon} ` : ""}Buy {item.label} ({SHOP_ITEM_COST}🪙)
+            </button>
+          ))}
           {sortedItems.map((item) => {
             const held = availableIds.has(item.id);
             return (
@@ -176,7 +209,7 @@ export function PathPlanner({
                 title={
                   held
                     ? `Use ${item.label}`
-                    : `Need ${item.label} in inventory (or take it earlier in this path)`
+                    : `Need ${item.label} in inventory (or take/buy it earlier in this path)`
                 }
                 onClick={() =>
                   setDraftAction({ kind: "useItem", itemId: item.id })
@@ -244,7 +277,11 @@ export function PathPlanner({
               Next: <strong>{actionSummary(draftAction)}</strong>
               {draftAction.kind === "extract"
                 ? ", then confirm leave"
-                : ", then direction"}
+                : ", then direction"}{" "}
+              · Coins after chart: {Math.max(0, projectedCoins)}
+              {draftAction.kind === "buyFromShop"
+                ? ` (−${SHOP_ITEM_COST})`
+                : ""}
             </>
           )}
         </p>

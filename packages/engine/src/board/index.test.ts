@@ -31,6 +31,7 @@ describe("board", () => {
       isFaceUp: false,
       resolved: false,
       walls: [],
+      coins: 0,
     });
     expect(getCell(board, { x: 0, y: 0 }).typeId).toBe("grass");
   });
@@ -91,5 +92,18 @@ describe("board", () => {
         .join("|");
     };
     expect(fingerprint(1)).not.toBe(fingerprint(2));
+  });
+
+  it("assigns coin stacks from coinWeights", () => {
+    const board = createBoard({
+      grid: { width: 5, height: 5 },
+      tileTypes: baseTypes,
+      defaultTileTypeId: "grass",
+      sideWalls: { seed: 11, weights: { none: 1, one: 0, two: 0 } },
+      coinWeights: { zero: 0.4, one: 0.3, two: 0.2, three: 0.1 },
+    });
+    const counts = Object.values(board.cells).map((c) => c.coins ?? 0);
+    expect(counts.every((n) => n >= 0 && n <= 3)).toBe(true);
+    expect(counts.some((n) => n > 0)).toBe(true);
   });
 });

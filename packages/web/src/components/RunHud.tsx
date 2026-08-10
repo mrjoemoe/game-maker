@@ -32,6 +32,7 @@ export function RunHud({ game, onSoftReset }: RunHudProps) {
         </span>
         <span>Stash {stashItemIds.length}</span>
         <span>Carrying {run.inventory.length}</span>
+        <span>Coins {game.coins}</span>
       </div>
       <div
         className="hp-bar"
