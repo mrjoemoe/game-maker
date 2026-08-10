@@ -260,7 +260,7 @@ describe("run mode", () => {
     ).toThrow(/exactly 6 steps/);
   });
 
-  it("blocks a side wall, reveals the destination, and ends the path", () => {
+  it("blocks an origin side wall without revealing the destination", () => {
     const walled: GameDefinition = {
       ...runDefinition,
       board: {
@@ -278,9 +278,32 @@ describe("run mode", () => {
       destination: { x: 0, y: 1 },
     });
     expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
+    expect(getCell(state.board, { x: 0, y: 1 }).isFaceUp).toBe(false);
+    expect(state.run.status).toBe("lost");
+    expect(state.run.bump).toMatch(/wall on this tile.*path over/i);
+  });
+
+  it("blocks a destination side wall and reveals that tile", () => {
+    const walled: GameDefinition = {
+      ...runDefinition,
+      board: {
+        ...runDefinition.board,
+        overrides: [
+          ...(runDefinition.board.overrides ?? []),
+          { coord: { x: 0, y: 1 }, walls: ["n"] },
+        ],
+      },
+    };
+    let state = createInitialState(walled);
+    state = applyAction(state, {
+      type: "step",
+      pieceId: "hero",
+      destination: { x: 0, y: 1 },
+    });
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
     expect(getCell(state.board, { x: 0, y: 1 }).isFaceUp).toBe(true);
     expect(state.run.status).toBe("lost");
-    expect(state.run.bump).toMatch(/wall.*path over/i);
+    expect(state.run.bump).toMatch(/wall on the next tile.*path over/i);
   });
 
   it("no-ops step when run is already lost", () => {
@@ -467,6 +490,37 @@ describe("run mode", () => {
     expect(state.run.status).toBe("playing");
     expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
     expect(getCell(state.board, { x: 0, y: 0 }).walls ?? []).not.toContain("s");
+  });
+
+  it("does not peek past an origin wall when using a pass item", () => {
+    const withPass: GameDefinition = {
+      ...runDefinition,
+      items: [...(runDefinition.items ?? []), { id: "boots", label: "Boots" }],
+      board: {
+        ...runDefinition.board,
+        tileTypes: runDefinition.board.tileTypes.map((t) =>
+          t.id === "trap" ? { ...t, passItemId: "boots" } : t,
+        ),
+        overrides: [
+          ...(runDefinition.board.overrides ?? []),
+          { coord: { x: 0, y: 0 }, walls: ["s"] },
+        ],
+      },
+    };
+    let state = createInitialState(withPass);
+    state = {
+      ...state,
+      run: { ...state.run, inventory: ["boots"] },
+    };
+    state = applyAction(state, {
+      type: "programStep",
+      pieceId: "hero",
+      step: { action: { kind: "useItem", itemId: "boots" }, move: "down" },
+    });
+    expect(state.run.status).toBe("lost");
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
+    expect(getCell(state.board, { x: 0, y: 1 }).isFaceUp).toBe(false);
+    expect(state.run.bump).toMatch(/wall on this tile/i);
   });
 
   it("fails takeFromMage when not on a Mage", () => {

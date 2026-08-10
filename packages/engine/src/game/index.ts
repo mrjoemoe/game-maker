@@ -328,11 +328,13 @@ function applyStep(
     destCell &&
     isCrossingBlocked(fromCell.walls, destCell.walls, piece.position, destination)
   ) {
-    const key = coordKey(destination);
-    const cells = revealCell(state.board.cells, key);
     const exit = sideToward(piece.position, destination);
     const blockedOnOrigin =
       exit !== null && tileHasWall(fromCell.walls, exit);
+    // Origin walls block without peeking at the next tile.
+    const cells = blockedOnOrigin
+      ? state.board.cells
+      : revealCell(state.board.cells, coordKey(destination));
     const message = blockedOnOrigin
       ? "You hit a wall on this tile — path over"
       : "You hit a wall on the next tile — path over";
@@ -498,30 +500,55 @@ function applyUseItemAction(
     };
   }
 
-  // Reveal destination so the action is judged against the real tile.
-  let cells = revealCell(state.board.cells, coordKey(destination));
-  const revealedDest = cells[coordKey(destination)];
-  const destType = resolveTileType(state.board.tileTypes, revealedDest.typeId);
+  const exit = sideToward(piece.position, destination);
+  if (!exit) {
+    return {
+      ...state,
+      run: markLost(state.run, `That action doesn't fit this move — path over`),
+    };
+  }
+
+  const blockedOnOrigin = tileHasWall(fromCell.walls, exit);
+  const blockedOnDest = tileHasWall(destCell.walls, oppositeSide(exit));
 
   if (item.breaksSideWalls) {
-    const blocked = isCrossingBlocked(
-      fromCell.walls,
-      revealedDest.walls,
-      piece.position,
-      destination,
-    );
-    if (!blocked) {
+    if (!blockedOnOrigin && !blockedOnDest) {
       return {
         ...state,
-        board: { ...state.board, cells },
         run: markLost(state.run, "Sledgehammer found no wall — path over"),
       };
     }
-    cells = clearCrossingWalls(cells, piece.position, destination);
+    // Clear walls without revealing the destination; the move reveals if it lands.
+    const cells = clearCrossingWalls(
+      state.board.cells,
+      piece.position,
+      destination,
+    );
     return {
       ...state,
       board: { ...state.board, cells },
       run: clearBump(state.run),
+    };
+  }
+
+  // Origin wall blocks before any peek at the destination tile.
+  if (blockedOnOrigin) {
+    return {
+      ...state,
+      run: markLost(state.run, "You hit a wall on this tile — path over"),
+    };
+  }
+
+  // Reveal destination to judge pass-item fit (and report dest-entry walls).
+  const cells = revealCell(state.board.cells, coordKey(destination));
+  const revealedDest = cells[coordKey(destination)];
+  const destType = resolveTileType(state.board.tileTypes, revealedDest.typeId);
+
+  if (blockedOnDest) {
+    return {
+      ...state,
+      board: { ...state.board, cells },
+      run: markLost(state.run, "You hit a wall on the next tile — path over"),
     };
   }
 
