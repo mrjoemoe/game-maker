@@ -1,0 +1,30 @@
+name: game-maker
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "127.0.0.1:${HOST_PORT:-5173}:5173"
+    volumes:
+      - ./packages:/app/packages
+      - ./templates:/app/templates
+      - ./prototypes:/app/prototypes
+      - ./package.json:/app/package.json
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - VITE_PROTOTYPE=${VITE_PROTOTYPE:-meadow-v1}
+    command: ["npm", "run", "dev"]
+
+  test:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    profiles: ["test"]
+    volumes:
+      - ./packages:/app/packages
+      - ./templates:/app/templates
+      - ./prototypes:/app/prototypes
+      - ./package.json:/app/package.json
+    command: ["npm", "run", "test"]

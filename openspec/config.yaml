@@ -1,32 +1,28 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Tech stack: TypeScript, React, Vite, Vitest, Docker (Node in containers; prefer ./dev.sh).
+  Domain: tile board game prototyping.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Operating model (see AGENT.md):
+  - templates/<id>/ = reusable template docs/metadata; runtime in packages/engine + packages/web.
+  - prototypes/<id>/ = named game versions (config + optional extensions). Never fork packages for a normal new game.
+  - Register prototypes in packages/web/src/prototypes/registry.ts.
+  - Launch: ./dev.sh up <prototype> [port] for simultaneous instances.
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+  Cursor skills: prototype-from-template, archive-and-push, openspec-*.
+
+rules:
+  proposal:
+    - Prefer prototypes over template forks when adding a game version
+  tasks:
+    - Include registry + Dockerfile workspace package steps when adding prototypes
+
+operations:
+  apply:
+    guidance:
+      - Follow AGENT.md template/prototype rules when implementing game versions
+  archive:
+    guidance:
+      - After a successful archive, follow .cursor/skills/archive-and-push: commit relevant changes and push to origin unless the user forbids push
+      - Summarize archive path, commit, and push result

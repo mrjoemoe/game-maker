@@ -1,0 +1,12 @@
+[submodule "external/references/boardgame.io"]
+	path = external/references/boardgame.io
+	url = https://github.com/boardgameio/boardgame.io.git
+[submodule "external/references/headless-game-grid"]
+	path = external/references/headless-game-grid
+	url = https://github.com/yogski/headless-game-grid.git
+[submodule "external/references/tile-whitebox-editor"]
+	path = external/references/tile-whitebox-editor
+	url = https://github.com/HmiaoH/tile-whitebox-editor.git
+[submodule "external/references/tiled"]
+	path = external/references/tiled
+	url = https://github.com/mapeditor/tiled.git

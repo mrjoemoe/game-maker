@@ -1,24 +1,27 @@
 {
   "name": "game-maker",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "description": "Configurable tile board game engine and playtest harness",
+  "workspaces": [
+    "packages/*",
+    "prototypes/*"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "openspec": "openspec"
+    "openspec": "openspec",
+    "dev": "npm run dev -w @game-maker/web",
+    "build": "npm run build -w @game-maker/engine && npm run build -w @game-maker/web",
+    "test": "npm run test -w @game-maker/engine",
+    "typecheck": "npm run typecheck -w @game-maker/engine && npm run typecheck -w @game-maker/web"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mrjoemoe/game-maker.git"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/mrjoemoe/game-maker/issues"
-  },
-  "homepage": "https://github.com/mrjoemoe/game-maker#readme",
   "devDependencies": {
-    "@fission-ai/openspec": "^1.8.0"
+    "@fission-ai/openspec": "^1.8.0",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.9"
   }
 }

@@ -1,0 +1,61 @@
+# Machine-readable provenance for external assets.
+schema_version: 1
+
+assets:
+  - id: gamedev-skills-puzzle
+    kind: skill-file
+    source_url: https://github.com/gamedev-skills/awesome-gamedev-agent-skills
+    source_path: skills/genres/puzzle/SKILL.md
+    revision: 3727d02499efac5d4703ccdc5e59e54e60e954b7
+    license: Apache-2.0
+    review_date: "2026-08-10"
+    reviewer: jordan-morris
+    files:
+      - path: external/skills/gamedev-skills/puzzle/SKILL.md
+        sha256: a2f40c5c684b0d0f09d0b1db1cfcb04ca7e4e6e8bca946022f8318f5fbc44b4c
+      - path: external/skills/gamedev-skills/LICENSE
+        sha256: 6f82dcfeb95a1c0a0452180a3b16f21bf82111780018fed59d95a052b5b75f6c
+    local_adaptations: >
+      File import only; OpenSpec remains authoritative for this repo.
+    update_procedure: >
+      Bump revision + sha256 after re-review of SKILL.md and LICENSE.
+
+  - id: ref-boardgame-io
+    kind: reference-submodule
+    source_url: https://github.com/boardgameio/boardgame.io
+    path: external/references/boardgame.io
+    revision: 2e9b7ceff3c212b0ded7bea5bc86f80812ab09fc
+    license: MIT
+    read_only: true
+    notes: Architecture reference for Game/moves state model. Do not import into packages.
+
+  - id: ref-headless-game-grid
+    kind: reference-submodule
+    source_url: https://github.com/yogski/headless-game-grid
+    path: external/references/headless-game-grid
+    revision: 69040989513c28ff5bae62c7b4ecb0752515072e
+    license: MIT
+    read_only: true
+    notes: Headless core + React shell reference.
+
+  - id: ref-tile-whitebox-editor
+    kind: reference-submodule
+    source_url: https://github.com/HmiaoH/tile-whitebox-editor
+    path: external/references/tile-whitebox-editor
+    revision: 88341a172e2bd43a6d4ca8e93f81840b43c095eb
+    license: UNVERIFIED
+    read_only: true
+    copy_forbidden: true
+    notes: >
+      Layered editor UX reference. License unverified — browse only; do not copy code.
+
+  - id: ref-tiled
+    kind: reference-submodule
+    source_url: https://github.com/mapeditor/tiled
+    path: external/references/tiled
+    revision: aa069419db754412a2b4d51d8ea03bb048499f0a
+    license: GPL-2.0-or-later
+    read_only: true
+    copy_forbidden: true
+    notes: >
+      Desktop tilemap editor reference (TMX/JSON). GPL — browse only; do not copy into packages.

@@ -1,0 +1,12 @@
+{
+  "id": "tile-board",
+  "name": "Tile Board",
+  "runtime": {
+    "engine": "@game-maker/engine",
+    "web": "@game-maker/web"
+  },
+  "configSchema": {
+    "required": ["id", "name", "templateId", "board", "pieceTypes", "initialPieces"],
+    "features": ["tileFlip"]
+  }
+}
