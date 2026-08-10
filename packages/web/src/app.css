@@ -204,8 +204,8 @@
 
 .tally-row {
   display: grid;
-  grid-template-columns: 1rem 1fr auto;
-  gap: 0.5rem;
+  grid-template-columns: 1rem minmax(0, 1fr) minmax(0, 1.1fr) auto;
+  gap: 0.4rem;
   align-items: center;
   font-size: 0.85rem;
 }
@@ -219,6 +219,26 @@
 
 .tally-label {
   color: var(--ink);
+}
+
+.tally-pass {
+  min-width: 0;
+  text-align: right;
+}
+
+.tally-pass-item {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.tally-pass-none {
+  color: var(--muted);
+  opacity: 0.45;
 }
 
 .tally-count {

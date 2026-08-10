@@ -151,8 +151,23 @@ Board cells MAY carry zero or more orthogonal side walls. Board config MAY gener
 - **THEN** the destination tile is revealed, the hero does not move, and the run is lost with a wall path-over message
 
 ### Requirement: Safe path tiles only
-In run mode, stepping onto a tile whose effect is not empty (meadow/forest) SHALL end the run as lost and report why (e.g. found a Castle — path over). Full-cell wall tiles SHALL reveal, keep the hero in place, and end the run as lost.
+In run mode, stepping onto a tile whose effect is not empty (meadow/forest) SHALL end the run as lost and report why (e.g. found a Castle — path over), unless the tile declares a `passItemId` that is in the run inventory. Full-cell wall tiles without a held pass item SHALL reveal, keep the hero in place, and end the run as lost.
 
 #### Scenario: Castle ends the path
-- **WHEN** the hero steps onto a goal/castle tile
+- **WHEN** the hero steps onto a goal/castle tile without its pass item
 - **THEN** the run status becomes lost and the bump message states the castle ended the path
+
+### Requirement: Pass item traverses rough tiles
+A tile type MAY declare `passItemId`. When the hero steps toward or onto that tile and the run inventory includes that item, the engine SHALL treat the tile as traversable: reveal it, move the hero onto it, and keep the run playing. If the tile effect is goal, the run SHALL be won instead of lost. Without the pass item, existing path-over / wall-block behavior SHALL apply. Side-wall crossings SHALL NOT be cleared by pass items.
+
+#### Scenario: Wall tile with pass item is crossed
+- **WHEN** the hero steps toward a full-cell wall tile whose `passItemId` is in inventory
+- **THEN** the tile is revealed, the hero moves onto it, and the run stays playing
+
+#### Scenario: Hazard without pass item still paths over
+- **WHEN** the hero steps onto a trap or enemy tile and does not hold that tile's `passItemId`
+- **THEN** the hero moves onto the tile and the run is lost with a path-over message
+
+#### Scenario: Goal with pass item wins
+- **WHEN** the hero steps onto a goal tile and holds that tile's `passItemId`
+- **THEN** the hero moves onto the tile and the run status becomes won

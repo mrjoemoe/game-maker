@@ -31,9 +31,22 @@ export type TileTypeDefinition = {
   color: string;
   /** Optional run-mode effect triggered on step. Defaults to inert (empty). */
   effect?: TileEffect;
+  /**
+   * When set, holding this item lets the hero traverse the tile instead of
+   * pathing over (goal tiles win). Side walls are unaffected.
+   */
+  passItemId?: string;
   /** Optional free-form metadata for prototypes. */
   props?: Record<string, unknown>;
 };
+
+/** True when inventory holds the tile type's declared pass item. */
+export function canPassWithItem(
+  type: TileTypeDefinition,
+  inventory: string[],
+): boolean {
+  return Boolean(type.passItemId && inventory.includes(type.passItemId));
+}
 
 export type TileState = {
   typeId: string;

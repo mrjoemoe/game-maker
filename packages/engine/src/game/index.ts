@@ -31,6 +31,7 @@ import {
   type RunState,
 } from "../run/index.js";
 import {
+  canPassWithItem,
   flipTileState,
   isCrossingBlocked,
   resolveTileType,
@@ -300,6 +301,23 @@ function applyStep(state: GameState, pieceId: string, destination: Coord): GameS
   const cell = cells[key];
   const tileType = resolveTileType(state.board.tileTypes, cell.typeId);
   const effect = tileEffect(tileType);
+  const holdingPassItem = canPassWithItem(tileType, state.run.inventory);
+
+  // Pass item: traverse rough terrain (goal wins).
+  if (holdingPassItem && (effect.kind === "wall" || !isSafePathEffect(effect.kind))) {
+    const pieces = movePiece(
+      state.pieces,
+      pieceId,
+      destination,
+      state.board.grid,
+    );
+    return {
+      ...state,
+      board: { ...state.board, cells },
+      pieces,
+      run: effect.kind === "goal" ? markWon(state.run) : clearBump(state.run),
+    };
+  }
 
   // Full-cell wall (thicket/river): reveal, stay put, path ends.
   if (effect.kind === "wall") {

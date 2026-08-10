@@ -292,4 +292,85 @@ describe("run mode", () => {
     });
     expect(state.pieces[0].position).toEqual(pos);
   });
+
+  it("crosses a wall when holding its pass item", () => {
+    const withPass: GameDefinition = {
+      ...runDefinition,
+      items: [...(runDefinition.items ?? []), { id: "axe", label: "Axe" }],
+      board: {
+        ...runDefinition.board,
+        tileTypes: runDefinition.board.tileTypes.map((t) =>
+          t.id === "wall" ? { ...t, passItemId: "axe" } : t,
+        ),
+      },
+    };
+    let state = createInitialState(withPass);
+    state = {
+      ...state,
+      run: { ...state.run, inventory: ["axe"] },
+    };
+    state = applyAction(state, {
+      type: "step",
+      pieceId: "hero",
+      destination: { x: 1, y: 0 },
+    });
+    expect(state.pieces[0].position).toEqual({ x: 1, y: 0 });
+    expect(state.run.status).toBe("playing");
+    expect(getCell(state.board, { x: 1, y: 0 }).isFaceUp).toBe(true);
+  });
+
+  it("still paths over a hazard without its pass item", () => {
+    const withPass: GameDefinition = {
+      ...runDefinition,
+      items: [...(runDefinition.items ?? []), { id: "boots", label: "Boots" }],
+      board: {
+        ...runDefinition.board,
+        tileTypes: runDefinition.board.tileTypes.map((t) =>
+          t.id === "trap" ? { ...t, passItemId: "boots" } : t,
+        ),
+      },
+    };
+    let state = createInitialState(withPass);
+    state = applyAction(state, {
+      type: "step",
+      pieceId: "hero",
+      destination: { x: 0, y: 1 },
+    });
+    state = applyAction(state, {
+      type: "step",
+      pieceId: "hero",
+      destination: { x: 0, y: 2 },
+    });
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 2 });
+    expect(state.run.status).toBe("lost");
+    expect(state.run.bump).toMatch(/Trap.*path over/);
+  });
+
+  it("wins on goal when holding its pass item", () => {
+    const withPass: GameDefinition = {
+      ...runDefinition,
+      items: [...(runDefinition.items ?? []), { id: "sneak", label: "Sneak" }],
+      board: {
+        ...runDefinition.board,
+        tileTypes: runDefinition.board.tileTypes.map((t) =>
+          t.id === "castle" ? { ...t, passItemId: "sneak" } : t,
+        ),
+        overrides: [
+          { coord: { x: 0, y: 1 }, typeId: "castle" },
+        ],
+      },
+    };
+    let state = createInitialState(withPass);
+    state = {
+      ...state,
+      run: { ...state.run, inventory: ["sneak"] },
+    };
+    state = applyAction(state, {
+      type: "step",
+      pieceId: "hero",
+      destination: { x: 0, y: 1 },
+    });
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
+    expect(state.run.status).toBe("won");
+  });
 });

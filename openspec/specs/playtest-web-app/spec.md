@@ -81,11 +81,15 @@ When run mode is enabled, the playtest app SHALL provide a side path planner to 
 - **THEN** the app applies those steps in order until the program finishes or the run ends
 
 ### Requirement: Tile count tally
-When run mode is enabled, the playtest app SHALL show a side panel listing each tile type on the map with a count.
+When run mode is enabled, the playtest app SHALL show a side panel listing each tile type on the map with a count. When a tile type declares a `passItemId`, the tally row SHALL show that item (label and/or icon) as the gear used to pass it.
 
 #### Scenario: Tally lists meadow count
 - **WHEN** the goblin-woods board is loaded
 - **THEN** the tile tally shows how many meadow tiles exist on the board
+
+#### Scenario: Tally shows pass item for pit
+- **WHEN** the goblin-woods board is loaded
+- **THEN** the pit tally row indicates Makeshift Bridge (or its icon) as the pass item
 
 ### Requirement: Visible side walls and path-over report
 Revealed tiles with side walls SHALL show visible wall indicators on those sides. When a run ends because the path is over, the UI SHALL display the engine’s path-over reason.

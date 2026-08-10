@@ -18,6 +18,7 @@ export {
 } from "./grid/directions.js";
 
 export {
+  canPassWithItem,
   createTileState,
   createTileTypeRegistry,
   flipTileState,

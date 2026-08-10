@@ -1,4 +1,8 @@
-import { resolveTileType, type GameState } from "@game-maker/engine";
+import {
+  resolveItem,
+  resolveTileType,
+  type GameState,
+} from "@game-maker/engine";
 
 type TileTallyProps = {
   game: GameState;
@@ -10,6 +14,8 @@ type TallyRow = {
   color: string;
   total: number;
   revealed: number;
+  passItemLabel: string | null;
+  passItemIcon: string | null;
 };
 
 function buildTally(game: GameState): TallyRow[] {
@@ -27,12 +33,25 @@ function buildTally(game: GameState): TallyRow[] {
   return [...counts.entries()]
     .map(([typeId, { total, revealed }]) => {
       const type = resolveTileType(game.board.tileTypes, typeId);
+      let passItemLabel: string | null = null;
+      let passItemIcon: string | null = null;
+      if (type.passItemId) {
+        try {
+          const item = resolveItem(game.items, type.passItemId);
+          passItemLabel = item.label;
+          passItemIcon = item.icon ?? null;
+        } catch {
+          passItemLabel = type.passItemId;
+        }
+      }
       return {
         typeId,
         label: type.label,
         color: type.color,
         total,
         revealed,
+        passItemLabel,
+        passItemIcon,
       };
     })
     .sort((a, b) => b.total - a.total || a.label.localeCompare(b.label));
@@ -54,6 +73,21 @@ export function TileTally({ game }: TileTallyProps) {
               aria-hidden="true"
             />
             <span className="tally-label">{row.label}</span>
+            <span className="tally-pass">
+              {row.passItemLabel ? (
+                <span
+                  className="tally-pass-item"
+                  title={`Pass with ${row.passItemLabel}`}
+                >
+                  {row.passItemIcon ? (
+                    <span aria-hidden="true">{row.passItemIcon}</span>
+                  ) : null}{" "}
+                  {row.passItemLabel}
+                </span>
+              ) : (
+                <span className="tally-pass-none">—</span>
+              )}
+            </span>
             <span className="tally-count" title={`${row.revealed} revealed`}>
               {row.total}
             </span>
