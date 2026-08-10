@@ -43,6 +43,14 @@ export function PathPlanner({
   const locked = disabled || full || executingIndex !== null;
   const sortedItems = [...items].sort((a, b) => a.label.localeCompare(b.label));
 
+  // Items already held, plus gear taken in earlier queued steps of this plan.
+  const availableIds = new Set(inventory);
+  for (const step of steps) {
+    if (step.action.kind === "takeFromMage") {
+      availableIds.add(step.action.itemId);
+    }
+  }
+
   const actionSummary = (action: ProgramAction): string => {
     const item =
       action.kind === "none"
@@ -55,7 +63,10 @@ export function PathPlanner({
     if (locked) {
       return;
     }
-    if (draftAction.kind === "useItem" && !inventory.includes(draftAction.itemId)) {
+    if (
+      draftAction.kind === "useItem" &&
+      !availableIds.has(draftAction.itemId)
+    ) {
       return;
     }
     onAppend({ action: draftAction, move });
@@ -124,7 +135,7 @@ export function PathPlanner({
             </button>
           ))}
           {sortedItems.map((item) => {
-            const held = inventory.includes(item.id);
+            const held = availableIds.has(item.id);
             return (
               <button
                 key={`use-${item.id}`}
@@ -135,7 +146,11 @@ export function PathPlanner({
                     : "action-choice"
                 }
                 disabled={locked || !held}
-                title={held ? `Use ${item.label}` : `Need ${item.label} in inventory`}
+                title={
+                  held
+                    ? `Use ${item.label}`
+                    : `Need ${item.label} in inventory (or take it earlier in this path)`
+                }
                 onClick={() =>
                   setDraftAction({ kind: "useItem", itemId: item.id })
                 }
