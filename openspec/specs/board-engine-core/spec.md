@@ -332,15 +332,19 @@ A board config MAY declare coin weight probabilities for 0–3 coins. After tile
 - **THEN** every cell’s coin count is 0, 1, 2, or 3
 
 ### Requirement: Collect coins on safe landing
-When the hero successfully moves onto a cell and the run stays playing or becomes won/extracted from that successful occupancy, the engine SHALL add that cell’s remaining coins to the persistent wallet and clear the cell’s coins. Path-over / lost landings SHALL NOT collect coins.
+When the hero successfully moves onto a cell and the run stays playing or becomes won/extracted from that successful occupancy, the engine SHALL add that cell’s coin stack to the persistent wallet if that cell has not already credited the wallet this attempt. The cell’s coin stack SHALL remain on the tile (not cleared). Path-over / lost landings SHALL NOT collect coins. Soft reset SHALL clear per-attempt coin claims so stacks can be gathered again on the next attempt while the wallet persists.
 
 #### Scenario: Safe meadow collects coins
 - **WHEN** the hero steps onto a meadow with 2 coins and the run stays playing
-- **THEN** the wallet increases by 2 and that cell has 0 coins
+- **THEN** the wallet increases by 2 and that cell still has 2 coins
 
 #### Scenario: Path-over does not collect
 - **WHEN** the hero path-overs onto a hazard cell that has coins
 - **THEN** the wallet is unchanged and the cell still has its coins
+
+#### Scenario: Soft reset keeps tile coins and wallet
+- **WHEN** the hero collected coins then soft resets
+- **THEN** the wallet still has those coins and face-up cells still show their original stacks
 
 ### Requirement: Persistent coin wallet
 Game state SHALL include a coin wallet. Soft reset SHALL preserve the wallet. Full reset / New map SHALL set the wallet to 0. Coins do not require extraction to keep.

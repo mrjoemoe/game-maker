@@ -105,6 +105,8 @@ export type GameState = {
   stashItemIds: string[];
   /** Persistent wallet; gathered coins are kept without extraction. */
   coins: number;
+  /** Cells already credited to the wallet this attempt (soft reset clears). */
+  claimedCoinKeys: string[];
 };
 
 export type GameAction =
@@ -177,27 +179,34 @@ function bankRunInventory(state: GameState, run: RunState): {
   };
 }
 
-/** Pick up remaining coins on a cell into the wallet and clear the cell. */
+/**
+ * Credit a cell’s coin stack to the wallet once per attempt.
+ * Tile stacks stay on the board across collects and soft resets.
+ */
 function collectCellCoins(
   cells: Record<string, TileState>,
   key: string,
   wallet: number,
-): { cells: Record<string, TileState>; coins: number; collected: number } {
+  claimedCoinKeys: string[],
+): {
+  cells: Record<string, TileState>;
+  coins: number;
+  collected: number;
+  claimedCoinKeys: string[];
+} {
   const cell = cells[key];
-  if (!cell) {
-    return { cells, coins: wallet, collected: 0 };
+  if (!cell || claimedCoinKeys.includes(key)) {
+    return { cells, coins: wallet, collected: 0, claimedCoinKeys };
   }
   const amount = cell.coins ?? 0;
   if (amount <= 0) {
-    return { cells, coins: wallet, collected: 0 };
+    return { cells, coins: wallet, collected: 0, claimedCoinKeys };
   }
   return {
-    cells: {
-      ...cells,
-      [key]: { ...cell, coins: 0 },
-    },
+    cells,
     coins: wallet + amount,
     collected: amount,
+    claimedCoinKeys: [...claimedCoinKeys, key],
   };
 }
 
@@ -339,13 +348,19 @@ function applyStep(
     ) {
       run = consumeItem(run, usedItemId);
     }
-    const gathered = collectCellCoins(cells, key, state.coins);
+    const gathered = collectCellCoins(
+      cells,
+      key,
+      state.coins,
+      state.claimedCoinKeys,
+    );
     return {
       ...state,
       board: { ...state.board, cells: gathered.cells },
       pieces,
       run: withCoinPickupBump(run, gathered.collected, gathered.coins),
       coins: gathered.coins,
+      claimedCoinKeys: gathered.claimedCoinKeys,
     };
   }
 
@@ -361,7 +376,12 @@ function applyStep(
     if (usedItemId) {
       run = consumeItem(run, usedItemId);
     }
-    const gathered = collectCellCoins(cells, key, state.coins);
+    const gathered = collectCellCoins(
+      cells,
+      key,
+      state.coins,
+      state.claimedCoinKeys,
+    );
     run = withCoinPickupBump(run, gathered.collected, gathered.coins);
     if (effect.kind === "goal") {
       const banked = bankRunInventory(
@@ -375,6 +395,7 @@ function applyStep(
         run: banked.run,
         stashItemIds: banked.stashItemIds,
         coins: gathered.coins,
+        claimedCoinKeys: gathered.claimedCoinKeys,
       };
     }
     return {
@@ -383,6 +404,7 @@ function applyStep(
       pieces,
       run,
       coins: gathered.coins,
+      claimedCoinKeys: gathered.claimedCoinKeys,
     };
   }
 
@@ -719,7 +741,12 @@ function applyTravelToPortal(
     destination,
     state.board.grid,
   );
-  const gathered = collectCellCoins(state.board.cells, dest.key, state.coins);
+  const gathered = collectCellCoins(
+    state.board.cells,
+    dest.key,
+    state.coins,
+    state.claimedCoinKeys,
+  );
   const travelMsg = `Traveled to Portal ${portalId}`;
   const noun = gathered.collected === 1 ? "coin" : "coins";
   const bump =
@@ -731,6 +758,7 @@ function applyTravelToPortal(
     board: { ...state.board, cells: gathered.cells },
     pieces,
     coins: gathered.coins,
+    claimedCoinKeys: gathered.claimedCoinKeys,
     run: { ...clearBump(state.run), bump },
   };
 }
@@ -907,6 +935,7 @@ function applySoftReset(state: GameState): GameState {
     }),
     stashItemIds: state.stashItemIds,
     coins: state.coins,
+    claimedCoinKeys: [],
   };
 }
 
@@ -967,6 +996,7 @@ export function createInitialState(definition: GameDefinition): GameState {
     run: createRunState({ maxHp: runConfig.maxHp }),
     stashItemIds: [],
     coins: 0,
+    claimedCoinKeys: [],
   };
 }
 

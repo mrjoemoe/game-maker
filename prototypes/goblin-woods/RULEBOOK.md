@@ -17,9 +17,10 @@ Reach the **Castle** by programming action+move paths through a hidden forest. E
 ## Coins
 
 - After the map is built, every cell rolls coins: **40%** 0, **30%** 1, **20%** 2, **10%** 3.
-- Land safely on a cell (run stays playing, or you win) to collect its coins into your wallet and clear that cell.
+- Land safely on a cell (run stays playing, or you win) to collect its coins into your wallet. Coin stacks **stay on the tile**.
+- Each cell credits the wallet **once per attempt**. Try again clears that claim so you can gather the same stacks again while your wallet keeps growing.
 - Path-over / death on a cell does **not** collect its coins.
-- Coins are **kept without extracting**. Soft reset keeps the wallet; New map resets it to 0.
+- Coins in the wallet are **kept without extracting**. Soft reset keeps the wallet; New map resets it to 0.
 
 ## Shops
 

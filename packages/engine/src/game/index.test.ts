@@ -761,11 +761,21 @@ describe("run mode", () => {
     });
     expect(state.run.status).toBe("playing");
     expect(state.coins).toBe(2);
-    expect(getCell(state.board, { x: 0, y: 1 }).coins).toBe(0);
+    expect(getCell(state.board, { x: 0, y: 1 }).coins).toBe(2);
     expect(state.run.bump).toMatch(/Collected 2 coins — wallet 2/);
 
     state = applyAction(state, { type: "softReset" });
     expect(state.coins).toBe(2);
+    expect(getCell(state.board, { x: 0, y: 1 }).coins).toBe(2);
+    expect(state.claimedCoinKeys).toEqual([]);
+
+    // Soft reset clears claims so the same stack can be gathered again.
+    state = applyAction(state, {
+      type: "step",
+      pieceId: "hero",
+      destination: { x: 0, y: 1 },
+    });
+    expect(state.coins).toBe(4);
   });
 
   it("does not collect coins on path-over", () => {
