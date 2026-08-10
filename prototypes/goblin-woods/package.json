@@ -1,0 +1,14 @@
+{
+  "name": "@game-maker/prototype-goblin-woods",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./config/game.config.ts",
+    "./config": "./config/game.config.ts",
+    "./extensions": "./extensions/index.ts"
+  },
+  "dependencies": {
+    "@game-maker/engine": "*"
+  }
+}

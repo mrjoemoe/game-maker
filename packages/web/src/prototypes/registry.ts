@@ -4,6 +4,8 @@ import { meadowV1 } from "../../../../prototypes/meadow-v1/config/game.config";
 import meadowExtensions from "../../../../prototypes/meadow-v1/extensions";
 import { quietGlade } from "../../../../prototypes/quiet-glade/config/game.config";
 import quietGladeExtensions from "../../../../prototypes/quiet-glade/extensions";
+import { goblinWoods } from "../../../../prototypes/goblin-woods/config/game.config";
+import goblinWoodsExtensions from "../../../../prototypes/goblin-woods/extensions";
 
 export type RegisteredPrototype = {
   definition: GameDefinition;
@@ -22,6 +24,10 @@ export const prototypeRegistry: Record<string, RegisteredPrototype> = {
   "quiet-glade": {
     definition: quietGlade,
     extensions: quietGladeExtensions,
+  },
+  "goblin-woods": {
+    definition: goblinWoods,
+    extensions: goblinWoodsExtensions,
   },
 };
 

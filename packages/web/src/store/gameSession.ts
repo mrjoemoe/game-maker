@@ -1,6 +1,7 @@
 import {
   applyAction,
   createInitialState,
+  isRunModeEnabled,
   type Coord,
   type GameAction,
   type GameDefinition,
@@ -8,7 +9,7 @@ import {
 } from "@game-maker/engine";
 import { useReducer } from "react";
 
-export type InteractionMode = "flip" | "move";
+export type InteractionMode = "flip" | "move" | "step";
 
 export type UiState = {
   game: GameState;
@@ -22,10 +23,13 @@ export type UiAction =
   | { type: "game"; action: GameAction };
 
 export function createUiState(definition: GameDefinition): UiState {
+  const runMode = isRunModeEnabled(definition);
   return {
     game: createInitialState(definition),
-    mode: "move",
-    selectedPieceId: null,
+    mode: runMode ? "step" : "move",
+    selectedPieceId: runMode
+      ? (definition.run?.heroPieceId ?? null)
+      : null,
   };
 }
 
@@ -38,10 +42,16 @@ export function uiReducer(state: UiState, action: UiAction): UiState {
     case "game": {
       try {
         const game = applyAction(state.game, action.action);
-        const selectedPieceId =
-          action.action.type === "reset" || action.action.type === "movePiece"
-            ? null
-            : state.selectedPieceId;
+        const clearsSelection =
+          action.action.type === "reset" ||
+          action.action.type === "movePiece" ||
+          action.action.type === "softReset";
+        const runMode = isRunModeEnabled(game.definition);
+        const selectedPieceId = clearsSelection
+          ? runMode
+            ? (game.definition.run?.heroPieceId ?? null)
+            : null
+          : state.selectedPieceId;
         return { ...state, game, selectedPieceId };
       } catch {
         return state;
@@ -61,6 +71,20 @@ export function cellClicked(
   coord: Coord,
   pieceIdAtCell: string | undefined,
 ): UiAction[] {
+  if (isRunModeEnabled(state.game.definition) || state.mode === "step") {
+    const heroId =
+      state.game.definition.run?.heroPieceId ?? state.selectedPieceId;
+    if (!heroId || state.game.run.status !== "playing") {
+      return [];
+    }
+    return [
+      {
+        type: "game",
+        action: { type: "step", pieceId: heroId, destination: coord },
+      },
+    ];
+  }
+
   if (state.mode === "flip") {
     return [{ type: "game", action: { type: "flipTile", coord } }];
   }

@@ -7,6 +7,12 @@
   },
   "configSchema": {
     "required": ["id", "name", "templateId", "board", "pieceTypes", "initialPieces"],
-    "features": ["tileFlip"]
+    "optional": ["items", "run"],
+    "features": ["tileFlip", "runMode"],
+    "notes": {
+      "run": "Required when features.runMode is true: { heroPieceId, startPosition, maxHp, baseAttack }",
+      "items": "Optional ItemDefinition[] with attackBonus / maxHpBonus",
+      "tileEffects": "TileTypeDefinition.effect may be empty|wall|trap|enemy|powerup|goal"
+    }
   }
 }

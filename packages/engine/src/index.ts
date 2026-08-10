@@ -14,6 +14,8 @@ export {
   createTileTypeRegistry,
   flipTileState,
   resolveTileType,
+  tileEffect,
+  type TileEffect,
   type TileState,
   type TileTypeDefinition,
   type TileTypeRegistry,
@@ -37,12 +39,33 @@ export {
 } from "./pieces/index.js";
 
 export {
+  createItemRegistry,
+  resolveItem,
+  totalAttack,
+  totalMaxHp,
+  type ItemDefinition,
+  type ItemRegistry,
+} from "./items/index.js";
+
+export {
+  applyDamage,
+  collectItem,
+  createRunState,
+  markWon,
+  type CreateRunStateOptions,
+  type RunState,
+  type RunStatus,
+} from "./run/index.js";
+
+export {
   applyAction,
   createInitialState,
+  isRunModeEnabled,
   isTileFlipEnabled,
   type GameAction,
   type GameDefinition,
   type GameFeatures,
   type GameState,
   type InitialPiece,
+  type RunConfig,
 } from "./game/index.js";

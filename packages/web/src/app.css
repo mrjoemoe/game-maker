@@ -150,3 +150,113 @@
 .hint p:last-child {
   margin-bottom: 0;
 }
+
+.mode-label {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.run-hud {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.run-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.45rem;
+}
+
+.hp-bar {
+  height: 0.65rem;
+  background: #ddd4c6;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.hp-fill {
+  height: 100%;
+  background: #2f5d50;
+  transition: width 160ms ease;
+}
+
+.inventory {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+  min-height: 1.6rem;
+  align-items: center;
+}
+
+.inventory-empty {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.item-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 0.35rem;
+  background: #f7f2e8;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.run-banner {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.run-banner p {
+  margin: 0;
+  font-weight: 650;
+}
+
+.run-banner.won {
+  background: #d9ead3;
+  border: 1px solid #6aa84f;
+}
+
+.run-banner.lost {
+  background: #f4cccc;
+  border: 1px solid #cc0000;
+}
+
+.run-banner button {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0.45rem 0.8rem;
+  border-radius: 0.4rem;
+  white-space: nowrap;
+}
+
+.tile-icon {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.4rem;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.tile.resolved {
+  filter: saturate(0.55) brightness(0.92);
+}
+
+.tile.resolved .tile-label {
+  opacity: 0.75;
+}

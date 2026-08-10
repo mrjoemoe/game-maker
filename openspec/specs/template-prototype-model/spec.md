@@ -40,3 +40,14 @@ The development tooling SHALL allow launching more than one prototype at a time 
 #### Scenario: Two prototypes on different ports
 - **WHEN** the developer starts prototype A on port 5173 and prototype B on port 5174
 - **THEN** both playtest instances are reachable on their respective localhost ports
+
+### Requirement: Config enables run mode
+A prototype config SHALL be able to enable run mode and declare a run setup (hero piece, start position, max HP, base attack) plus optional items. When run mode is enabled, the playtest app SHALL present run-based interaction instead of free move/flip.
+
+#### Scenario: Prototype enables run mode
+- **WHEN** a prototype sets run mode enabled with a hero start position and max HP
+- **THEN** the playtest app starts a run for that hero and shows run status
+
+#### Scenario: Run mode is opt-in
+- **WHEN** a prototype omits run mode
+- **THEN** the prototype behaves as a normal flip/move tile-board game

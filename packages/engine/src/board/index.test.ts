@@ -29,6 +29,7 @@ describe("board", () => {
     expect(getCell(board, { x: 1, y: 0 })).toEqual({
       typeId: "water",
       isFaceUp: false,
+      resolved: false,
     });
     expect(getCell(board, { x: 0, y: 0 }).typeId).toBe("grass");
   });
