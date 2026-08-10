@@ -69,3 +69,10 @@ The Goblin Woods hero start cell SHALL be a Mage tile (revealed at run start). T
 #### Scenario: Start cell is Mage
 - **WHEN** the Goblin Woods board is loaded
 - **THEN** the start position’s tile type is Mage
+
+### Requirement: Prototype rulebook file
+Run-mode prototypes that expose player-facing rules SHALL keep a `RULEBOOK.md` under `prototypes/<prototype-id>/` and MAY export that markdown via prototype extensions for the playtest UI.
+
+#### Scenario: Goblin Woods has a rulebook
+- **WHEN** an agent inspects `prototypes/goblin-woods/`
+- **THEN** a `RULEBOOK.md` describing current Goblin Woods rules is present

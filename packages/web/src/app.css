@@ -31,6 +31,108 @@
   line-height: 1.5;
 }
 
+.app-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0 0 1.25rem;
+}
+
+.app-tab {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0.5rem 1rem;
+  border-radius: 0.4rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.app-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #f7f2e8;
+}
+
+.rulebook {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.4rem 1.75rem;
+  max-width: 46rem;
+}
+
+.rulebook h1 {
+  margin: 0 0 0.75rem;
+  font-family: "Fraunces", "Palatino Linotype", serif;
+  font-size: 1.85rem;
+  font-weight: 650;
+}
+
+.rulebook h2 {
+  margin: 1.35rem 0 0.5rem;
+  font-family: "Fraunces", "Palatino Linotype", serif;
+  font-size: 1.35rem;
+  font-weight: 650;
+}
+
+.rulebook h3 {
+  margin: 1rem 0 0.4rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.rulebook p,
+.rulebook li {
+  color: var(--ink);
+  line-height: 1.55;
+  font-size: 0.95rem;
+}
+
+.rulebook p {
+  margin: 0 0 0.75rem;
+}
+
+.rulebook ul {
+  margin: 0 0 0.85rem;
+  padding-left: 1.2rem;
+}
+
+.rulebook li {
+  margin: 0.25rem 0;
+}
+
+.rulebook code {
+  font-size: 0.88em;
+  background: #ebe4d6;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+}
+
+.rulebook-table-wrap {
+  overflow-x: auto;
+  margin: 0 0 1rem;
+}
+
+.rulebook table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.rulebook th,
+.rulebook td {
+  border: 1px solid var(--line);
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.rulebook th {
+  background: #ebe4d6;
+  font-weight: 700;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;

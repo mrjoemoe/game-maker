@@ -50,6 +50,10 @@ Always follow `.cursor/skills/archive-and-push/SKILL.md`: commit the archived ch
 
 Only skip OpenSpec / archive / push when the user clearly says so in the same request (e.g. “skip openspec”, “code only”, “don’t push”).
 
+## Keep the rulebook current
+
+When a change alters **gameplay rules** for a prototype that has a `RULEBOOK.md` (e.g. `prototypes/goblin-woods/RULEBOOK.md`), **update that rulebook in the same change** so it matches shipped behavior. The playtest **Rulebook** tab reads this file — stale rules confuse playtests. Include rulebook edits in the OpenSpec tasks, archive, and commit.
+
 ## Skills
 
 - `.cursor/skills/openspec-fasttrack/` — **default** for clear behavior changes: OpenSpec → implement → archive → commit+push

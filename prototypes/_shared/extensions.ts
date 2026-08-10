@@ -5,4 +5,6 @@
 export type PrototypeExtensions = {
   /** Short note shown in the playtest sidebar when set. */
   banner?: string;
+  /** Player-facing rules markdown (e.g. from RULEBOOK.md?raw). */
+  rulebook?: string;
 };

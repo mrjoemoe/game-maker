@@ -11,6 +11,7 @@ import { useCallback, useRef, useState } from "react";
 import { BoardView } from "./components/BoardView";
 import { InventoryPanel } from "./components/InventoryPanel";
 import { PathPlanner } from "./components/PathPlanner";
+import { RulebookPanel } from "./components/RulebookPanel";
 import { RunHud } from "./components/RunHud";
 import { TileTally } from "./components/TileTally";
 import { resolvePrototype } from "./prototypes/registry";
@@ -25,12 +26,16 @@ const prototypeId = import.meta.env.VITE_PROTOTYPE as string | undefined;
 const active = resolvePrototype(prototypeId);
 const STEP_MS = 420;
 
+type AppTab = "play" | "rulebook";
+
 export function App() {
   const [state, dispatch] = useGameSession(active.definition);
   const flipEnabled = isTileFlipEnabled(state.game.definition);
   const runMode = isRunModeEnabled(state.game.definition);
   const heroId = state.game.definition.run?.heroPieceId;
   const programLength = runProgramLength(state.game.definition);
+  const rulebook = active.extensions.rulebook;
+  const [tab, setTab] = useState<AppTab>("play");
 
   const [path, setPath] = useState<ProgramStep[]>([]);
   const [executingIndex, setExecutingIndex] = useState<number | null>(null);
@@ -117,6 +122,7 @@ export function App() {
   }, [heroId, path, programLength, dispatch]);
 
   const allItems = Object.values(state.game.items);
+  const showRulebookTab = Boolean(rulebook);
 
   return (
     <div className="app">
@@ -129,95 +135,122 @@ export function App() {
         </p>
       </header>
 
-      <section className="toolbar" aria-label="Playtest controls">
-        {runMode ? (
-          <div className="modes">
-            <span className="mode-label">
-              Program up to {programLength} action+move pairs, then run
-            </span>
-          </div>
-        ) : (
-          <div className="modes">
-            <button
-              type="button"
-              className={state.mode === "move" ? "active" : ""}
-              onClick={() => setMode("move")}
-            >
-              Move pieces
+      {showRulebookTab ? (
+        <nav className="app-tabs" aria-label="Playtest views">
+          <button
+            type="button"
+            className={tab === "play" ? "app-tab active" : "app-tab"}
+            onClick={() => setTab("play")}
+          >
+            Play
+          </button>
+          <button
+            type="button"
+            className={tab === "rulebook" ? "app-tab active" : "app-tab"}
+            onClick={() => setTab("rulebook")}
+          >
+            Rulebook
+          </button>
+        </nav>
+      ) : null}
+
+      {tab === "rulebook" && rulebook ? (
+        <RulebookPanel markdown={rulebook} />
+      ) : (
+        <>
+          <section className="toolbar" aria-label="Playtest controls">
+            {runMode ? (
+              <div className="modes">
+                <span className="mode-label">
+                  Program up to {programLength} action+move pairs, then run
+                </span>
+              </div>
+            ) : (
+              <div className="modes">
+                <button
+                  type="button"
+                  className={state.mode === "move" ? "active" : ""}
+                  onClick={() => setMode("move")}
+                >
+                  Move pieces
+                </button>
+                {flipEnabled ? (
+                  <button
+                    type="button"
+                    className={state.mode === "flip" ? "active" : ""}
+                    onClick={() => setMode("flip")}
+                  >
+                    Flip tiles
+                  </button>
+                ) : null}
+              </div>
+            )}
+            <button type="button" className="reset" onClick={hardReset}>
+              {runMode ? "New map" : "Reset"}
             </button>
-            {flipEnabled ? (
-              <button
-                type="button"
-                className={state.mode === "flip" ? "active" : ""}
-                onClick={() => setMode("flip")}
-              >
-                Flip tiles
-              </button>
-            ) : null}
-          </div>
-        )}
-        <button type="button" className="reset" onClick={hardReset}>
-          {runMode ? "New map" : "Reset"}
-        </button>
-      </section>
+          </section>
 
-      {runMode ? (
-        <RunHud game={state.game} onSoftReset={softReset} />
-      ) : null}
+          {runMode ? (
+            <RunHud game={state.game} onSoftReset={softReset} />
+          ) : null}
 
-      <main className={`stage${runMode ? " stage-run" : ""}`}>
-        <BoardView
-          game={state.game}
-          selectedPieceId={state.selectedPieceId}
-          onCellClick={onCellClick}
-        />
-        {runMode ? (
-          <div className="run-sidebar">
-            <PathPlanner
-              programLength={programLength}
-              steps={path}
-              items={allItems}
-              inventory={state.game.run.inventory}
-              executingIndex={executingIndex}
-              disabled={state.game.run.status !== "playing"}
-              onAppend={(step) =>
-                setPath((prev) =>
-                  prev.length >= programLength ? prev : [...prev, step],
-                )
-              }
-              onUndo={() => setPath((prev) => prev.slice(0, -1))}
-              onClear={clearPath}
-              onExecute={() => {
-                void runProgramAnimated();
-              }}
+          <main className={`stage${runMode ? " stage-run" : ""}`}>
+            <BoardView
+              game={state.game}
+              selectedPieceId={state.selectedPieceId}
+              onCellClick={onCellClick}
             />
-            <InventoryPanel game={state.game} />
-            <TileTally game={state.game} />
-          </div>
-        ) : (
-          <aside className="hint">
-            {active.extensions.banner ? <p>{active.extensions.banner}</p> : null}
-            <p>
-              Mode:{" "}
-              <strong>
-                {state.mode === "flip" && flipEnabled ? "Flip" : "Move"}
-              </strong>
-            </p>
-            <p>
-              {state.mode === "flip" && flipEnabled
-                ? "Click any cell to flip its tile face up or face down."
-                : "Click a piece, then click a destination cell."}
-            </p>
-            {state.selectedPieceId ? (
-              <p>Selected: {state.selectedPieceId}</p>
-            ) : null}
-          </aside>
-        )}
-      </main>
+            {runMode ? (
+              <div className="run-sidebar">
+                <PathPlanner
+                  programLength={programLength}
+                  steps={path}
+                  items={allItems}
+                  inventory={state.game.run.inventory}
+                  executingIndex={executingIndex}
+                  disabled={state.game.run.status !== "playing"}
+                  onAppend={(step) =>
+                    setPath((prev) =>
+                      prev.length >= programLength ? prev : [...prev, step],
+                    )
+                  }
+                  onUndo={() => setPath((prev) => prev.slice(0, -1))}
+                  onClear={clearPath}
+                  onExecute={() => {
+                    void runProgramAnimated();
+                  }}
+                />
+                <InventoryPanel game={state.game} />
+                <TileTally game={state.game} />
+              </div>
+            ) : (
+              <aside className="hint">
+                {active.extensions.banner ? (
+                  <p>{active.extensions.banner}</p>
+                ) : null}
+                <p>
+                  Mode:{" "}
+                  <strong>
+                    {state.mode === "flip" && flipEnabled ? "Flip" : "Move"}
+                  </strong>
+                </p>
+                <p>
+                  {state.mode === "flip" && flipEnabled
+                    ? "Click any cell to flip its tile face up or face down."
+                    : "Click a piece, then click a destination cell."}
+                </p>
+                {state.selectedPieceId ? (
+                  <p>Selected: {state.selectedPieceId}</p>
+                ) : null}
+              </aside>
+            )}
+          </main>
 
-      {runMode && active.extensions.banner ? (
-        <p className="run-banner-note">{active.extensions.banner}</p>
-      ) : null}
+          {runMode && active.extensions.banner ? (
+            <p className="run-banner-note">{active.extensions.banner}</p>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }

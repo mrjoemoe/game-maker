@@ -15,6 +15,7 @@ context: |
   Use full openspec-propose only when the user asks to plan/propose first, or criteria are too ambiguous to implement.
   Clear multi-capability game features still use fast-track — do not propose-and-stop by default.
   Do not implement feature code before creating an OpenSpec change.
+  When gameplay rules change for a prototype with RULEBOOK.md, update that rulebook in the same change (see AGENT.md).
 
   Cursor skills: openspec-fasttrack (default), prototype-from-template, archive-and-push, openspec-*.
 
@@ -26,6 +27,7 @@ rules:
   tasks:
     - Include registry + Dockerfile workspace package steps when adding prototypes
     - End with archive + archive-and-push (commit and push) unless the user forbids it
+    - When changing gameplay rules, update the prototype RULEBOOK.md in the same change if one exists
 
 operations:
   apply:

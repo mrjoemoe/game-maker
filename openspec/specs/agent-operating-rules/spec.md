@@ -54,3 +54,10 @@ Agents SHALL use full openspec-propose only when the user explicitly asks to pro
 #### Scenario: User asks to propose only
 - **WHEN** a user asks to propose or plan a change without implementing yet
 - **THEN** the agent may use openspec-propose and stop after artifacts
+
+### Requirement: Keep prototype rulebook current
+Whenever an OpenSpec change alters gameplay rules for a prototype that has a `RULEBOOK.md`, agents SHALL update that rulebook in the same change so it matches the shipped behavior. `AGENT.md` SHALL state this duty.
+
+#### Scenario: Rule change updates rulebook
+- **WHEN** an agent implements a Goblin Woods rule change
+- **THEN** `prototypes/goblin-woods/RULEBOOK.md` is updated to reflect the new rules before archive/commit

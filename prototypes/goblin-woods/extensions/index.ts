@@ -1,8 +1,10 @@
 import type { PrototypeExtensions } from "../../_shared/extensions.js";
+import rulebook from "../RULEBOOK.md?raw";
 
 export const extensions: PrototypeExtensions = {
   banner:
-    "Chart 6 moves on meadow/forest only. Hit anything else and the path is over.",
+    "Action then move. Take gear from the Mage, Use it to pass hazards, reach the Castle with Sneak.",
+  rulebook,
 };
 
 export default extensions;

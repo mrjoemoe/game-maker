@@ -65,6 +65,8 @@ Apply tasks; keep scope to the change. Run `npm run test` / `npm run typecheck` 
 
 Mark tasks `[x]` in `tasks.md` when done.
 
+If the change alters gameplay rules for a prototype that has `RULEBOOK.md`, update that rulebook in the same change (see `AGENT.md`).
+
 ### 3. Archive + sync specs
 
 - Merge delta requirements into matching `openspec/specs/<capability>/spec.md`
