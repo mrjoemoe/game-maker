@@ -32,6 +32,8 @@ function effectIcon(tileType: TileTypeDefinition, resolved?: boolean): string | 
       return resolved ? "💀" : "👹";
     case "powerup":
       return resolved ? "📦" : "⚔️";
+    case "mage":
+      return resolved ? "✨" : "🧙";
     case "goal":
       return "🏰";
     default:

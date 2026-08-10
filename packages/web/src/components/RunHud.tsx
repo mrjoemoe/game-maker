@@ -6,7 +6,7 @@ type RunHudProps = {
 };
 
 export function RunHud({ game, onSoftReset }: RunHudProps) {
-  const { run, items } = game;
+  const { run } = game;
   const hpPct = Math.max(0, Math.min(100, (run.hp / run.maxHp) * 100));
   const ended = run.status !== "playing";
 
@@ -27,20 +27,6 @@ export function RunHud({ game, onSoftReset }: RunHudProps) {
         aria-label="Hit points"
       >
         <div className="hp-fill" style={{ width: `${hpPct}%` }} />
-      </div>
-      <div className="inventory" aria-label="Inventory">
-        {run.inventory.length === 0 ? (
-          <span className="inventory-empty">No gear yet</span>
-        ) : (
-          run.inventory.map((id) => {
-            const item = items[id];
-            return (
-              <span key={id} className="item-chip" title={item?.label ?? id}>
-                {item?.icon ?? item?.label ?? id}
-              </span>
-            );
-          })
-        )}
       </div>
       {run.bump && run.status === "playing" ? (
         <p className="run-bump" role="status">

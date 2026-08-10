@@ -373,4 +373,58 @@ describe("run mode", () => {
     expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
     expect(state.run.status).toBe("won");
   });
+
+  it("opens a Mage item choice and persists the pick across soft reset", () => {
+    const withMage: GameDefinition = {
+      ...runDefinition,
+      board: {
+        ...runDefinition.board,
+        tileTypes: [
+          ...runDefinition.board.tileTypes,
+          { id: "mage", label: "Mage", color: "#6a5acd", effect: { kind: "mage" } },
+        ],
+        overrides: [{ coord: { x: 0, y: 1 }, typeId: "mage" }],
+      },
+    };
+    let state = createInitialState(withMage);
+    expect(state.run.inventory).toEqual([]);
+
+    state = applyAction(state, {
+      type: "step",
+      pieceId: "hero",
+      destination: { x: 0, y: 1 },
+    });
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
+    expect(state.run.status).toBe("playing");
+    expect(state.run.pendingItemChoice?.cellKey).toBe("0,1");
+
+    // Further steps are blocked until a choice is made.
+    const blocked = applyAction(state, {
+      type: "step",
+      pieceId: "hero",
+      destination: { x: 0, y: 2 },
+    });
+    expect(blocked.pieces[0].position).toEqual({ x: 0, y: 1 });
+    expect(blocked.run.pendingItemChoice).not.toBeNull();
+
+    state = applyAction(state, { type: "chooseItem", itemId: "sword" });
+    expect(state.run.inventory).toEqual(["sword"]);
+    expect(state.discoveredItemIds).toEqual(["sword"]);
+    expect(state.run.pendingItemChoice).toBeNull();
+    expect(getCell(state.board, { x: 0, y: 1 }).resolved).toBe(true);
+
+    state = applyAction(state, { type: "softReset" });
+    expect(state.run.inventory).toEqual(["sword"]);
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
+    expect(getCell(state.board, { x: 0, y: 1 }).resolved).toBe(true);
+
+    // Resolved Mage is a safe pass-through with no new choice.
+    state = applyAction(state, {
+      type: "step",
+      pieceId: "hero",
+      destination: { x: 0, y: 1 },
+    });
+    expect(state.run.pendingItemChoice).toBeNull();
+    expect(state.run.status).toBe("playing");
+  });
 });

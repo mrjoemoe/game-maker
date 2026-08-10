@@ -37,6 +37,12 @@ export const goblinWoods: GameDefinition = {
       { id: "meadow", label: "Meadow", color: "#8fbc6b", effect: { kind: "empty" } },
       { id: "forest", label: "Forest", color: "#4f7a3e", effect: { kind: "empty" } },
       {
+        id: "mage",
+        label: "Mage",
+        color: "#7b6b9e",
+        effect: { kind: "mage" },
+      },
+      {
         id: "thicket",
         label: "Thicket",
         color: "#3d4f2f",
@@ -116,6 +122,9 @@ export const goblinWoods: GameDefinition = {
       weights: { none: 0.7, one: 0.25, two: 0.05 },
     },
     overrides: [
+      // Opening Mage — first tile north of start
+      { coord: { x: 3, y: 5 }, typeId: "mage", walls: [] },
+
       // Cosmetic forest
       { coord: { x: 1, y: 5 }, typeId: "forest" },
       { coord: { x: 5, y: 5 }, typeId: "forest" },

@@ -11,6 +11,8 @@ import {
 } from "@game-maker/engine";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BoardView } from "./components/BoardView";
+import { InventoryPanel } from "./components/InventoryPanel";
+import { MagePicker } from "./components/MagePicker";
 import { PathPlanner } from "./components/PathPlanner";
 import { RunHud } from "./components/RunHud";
 import { TileTally } from "./components/TileTally";
@@ -32,6 +34,7 @@ export function App() {
   const runMode = isRunModeEnabled(state.game.definition);
   const heroId = state.game.definition.run?.heroPieceId;
   const programLength = runProgramLength(state.game.definition);
+  const awaitingItemChoice = Boolean(state.game.run.pendingItemChoice);
 
   const [path, setPath] = useState<Direction[]>([]);
   const [executingIndex, setExecutingIndex] = useState<number | null>(null);
@@ -76,11 +79,19 @@ export function App() {
     dispatch({ type: "game", action: { type: "reset" } });
   };
 
+  const chooseItem = (itemId: string) => {
+    dispatch({ type: "game", action: { type: "chooseItem", itemId } });
+    clearPath();
+  };
+
   const runProgramAnimated = useCallback(async () => {
     if (!heroId || executingRef.current || path.length !== programLength) {
       return;
     }
-    if (gameRef.current.run.status !== "playing") {
+    if (
+      gameRef.current.run.status !== "playing" ||
+      gameRef.current.run.pendingItemChoice
+    ) {
       return;
     }
 
@@ -90,7 +101,11 @@ export function App() {
     let local = gameRef.current;
 
     for (let i = 0; i < steps.length; i += 1) {
-      if (cancelRef.current || local.run.status !== "playing") {
+      if (
+        cancelRef.current ||
+        local.run.status !== "playing" ||
+        local.run.pendingItemChoice
+      ) {
         break;
       }
       const hero = local.pieces.find((p) => p.id === heroId);
@@ -112,6 +127,9 @@ export function App() {
           // Ignore invalid step and continue the program.
         }
       }
+      if (local.run.pendingItemChoice) {
+        break;
+      }
       await new Promise((r) => setTimeout(r, STEP_MS));
     }
 
@@ -125,7 +143,11 @@ export function App() {
       return;
     }
     const onKeyDown = (event: KeyboardEvent) => {
-      if (executingRef.current || state.game.run.status !== "playing") {
+      if (
+        executingRef.current ||
+        state.game.run.status !== "playing" ||
+        state.game.run.pendingItemChoice
+      ) {
         return;
       }
       const map: Record<string, Direction> = {
@@ -164,8 +186,11 @@ export function App() {
     path.length,
     programLength,
     state.game.run.status,
+    state.game.run.pendingItemChoice,
     runProgramAnimated,
   ]);
+
+  const allItems = Object.values(state.game.items);
 
   return (
     <div className="app">
@@ -226,7 +251,9 @@ export function App() {
               programLength={programLength}
               steps={path}
               executingIndex={executingIndex}
-              disabled={state.game.run.status !== "playing"}
+              disabled={
+                state.game.run.status !== "playing" || awaitingItemChoice
+              }
               onAppend={(direction) =>
                 setPath((prev) =>
                   prev.length >= programLength ? prev : [...prev, direction],
@@ -238,6 +265,7 @@ export function App() {
                 void runProgramAnimated();
               }}
             />
+            <InventoryPanel game={state.game} />
             <TileTally game={state.game} />
           </div>
         ) : (
@@ -263,6 +291,10 @@ export function App() {
 
       {runMode && active.extensions.banner ? (
         <p className="run-banner-note">{active.extensions.banner}</p>
+      ) : null}
+
+      {runMode && awaitingItemChoice ? (
+        <MagePicker items={allItems} onChoose={chooseItem} />
       ) : null}
     </div>
   );

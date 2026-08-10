@@ -77,6 +77,7 @@ export {
   pathOverMessage,
   setBump,
   type CreateRunStateOptions,
+  type PendingItemChoice,
   type RunState,
   type RunStatus,
 } from "./run/index.js";

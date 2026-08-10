@@ -79,7 +79,7 @@ When tile flipping is disabled on the active definition, applying a flip action 
 - **THEN** the targeted tile's face state is unchanged
 
 ### Requirement: Tile effects
-A tile type MAY declare an effect that resolves when a hero steps onto a cell of that type. Supported effects SHALL include: none/empty, wall (impassable), trap (damage), enemy (combat), powerup (grants an item), and goal (win).
+A tile type MAY declare an effect that resolves when a hero steps onto a cell of that type. Supported effects SHALL include: none/empty, wall (impassable), trap (damage), enemy (combat), powerup (grants an item), mage (choose one item), and goal (win).
 
 #### Scenario: Tile type declares an effect
 - **WHEN** a tile type is defined with an enemy effect of power P and damage D
@@ -151,7 +151,7 @@ Board cells MAY carry zero or more orthogonal side walls. Board config MAY gener
 - **THEN** the destination tile is revealed, the hero does not move, and the run is lost with a wall path-over message
 
 ### Requirement: Safe path tiles only
-In run mode, stepping onto a tile whose effect is not empty (meadow/forest) SHALL end the run as lost and report why (e.g. found a Castle — path over), unless the tile declares a `passItemId` that is in the run inventory. Full-cell wall tiles without a held pass item SHALL reveal, keep the hero in place, and end the run as lost.
+In run mode, stepping onto a tile whose effect is not empty (meadow/forest) SHALL end the run as lost and report why (e.g. found a Castle — path over), unless the tile declares a `passItemId` that is in the run inventory, or the tile is a Mage (choice) effect. Full-cell wall tiles without a held pass item SHALL reveal, keep the hero in place, and end the run as lost.
 
 #### Scenario: Castle ends the path
 - **WHEN** the hero steps onto a goal/castle tile without its pass item
@@ -171,3 +171,18 @@ A tile type MAY declare `passItemId`. When the hero steps toward or onto that ti
 #### Scenario: Goal with pass item wins
 - **WHEN** the hero steps onto a goal tile and holds that tile's `passItemId`
 - **THEN** the hero moves onto the tile and the run status becomes won
+
+### Requirement: Mage grants a chosen item
+A tile type MAY declare effect kind `mage`. Stepping onto an unresolved Mage tile SHALL reveal it, move the hero onto it, keep the run playing, and set a pending item choice for that cell. While a choice is pending, further steps SHALL be no-ops. Choosing an item from the game’s item registry SHALL add it to inventory and discovered items, mark the Mage cell resolved, and clear the pending choice. Stepping onto a resolved Mage SHALL move the hero and keep the run playing (safe pass-through). Soft reset SHALL preserve Mage resolved state and re-seed inventory from discovered items.
+
+#### Scenario: First visit to Mage opens a choice
+- **WHEN** the hero steps onto an unresolved Mage tile
+- **THEN** the hero is on that tile, the run stays playing, and a pending item choice is set
+
+#### Scenario: Choosing an item grants and persists it
+- **WHEN** the player chooses an item while a Mage choice is pending
+- **THEN** that item is in inventory and discoveredItemIds, the Mage cell is resolved, and the pending choice is cleared
+
+#### Scenario: Soft reset keeps discovered gear
+- **WHEN** a soft reset runs after an item was granted by the Mage
+- **THEN** the new attempt’s inventory includes that item and the Mage remains resolved

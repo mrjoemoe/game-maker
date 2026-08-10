@@ -106,6 +106,7 @@ export type GameAction =
   | { type: "movePiece"; pieceId: string; destination: Coord }
   | { type: "step"; pieceId: string; destination: Coord }
   | { type: "runProgram"; pieceId: string; steps: Direction[] }
+  | { type: "chooseItem"; itemId: string }
   | { type: "softReset" }
   | { type: "reset" };
 
@@ -239,6 +240,8 @@ function resolveStepEffects(
         discovered: granted.discovered,
       };
     }
+    case "mage":
+      return { cells, run, discovered };
     case "goal":
       return { cells, run: markWon(run), discovered };
     default: {
@@ -250,6 +253,11 @@ function resolveStepEffects(
 
 function applyStep(state: GameState, pieceId: string, destination: Coord): GameState {
   if (!isRunModeEnabled(state.definition) || state.run.status !== "playing") {
+    return state;
+  }
+
+  // Must finish a Mage (or similar) item pick before moving again.
+  if (state.run.pendingItemChoice) {
     return state;
   }
 
@@ -303,6 +311,25 @@ function applyStep(state: GameState, pieceId: string, destination: Coord): GameS
   const effect = tileEffect(tileType);
   const holdingPassItem = canPassWithItem(tileType, state.run.inventory);
 
+  // Mage: move on; unresolved opens an item choice, resolved is safe pass-through.
+  if (effect.kind === "mage") {
+    const pieces = movePiece(
+      state.pieces,
+      pieceId,
+      destination,
+      state.board.grid,
+    );
+    return {
+      ...state,
+      board: { ...state.board, cells },
+      pieces,
+      run: {
+        ...clearBump(state.run),
+        pendingItemChoice: cell.resolved ? null : { cellKey: key },
+      },
+    };
+  }
+
   // Pass item: traverse rough terrain (goal wins).
   if (holdingPassItem && (effect.kind === "wall" || !isSafePathEffect(effect.kind))) {
     const pieces = movePiece(
@@ -353,6 +380,41 @@ function applyStep(state: GameState, pieceId: string, destination: Coord): GameS
   };
 }
 
+function applyChooseItem(state: GameState, itemId: string): GameState {
+  if (!isRunModeEnabled(state.definition) || state.run.status !== "playing") {
+    return state;
+  }
+  const pending = state.run.pendingItemChoice;
+  if (!pending) {
+    return state;
+  }
+  if (!state.items[itemId]) {
+    throw new Error(`Unknown item id: ${itemId}`);
+  }
+
+  const granted = grantItem(
+    state.run,
+    state.discoveredItemIds,
+    itemId,
+    state.items,
+  );
+  const maxHp = effectiveMaxHp(state, granted.run.inventory);
+  const cells = markResolved(state.board.cells, pending.cellKey);
+
+  return {
+    ...state,
+    board: { ...state.board, cells },
+    run: {
+      ...granted.run,
+      maxHp,
+      hp: Math.max(granted.run.hp, maxHp),
+      pendingItemChoice: null,
+      bump: null,
+    },
+    discoveredItemIds: granted.discovered,
+  };
+}
+
 /**
  * Execute a locked-in list of orthogonal moves in order. Stops early if the
  * run ends (won/lost). Out-of-bounds moves are wasted (hero stays put).
@@ -375,7 +437,7 @@ function applyRunProgram(
 
   let current = state;
   for (const direction of steps) {
-    if (current.run.status !== "playing") {
+    if (current.run.status !== "playing" || current.run.pendingItemChoice) {
       break;
     }
     const piece = current.pieces.find((p) => p.id === pieceId);
@@ -525,6 +587,8 @@ export function applyAction(state: GameState, action: GameAction): GameState {
       return applyStep(state, action.pieceId, action.destination);
     case "runProgram":
       return applyRunProgram(state, action.pieceId, action.steps);
+    case "chooseItem":
+      return applyChooseItem(state, action.itemId);
     case "softReset":
       return applySoftReset(state);
     case "reset":

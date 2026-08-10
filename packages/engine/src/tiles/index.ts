@@ -9,6 +9,7 @@ export type TileEffect =
   | { kind: "trap"; damage: number }
   | { kind: "enemy"; power: number; damage: number; rewardItemId?: string }
   | { kind: "powerup"; itemId: string }
+  | { kind: "mage" }
   | { kind: "goal" };
 
 export type { TileSide, SideWallConfig, SideWallWeights } from "./sides.js";
