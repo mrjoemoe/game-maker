@@ -1,22 +1,34 @@
 ---
 name: openspec-fasttrack
-description: Fast-track a minor change through OpenSpec (slim proposal/specs/tasks), implement it, archive into main specs, then commit and push. Use for small feature tweaks, rule changes, UI additions, or bugfixes in this repo — never skip OpenSpec by coding first.
+description: >-
+  DEFAULT OpenSpec workflow in game-maker for clear behavior changes: slim
+  proposal/specs/tasks, implement immediately, archive into main specs, then
+  commit and push. Use whenever the user describes a feature, rule, inventory,
+  map, UI, or bugfix to build — including multi-capability engine+web+prototype
+  work. Prefer this over openspec-propose unless the user asks to plan-only or
+  the request is too ambiguous to implement.
 ---
 
-# OpenSpec fast-track (minor changes)
+# OpenSpec fast-track (default for clear changes)
 
 ## When to use
 
-Use this skill for **minor** work in `game-maker`, for example:
+**This is the default** for behavior work in `game-maker`. Use it when the user describes what they want with clear enough acceptance criteria, for example:
 
-- Game rule tweaks (e.g. path-over-on-hazard, program length)
-- Small UI additions (path planner, tile tally, wall visuals, bump messages)
-- Prototype config adjustments that change behavior
-- Focused engine/UI bugfixes with clear acceptance criteria
+- Game rule / inventory / extraction / loadout / win-condition changes
+- Engine + playtest UI + prototype config in one request
+- Path programming, walls, tile visuals, HUD, tallies
+- Focused bugfixes with clear expected behavior
+- Phrases like “make an update”, “here’s the idea”, “let’s make…”, “can you also…”
 
-**Do not** skip OpenSpec and implement code first. Phrases like “can you also…”, “make it so…”, or “fix …” still require this workflow.
+**Do not** route those to `openspec-propose` (plan artifacts only, then stop). Fast-track writes slim OpenSpec artifacts **and continues into implementation** in the same effort.
 
-Use the full propose → apply → archive flow (not this fast-track) when the change is large, architectural, or spans many capabilities with unclear trade-offs.
+Use full **openspec-propose** only when:
+
+- The user explicitly asks to propose / plan first / `/opsx-propose`, or
+- Material ambiguity blocks coding and needs a design review gate before any implementation
+
+Spanning multiple capabilities or feeling “medium-large” is **not** enough to skip fast-track.
 
 ## Hard rule
 
@@ -70,7 +82,8 @@ Follow `.cursor/skills/archive-and-push/SKILL.md`:
 
 ## Anti-patterns
 
-- Implementing a “quick” Goblin Woods / engine / web tweak with no OpenSpec change
+- Using full `openspec-propose` and stopping for review when the user already gave clear build criteria
+- Implementing a Goblin Woods / engine / web tweak with no OpenSpec change
 - Leaving an active change unarchived after shipping code
 - Archiving without syncing main specs
 - Committing without pushing after archive (unless user said not to push)

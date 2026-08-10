@@ -1,6 +1,11 @@
 ---
 name: openspec-propose
-description: Propose a new change with all artifacts generated in one step. Use when the user wants to quickly describe what they want to build and get a complete proposal with design, specs, and tasks ready for implementation.
+description: >-
+  Plan-only OpenSpec change (proposal/specs/design/tasks) then STOP — do not
+  implement. Use only when the user explicitly asks to propose or plan first
+  (/opsx-propose), or the request is too ambiguous to code without a design
+  review gate. In game-maker, do NOT use this for clear “build this feature”
+  requests; use openspec-fasttrack instead (default).
 allowed-tools: Bash(openspec:*)
 license: MIT
 compatibility: Requires openspec CLI.
@@ -12,7 +17,11 @@ metadata:
 
 Propose a new change - create the change and generate all artifacts in one step.
 
+**game-maker default:** Prefer `.cursor/skills/openspec-fasttrack/SKILL.md` whenever the user describes a clear feature, rule, UI, or fix to implement. This propose skill is **opt-in** (explicit plan-first / high ambiguity), not the default for “make an update…”.
+
 **Planning boundary**: This workflow creates planning artifacts only. The user request that selected or triggered this workflow authorizes planning only, even if it asks to build or fix something. Do not edit project code. After the planning artifacts are complete, stop. Do not start implementation in the same response, even if the initial request asks for it. Wait for a new user request after the artifacts are presented; then start the apply workflow.
+
+If you realized mid-flight that the request was a clear build and you should have fast-tracked: finish or hand off to fast-track rather than stopping at “ready for `/opsx-apply`” unless the user asked for plan-only.
 
 I'll create a change with the artifacts your schema defines. With the default spec-driven schema that is:
 - proposal.md (what & why)

@@ -11,15 +11,18 @@ context: |
   - Launch: ./dev.sh up <prototype> [port] for simultaneous instances.
 
   OpenSpec is mandatory for every behavior change (including minor UI/rule tweaks).
-  Minor work: use openspec-fasttrack (slim change → implement → archive into specs → commit+push).
+  DEFAULT workflow: openspec-fasttrack (slim change → implement → archive into specs → commit+push).
+  Use full openspec-propose only when the user asks to plan/propose first, or criteria are too ambiguous to implement.
+  Clear multi-capability game features still use fast-track — do not propose-and-stop by default.
   Do not implement feature code before creating an OpenSpec change.
 
-  Cursor skills: openspec-fasttrack, prototype-from-template, archive-and-push, openspec-*.
+  Cursor skills: openspec-fasttrack (default), prototype-from-template, archive-and-push, openspec-*.
 
 rules:
   proposal:
     - Prefer prototypes over template forks when adding a game version
-    - Even minor follow-up requests need an OpenSpec change (use fast-track when appropriate)
+    - Default to fast-track for clear build requests; full propose is opt-in or for blocking ambiguity
+    - Even follow-up requests need an OpenSpec change (fast-track by default)
   tasks:
     - Include registry + Dockerfile workspace package steps when adding prototypes
     - End with archive + archive-and-push (commit and push) unless the user forbids it
