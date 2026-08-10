@@ -6,7 +6,7 @@ type RunHudProps = {
 };
 
 export function RunHud({ game, onSoftReset }: RunHudProps) {
-  const { run, stashItemIds } = game;
+  const { run, stashItemIds, coins } = game;
   const hpPct = Math.max(0, Math.min(100, (run.hp / run.maxHp) * 100));
   const ended = run.status !== "playing";
 
@@ -25,14 +25,26 @@ export function RunHud({ game, onSoftReset }: RunHudProps) {
 
   return (
     <div className="run-hud">
-      <div className="run-meta">
-        <span>Attempt {run.attempts}</span>
-        <span>
-          HP {run.hp}/{run.maxHp}
-        </span>
-        <span>Stash {stashItemIds.length}</span>
-        <span>Carrying {run.inventory.length}</span>
-        <span>Coins {game.coins}</span>
+      <div className="run-hud-top">
+        <div className="run-meta">
+          <span>Attempt {run.attempts}</span>
+          <span>
+            HP {run.hp}/{run.maxHp}
+          </span>
+          <span>Stash {stashItemIds.length}</span>
+          <span>Carrying {run.inventory.length}</span>
+        </div>
+        <div
+          className="coin-wallet"
+          role="status"
+          aria-label={`Coin wallet ${coins}`}
+        >
+          <span className="coin-wallet-icon" aria-hidden="true">
+            🪙
+          </span>
+          <span className="coin-wallet-label">Coins</span>
+          <span className="coin-wallet-count">{coins}</span>
+        </div>
       </div>
       <div
         className="hp-bar"

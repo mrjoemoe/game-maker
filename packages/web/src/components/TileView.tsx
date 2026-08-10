@@ -99,7 +99,8 @@ export function TileView({
       {icon ? <span className="tile-icon">{icon}</span> : null}
       {tile.isFaceUp && (tile.coins ?? 0) > 0 ? (
         <span className="tile-coins" aria-label={`${tile.coins} coins`}>
-          {"🪙".repeat(Math.min(3, tile.coins ?? 0))}
+          <span aria-hidden="true">🪙</span>
+          <span className="tile-coins-count">{tile.coins}</span>
         </span>
       ) : null}
       <span className="tile-label">

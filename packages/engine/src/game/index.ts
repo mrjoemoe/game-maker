@@ -182,14 +182,14 @@ function collectCellCoins(
   cells: Record<string, TileState>,
   key: string,
   wallet: number,
-): { cells: Record<string, TileState>; coins: number } {
+): { cells: Record<string, TileState>; coins: number; collected: number } {
   const cell = cells[key];
   if (!cell) {
-    return { cells, coins: wallet };
+    return { cells, coins: wallet, collected: 0 };
   }
   const amount = cell.coins ?? 0;
   if (amount <= 0) {
-    return { cells, coins: wallet };
+    return { cells, coins: wallet, collected: 0 };
   }
   return {
     cells: {
@@ -197,6 +197,22 @@ function collectCellCoins(
       [key]: { ...cell, coins: 0 },
     },
     coins: wallet + amount,
+    collected: amount,
+  };
+}
+
+function withCoinPickupBump(
+  run: RunState,
+  collected: number,
+  wallet: number,
+): RunState {
+  if (collected <= 0) {
+    return run;
+  }
+  const noun = collected === 1 ? "coin" : "coins";
+  return {
+    ...run,
+    bump: `Collected ${collected} ${noun} — wallet ${wallet}`,
   };
 }
 
@@ -328,7 +344,7 @@ function applyStep(
       ...state,
       board: { ...state.board, cells: gathered.cells },
       pieces,
-      run,
+      run: withCoinPickupBump(run, gathered.collected, gathered.coins),
       coins: gathered.coins,
     };
   }
@@ -346,6 +362,7 @@ function applyStep(
       run = consumeItem(run, usedItemId);
     }
     const gathered = collectCellCoins(cells, key, state.coins);
+    run = withCoinPickupBump(run, gathered.collected, gathered.coins);
     if (effect.kind === "goal") {
       const banked = bankRunInventory(
         { ...state, coins: gathered.coins },
