@@ -94,7 +94,7 @@ export type SideWallWeights = {
 
 export type SideWallConfig = {
   weights?: SideWallWeights;
-  /** Stable seed so full reset rebuilds the same wall layout. */
+  /** PRNG seed for wall placement. Omitted or overridden on New map rerolls. */
   seed?: number;
 };
 

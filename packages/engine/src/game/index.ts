@@ -746,6 +746,23 @@ export function createInitialState(definition: GameDefinition): GameState {
   };
 }
 
+function withRerolledSideWallSeed(definition: GameDefinition): GameDefinition {
+  if (!definition.board.sideWalls) {
+    return definition;
+  }
+  const seed = (Math.random() * 0x1_0000_0000) >>> 0;
+  return {
+    ...definition,
+    board: {
+      ...definition.board,
+      sideWalls: {
+        ...definition.board.sideWalls,
+        seed,
+      },
+    },
+  };
+}
+
 export function applyAction(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case "flipTile": {
@@ -794,8 +811,13 @@ export function applyAction(state: GameState, action: GameAction): GameState {
       return applyRunProgram(state, action.pieceId, action.steps);
     case "softReset":
       return applySoftReset(state);
-    case "reset":
-      return createInitialState(state.definition);
+    case "reset": {
+      const definition =
+        isRunModeEnabled(state.definition) && state.definition.board.sideWalls
+          ? withRerolledSideWallSeed(state.definition)
+          : state.definition;
+      return createInitialState(definition);
+    }
     default: {
       const _exhaustive: never = action;
       return _exhaustive;

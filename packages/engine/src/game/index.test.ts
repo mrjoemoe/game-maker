@@ -536,4 +536,26 @@ describe("run mode", () => {
     expect(state.run.status).toBe("lost");
     expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
   });
+
+  it("full reset in run mode rerolls the side-wall seed", () => {
+    const seeded: GameDefinition = {
+      ...runDefinition,
+      board: {
+        ...runDefinition.board,
+        sideWalls: { seed: 42, weights: { none: 0.7, one: 0.25, two: 0.05 } },
+      },
+    };
+    let state = createInitialState(seeded);
+    expect(state.definition.board.sideWalls?.seed).toBe(42);
+
+    const seeds = new Set<number>();
+    for (let i = 0; i < 8; i += 1) {
+      state = applyAction(state, { type: "reset" });
+      const seed = state.definition.board.sideWalls?.seed;
+      expect(typeof seed).toBe("number");
+      seeds.add(seed!);
+    }
+    expect(seeds.size).toBeGreaterThan(1);
+    expect(seeds.has(42)).toBe(false);
+  });
 });
