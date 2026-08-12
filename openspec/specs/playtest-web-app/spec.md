@@ -204,3 +204,9 @@ The path planner SHALL offer Travel to Portal 1–4 actions. Queued travel steps
 - **WHEN** the player composes a path step
 - **THEN** Travel to Portal 1, 2, 3, and 4 are available as actions
 
+### Requirement: Vite resolves game-library
+The playtest Vite config SHALL alias `@game-maker/game-library` to the package TypeScript entry so composed prototype configs and the registry resolve during development and Docker launches.
+
+#### Scenario: Goblin Woods loads in Vite
+- **WHEN** the playtest app imports a prototype that depends on `@game-maker/game-library`
+- **THEN** Vite resolves the import without a missing-module error

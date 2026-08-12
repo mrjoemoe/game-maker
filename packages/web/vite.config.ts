@@ -7,6 +7,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@game-maker/engine": path.resolve(__dirname, "../engine/src/index.ts"),
+      "@game-maker/game-library": path.resolve(
+        __dirname,
+        "../game-library/src/index.ts",
+      ),
     },
   },
   server: {
