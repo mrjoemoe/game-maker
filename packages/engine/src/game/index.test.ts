@@ -674,6 +674,42 @@ describe("run mode", () => {
     expect(state.run.inventory).toEqual([]);
   });
 
+  it("enters a hazard past a destination wall when using its pass item", () => {
+    const withPass: GameDefinition = {
+      ...runDefinition,
+      items: [...(runDefinition.items ?? []), { id: "boots", label: "Boots" }],
+      board: {
+        ...runDefinition.board,
+        tileTypes: runDefinition.board.tileTypes.map((t) =>
+          t.id === "trap" ? { ...t, passItemId: "boots" } : t,
+        ),
+        overrides: [
+          ...(runDefinition.board.overrides ?? []).map((o) =>
+            o.coord.x === 0 && o.coord.y === 2
+              ? { ...o, typeId: "trap", walls: ["n"] as const }
+              : o,
+          ),
+          { coord: { x: 0, y: 1 }, typeId: "meadow", walls: [] },
+        ],
+      },
+    };
+    let state = createInitialState(withPass);
+    state = {
+      ...state,
+      pieces: [{ id: "hero", typeId: "hero", position: { x: 0, y: 1 } }],
+      run: { ...state.run, inventory: ["boots"] },
+    };
+    state = applyAction(state, {
+      type: "programStep",
+      pieceId: "hero",
+      step: { action: { kind: "useItem", itemId: "boots" }, move: "down" },
+    });
+    expect(state.run.status).toBe("playing");
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 2 });
+    expect(state.run.inventory).toEqual([]);
+    expect(getCell(state.board, { x: 0, y: 2 }).walls ?? []).not.toContain("n");
+  });
+
   it("does not peek past an origin wall when using a pass item", () => {
     const withPass: GameDefinition = {
       ...runDefinition,

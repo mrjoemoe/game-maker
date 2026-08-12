@@ -267,6 +267,31 @@ function clearCrossingWalls(
   };
 }
 
+/** Clear only the destination's entry-face wall for this crossing. */
+function clearDestEntryWall(
+  cells: Record<string, TileState>,
+  from: Coord,
+  to: Coord,
+): Record<string, TileState> {
+  const exit = sideToward(from, to);
+  if (!exit) {
+    return cells;
+  }
+  const entry = oppositeSide(exit);
+  const toKey = coordKey(to);
+  const toCell = cells[toKey];
+  if (!toCell) {
+    return cells;
+  }
+  return {
+    ...cells,
+    [toKey]: {
+      ...toCell,
+      walls: removeWallSide(toCell.walls, entry),
+    },
+  };
+}
+
 function applyStep(
   state: GameState,
   pieceId: string,
@@ -563,23 +588,28 @@ function applyUseItemAction(
   }
 
   // Reveal destination to judge pass-item fit (and report dest-entry walls).
-  const cells = revealCell(state.board.cells, coordKey(destination));
+  let cells = revealCell(state.board.cells, coordKey(destination));
   const revealedDest = cells[coordKey(destination)];
   const destType = resolveTileType(state.board.tileTypes, revealedDest.typeId);
+
+  // Matching pass item opens the destination rim for this step so the move can
+  // enter (players cannot Use sledgehammer and a pass item in the same step).
+  if (destType.passItemId === itemId) {
+    if (blockedOnDest) {
+      cells = clearDestEntryWall(cells, piece.position, destination);
+    }
+    return {
+      ...state,
+      board: { ...state.board, cells },
+      run: clearBump(state.run),
+    };
+  }
 
   if (blockedOnDest) {
     return {
       ...state,
       board: { ...state.board, cells },
       run: markLost(state.run, "You hit a wall on the next tile — path over"),
-    };
-  }
-
-  if (destType.passItemId === itemId) {
-    return {
-      ...state,
-      board: { ...state.board, cells },
-      run: clearBump(state.run),
     };
   }
 

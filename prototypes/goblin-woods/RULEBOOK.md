@@ -64,8 +64,8 @@ If an action does not fit, the run **ends** (path over) and that step’s move d
 ## Side walls
 
 - Leaving through a wall on **your** tile ends the path without revealing the next tile.
-- A wall only on the **next** tile ends the path and reveals it.
-- **Sledgehammer**: Use on a blocked crossing to smash that edge, then move. Required to enter the walled **Castle**.
+- A wall only on the **next** tile ends the path and reveals it — unless you **Use** that tile’s matching pass item (see below), which opens that rim for the step.
+- **Sledgehammer**: Use on a blocked crossing to smash that edge, then move. Required for walls on **your** tile and to enter the walled **Castle**.
 
 ## Items and pass tiles
 
@@ -79,6 +79,8 @@ If an action does not fit, the run **ends** (path over) and that step’s move d
 | Brute | Spear |
 | Villain | Charm |
 | Castle | **Sledgehammer** (**wins**; castle has walls on all sides) |
+
+**Use** the matching pass item on the step you move onto that tile. That also gets you past a wall on the **destination’s** rim. A wall on your **current** tile still needs **Sledgehammer** (you can only Use one item per step).
 
 Used items are **consumed**. Gear only returns to stash on **Extract** or **Castle win**.
 
