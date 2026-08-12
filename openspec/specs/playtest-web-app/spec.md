@@ -80,31 +80,43 @@ Revealed tiles SHALL display an indicator of their effect (enemy, trap, powerup,
 - **THEN** those corners show an extraction indicator
 
 ### Requirement: Path planner UI
-When run mode is enabled, the playtest app SHALL provide a side path planner to queue up to `programLength` action+move pairs and execute them in order (action then move), stopping when the run ends. The UI SHALL let the player choose each step’s action (`none`, take from Mage, use an item, or extract) and move direction. Each slot SHALL display the action summary and move. When composing a later step, Use-item actions SHALL be enabled for items in the current inventory and for items taken via earlier queued `takeFromMage` steps in the same program, minus items used in earlier queued `useItem` steps. Run path SHALL be enabled when at least one complete pair is queued (not only when all slots are filled). A queued Extract step SHALL prevent appending further steps.
+When run mode is enabled, the playtest app SHALL provide an action bank on the right of the board and a horizontal action track below the board (above inventory). The bank SHALL include left, up, down, and right as actions along with take, buy, use, travel, and extract. Clicking a bank action SHALL append it to the track left-to-right up to `programLength` (default 10). The track SHALL highlight the executing action while running. Use-item actions SHALL be enabled for items held or taken/bought earlier in the queued program. Run SHALL be enabled with at least one queued action. A queued Extract SHALL prevent appending further actions. Collecting coins SHALL NOT appear as a bank action.
+
+#### Scenario: Direction appends to track
+- **WHEN** the player clicks Right in the action bank
+- **THEN** a move-right action appears as the next slot on the track below the board
 
 #### Scenario: Run path executes queued moves
-- **WHEN** the player fills all program slots and activates run path
-- **THEN** the app applies those action+move pairs in order until the program finishes or the run ends
+- **WHEN** the player fills the action track and activates Run
+- **THEN** the app applies those atomic actions in order until the program finishes or the run ends
 
 #### Scenario: Full program required before run
-- **WHEN** fewer than `programLength` complete action+move pairs are set but at least one pair is queued
-- **THEN** Run path is enabled so the player can end the chart early
+- **WHEN** fewer than `programLength` actions are queued but at least one is present
+- **THEN** Run is enabled so the player can end the chart early
 
 #### Scenario: Slot shows use-item then north
-- **WHEN** the player sets a step to use the sword and move up
-- **THEN** that slot shows both the use-sword action and the up move
+- **WHEN** the player appends Use sword then Up to the track
+- **THEN** those slots show the use-sword action and the up move as consecutive actions
+
+#### Scenario: Run path executes queued actions
+- **WHEN** the player queues actions and activates Run
+- **THEN** the app applies those atomic actions in order until the program finishes or the run ends
+
+#### Scenario: Short program can run
+- **WHEN** fewer than `programLength` actions are queued but at least one is present
+- **THEN** Run is enabled
 
 #### Scenario: Take then use in the same plan
-- **WHEN** the player queues takeFromMage for an item in an earlier slot
-- **THEN** Use for that item is available when composing a later slot in the same program
+- **WHEN** the player queues takeFromMage for an item earlier in the track
+- **THEN** Use for that item is available later in the same program
 
 #### Scenario: Empty program cannot run
-- **WHEN** no action+move pairs are queued
-- **THEN** Run path stays disabled
+- **WHEN** no actions are queued
+- **THEN** Run stays disabled
 
 #### Scenario: Extract locks further slots
-- **WHEN** the player queues Extract as a step action
-- **THEN** additional steps cannot be appended until Undo or Clear
+- **WHEN** the player queues Extract
+- **THEN** additional actions cannot be appended until Undo or Clear
 
 ### Requirement: Tile count tally
 When run mode is enabled, the playtest app SHALL show a side panel listing each tile type on the map with a count. When a tile type declares a `passItemId`, the tally row SHALL show that item (label and/or icon) as the gear used to pass it.

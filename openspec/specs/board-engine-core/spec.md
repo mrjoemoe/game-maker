@@ -147,15 +147,15 @@ The engine SHALL provide a soft reset action that returns the hero to the start 
 - **THEN** that Mage cell is unresolved again so takeFromMage can succeed on the new attempt
 
 ### Requirement: Programmed path length
-A run-mode definition MAY set `programLength` (default 6) as the maximum number of steps in one program. The engine SHALL accept a `runProgram` with between 1 and `programLength` steps (inclusive) and SHALL stop applying further steps once the run is no longer playing. Empty programs and programs longer than `programLength` SHALL be rejected.
+A run-mode definition MAY set `programLength` (default 10) as the maximum number of atomic actions in one program. The engine SHALL accept a `runProgram` with between 1 and `programLength` actions (inclusive) and SHALL stop applying further actions once the run is no longer playing. Empty programs and programs longer than `programLength` SHALL be rejected.
 
 #### Scenario: Program stops after path-over
-- **WHEN** a programmed step ends the run as lost
-- **THEN** remaining steps in that program are not applied
+- **WHEN** a programmed action ends the run as lost
+- **THEN** remaining actions in that program are not applied
 
 #### Scenario: Short program is accepted
-- **WHEN** a runProgram with fewer than `programLength` steps (but at least one) is applied
-- **THEN** those steps execute in order without requiring the remaining slots
+- **WHEN** a runProgram with fewer than `programLength` actions (but at least one) is applied
+- **THEN** those actions execute in order without requiring the remaining slots
 
 ### Requirement: Walls live on edges between cells
 The board SHALL store walls as undirected edges between orthogonally adjacent cells, not as faces owned by a single tile. Crossing from A to B is blocked if and only if the shared edge between A and B has a wall. Crossing a walled edge SHALL end the run as lost with a reported reason and SHALL reveal the destination tile.
@@ -224,28 +224,51 @@ Mage tiles SHALL NOT open an interactive pending choice on step. Granting SHALL 
 - **WHEN** the hero moves onto an unresolved Mage without a takeFromMage action on that step
 - **THEN** the hero arrives on the Mage, the run stays playing, and no pending item choice is set
 
-### Requirement: Action-then-move program steps
-A run program SHALL consist of 1 to `programLength` steps, each pairing a program action with an orthogonal move. Each step SHALL apply the action first, then the move. If the action is invalid for the current situation, the run SHALL be lost with a reported reason and the move SHALL not apply. Successful `useItem` actions SHALL consume the item from the run inventory. A successful `extract` action SHALL end the run as extracted so the move does not apply.
+### Requirement: Atomic program actions
+Each programmed step SHALL be a single atomic action. Orthogonal moves SHALL be actions (`move` with direction up/down/left/right). Taking from the Mage, buying from a shop, using an item, traveling to a portal, and extracting SHALL each be one action. Collecting coins SHALL NOT be a programmed action; coins are gathered automatically on safe landing.
+
+#### Scenario: Move costs one slot
+- **WHEN** the hero programs a single down move
+- **THEN** that program has length 1 and moving down executes without a separate paired action
+
+#### Scenario: Grab then move uses two slots
+- **WHEN** the hero programs takeFromMage then move right
+- **THEN** both consume action slots and execute in order
+
+#### Scenario: Coins are not charted
+- **WHEN** the hero moves onto a cell with coins and the run stays playing
+- **THEN** coins are collected without requiring a coin action in the program
 
 #### Scenario: Take from Mage while standing on Mage
-- **WHEN** the hero is on an unresolved Mage and the step action is takeFromMage with a valid item id
-- **THEN** the item is granted to the run inventory, the Mage is resolved, and the move proceeds
+- **WHEN** the hero is on an unresolved Mage and programs takeFromMage with a valid item id
+- **THEN** the item is granted to the run inventory and the Mage is resolved
 
 #### Scenario: Take from Mage off a Mage tile fails
-- **WHEN** the hero is not on an unresolved Mage and the step action is takeFromMage
-- **THEN** the run is lost and the hero does not move
+- **WHEN** the hero is not on an unresolved Mage and programs takeFromMage
+- **THEN** the run is lost
+
+#### Scenario: Extract ends the chart
+- **WHEN** the hero is on extraction and programs extract
+- **THEN** the run becomes extracted
+
+### Requirement: Use item arms the next move
+Using an item as a programmed action SHALL arm that item for the next move action. The following move SHALL apply wall-breaking / pass-item rules for that item, then move. Programming a non-move action while an item is armed, or ending the program still armed, SHALL end the run as lost.
+
+#### Scenario: Use then move crosses a wall
+- **WHEN** the hero programs useItem (sledgehammer) then move across a walled edge
+- **THEN** the edge clears and the move proceeds, consuming the item
 
 #### Scenario: Use pass item then enter matching tile
-- **WHEN** the hero holds an item, uses it as the step action, and moves onto a tile whose passItemId is that item
+- **WHEN** the hero holds an item, programs useItem, then moves onto a tile whose passItemId is that item
 - **THEN** the hero traverses that tile (goal wins and banks) instead of pathing over, and the item is consumed
 
 #### Scenario: Use item that does not match the destination fails
-- **WHEN** the hero uses an item whose pass/break effect does not apply to the upcoming move
+- **WHEN** the hero programs useItem whose pass/break effect does not apply to the following move
 - **THEN** the run is lost before or without a successful traverse
 
-#### Scenario: Extract ends before the move
-- **WHEN** the hero is on extraction and the step action is extract with any move
-- **THEN** the run becomes extracted and the move is not applied
+#### Scenario: Use without move paths over
+- **WHEN** the hero programs useItem as the last action with no following move
+- **THEN** the run is lost after that program with an unused-item message
 
 ### Requirement: Sledgehammer breaks edge walls
 An item MAY declare `breaksSideWalls`. Using that item as a step action SHALL clear the shared edge wall for the crossing being attempted when that crossing is blocked and SHALL consume the item from the run inventory after the move succeeds; using it when the crossing is not blocked SHALL fail the run.

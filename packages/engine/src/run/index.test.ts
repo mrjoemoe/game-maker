@@ -11,6 +11,7 @@ describe("run", () => {
       inventory: [],
       attempts: 1,
       bump: null,
+      pendingUseItemId: null,
     });
   });
 

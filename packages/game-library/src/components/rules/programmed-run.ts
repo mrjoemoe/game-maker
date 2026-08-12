@@ -9,7 +9,8 @@ export const rulesProgrammedRun = defineComponent({
     owner: "platform",
     docs: {
       summary: "Programmed path run-mode configuration.",
-      playerFacing: "Chart a path, then run it. Soft reset keeps the map.",
+      playerFacing:
+        "Chart up to ten actions (moves included), then run. Soft reset keeps the map.",
     },
   },
   contribute: ({ params }) => {
@@ -24,7 +25,7 @@ export const rulesProgrammedRun = defineComponent({
         startPosition: { ...start },
         maxHp: (params.maxHp as number) ?? 100,
         baseAttack: (params.baseAttack as number) ?? 1,
-        programLength: (params.programLength as number) ?? 6,
+        programLength: (params.programLength as number) ?? 10,
       },
       pieceTypes: [
         {

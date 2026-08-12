@@ -4,7 +4,7 @@ Living rules for the Goblin Woods playtest. Agents must keep this file in sync w
 
 ## Goal
 
-Reach the **Castle** by programming action+move paths through a hidden forest. Extract gear to your stash, gather **coins**, buy at **shops**, and use **portals** to warp across discovered gates. Win by breaking into the castle with a **Sledgehammer**.
+Reach the **Castle** by programming actions through a hidden forest. Extract gear to your stash, gather **coins**, buy at **shops**, and use **portals** to warp across discovered gates. Win by breaking into the castle with a **Sledgehammer**.
 
 ## Setup
 
@@ -39,22 +39,22 @@ Reach the **Castle** by programming action+move paths through a hidden forest. E
 ## How a turn works
 
 1. Optionally **commit a loadout** from stash (or go empty-handed).
-2. Chart a path of **1 to 6** steps (you may run early).
-3. Each step is **Action → Move** (orthogonal). Travel skips the move.
-4. Press **Run** to execute. Chart again from your new position if still playing.
+2. Chart a path of **1 to 10 actions** (you may run early).
+3. Each chart slot is **one action**: move one space, take/buy/use an item, travel, or extract. Collecting coins is **not** an action.
+4. Press **Run** to execute left-to-right. Chart again from your new position if still playing.
 
 ### Actions
 
 | Action | When it is legal |
 |--------|------------------|
-| **No action** | Always (just move). |
+| **↑ / ← / ↓ / →** | Move one orthogonal space (costs one action). |
 | **Take [item] from Mage** | Standing on an **unresolved Mage**. One take per attempt (Mage refreshes on Try again). |
 | **Buy [item]** (3🪙) | Standing on a **Shop** with at least 3 coins. Repeatable. |
 | **Travel to Portal N** | Standing on a **Portal**; destination Portal N must already be discovered and not your current portal. |
-| **Use [item]** | You hold it (or took/bought it earlier in this chart). Must match the upcoming move. |
-| **Extract** | Standing on an **Extraction** corner. Banks run inventory to stash and ends the attempt (not a win). Ends the chart — no further steps. |
+| **Use [item]** | You hold it (or took/bought it earlier in this chart). Must be followed by a **move** action. |
+| **Extract** | Standing on an **Extraction** corner. Banks run inventory to stash and ends the attempt (not a win). Ends the chart — no further actions. |
 
-If an action does not fit, the run **ends** (path over) and that step’s move does not happen.
+If an action does not fit, the run **ends** (path over). Coins still collect automatically when you land safely — they never cost a chart slot.
 
 ## Safe ground vs hazards
 
@@ -80,7 +80,7 @@ If an action does not fit, the run **ends** (path over) and that step’s move d
 | Villain | Charm |
 | Castle | **Sledgehammer** (**wins**) |
 
-**Use** the matching pass item on the step you move onto that tile. That also opens a wall on the **shared edge** into that tile. **Sledgehammer** is for smashing a wall when you are not using another pass item that step (and for the Castle).
+**Use** the matching pass item, then **move** onto that tile. That also opens a wall on the **shared edge** into that tile. **Sledgehammer** is Use then move across a walled edge (and for the Castle).
 
 Used items are **consumed**. Gear only returns to stash on **Extract** or **Castle win**.
 

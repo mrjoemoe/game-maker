@@ -8,9 +8,10 @@ import {
   type ProgramStep,
 } from "@game-maker/engine";
 import { useCallback, useRef, useState } from "react";
+import { ActionBank } from "./components/ActionBank";
+import { ActionTrack } from "./components/ActionTrack";
 import { BoardView } from "./components/BoardView";
 import { InventoryPanel } from "./components/InventoryPanel";
-import { PathPlanner } from "./components/PathPlanner";
 import { RulebookPanel } from "./components/RulebookPanel";
 import { RunHud } from "./components/RunHud";
 import { TileTally } from "./components/TileTally";
@@ -129,10 +130,24 @@ export function App() {
         dispatch({ type: "replaceGame", game: local });
         gameRef.current = local;
       } catch {
-        // Ignore invalid step and stop.
         break;
       }
       await new Promise((r) => setTimeout(r, STEP_MS));
+    }
+
+    // Animated programStep skips applyRunProgram's end-of-program flush.
+    if (local.run.status === "playing" && local.run.pendingUseItemId) {
+      local = {
+        ...local,
+        run: {
+          ...local.run,
+          status: "lost",
+          bump: "You used an item but didn't move — path over",
+          pendingUseItemId: null,
+        },
+      };
+      dispatch({ type: "replaceGame", game: local });
+      gameRef.current = local;
     }
 
     executingRef.current = false;
@@ -181,7 +196,7 @@ export function App() {
             {runMode ? (
               <div className="modes">
                 <span className="mode-label">
-                  Program up to {programLength} action+move pairs, then run
+                  Program up to {programLength} actions, then run
                 </span>
               </div>
             ) : (
@@ -222,6 +237,18 @@ export function App() {
                     selectedPieceId={state.selectedPieceId}
                     onCellClick={onCellClick}
                   />
+                  <ActionTrack
+                    programLength={programLength}
+                    steps={path}
+                    items={allItems}
+                    executingIndex={executingIndex}
+                    disabled={state.game.run.status !== "playing"}
+                    onUndo={() => setPath((prev) => prev.slice(0, -1))}
+                    onClear={clearPath}
+                    onExecute={() => {
+                      void runProgramAnimated();
+                    }}
+                  />
                   <InventoryPanel
                     game={state.game}
                     selectedLoadout={selectedLoadout}
@@ -230,24 +257,19 @@ export function App() {
                   />
                 </div>
                 <div className="run-sidebar">
-                  <PathPlanner
+                  <ActionBank
                     programLength={programLength}
                     steps={path}
                     items={allItems}
                     inventory={state.game.run.inventory}
                     coins={state.game.coins}
-                    executingIndex={executingIndex}
                     disabled={state.game.run.status !== "playing"}
+                    executing={executingIndex !== null}
                     onAppend={(step) =>
                       setPath((prev) =>
                         prev.length >= programLength ? prev : [...prev, step],
                       )
                     }
-                    onUndo={() => setPath((prev) => prev.slice(0, -1))}
-                    onClear={clearPath}
-                    onExecute={() => {
-                      void runProgramAnimated();
-                    }}
                   />
                   <TileTally game={state.game} />
                 </div>

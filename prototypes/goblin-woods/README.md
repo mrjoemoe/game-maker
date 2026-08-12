@@ -2,7 +2,7 @@
 
 Fantasy forest die-and-retry prototype on the `tile-board` template (`runMode`).
 
-You start at the **bottom center** of a **7×7** grid. Chart action+move paths, gather coins, buy or take gear, extract to stash, and win the walled castle with a sledgehammer.
+You start at the **bottom center** of a **7×7** grid. Chart up to **10 actions** (moves included), gather coins, buy or take gear, extract to stash, and win the castle with a sledgehammer.
 
 ## Launch
 

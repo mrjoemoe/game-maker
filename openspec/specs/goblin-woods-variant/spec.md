@@ -93,6 +93,13 @@ Goblin Woods SHALL place exactly four portal tiles (Portal 1–4) on random mead
 - **WHEN** the Goblin Woods board is resolved
 - **THEN** exactly one cell of each portal-1 through portal-4 type exists
 
+### Requirement: Goblin Woods ten-action programs
+Goblin Woods SHALL set `programLength` to 10. The rulebook SHALL describe charting up to ten atomic actions (including directional moves), with coins collected automatically on safe landing.
+
+#### Scenario: Program length is ten
+- **WHEN** the Goblin Woods variant is resolved
+- **THEN** `run.programLength` is 10
+
 ### Requirement: Rulebook explains edge walls and pass items
 The Goblin Woods rulebook SHALL state that walls sit between tiles, that fifteen connected edge walls are placed each map, and that Using a matching pass item (or sledgehammer) clears the shared edge for that crossing.
 

@@ -8,6 +8,8 @@ export type RunState = {
   attempts: number;
   /** Short reason the last step failed or ended the path, or null. */
   bump: string | null;
+  /** Item armed by useItem; consumed on the next move action. */
+  pendingUseItemId?: string | null;
 };
 
 export type CreateRunStateOptions = {
@@ -28,6 +30,7 @@ export function createRunState(options: CreateRunStateOptions): RunState {
     inventory: [...(options.inventory ?? [])],
     attempts: options.attempts ?? 1,
     bump: null,
+    pendingUseItemId: null,
   };
 }
 

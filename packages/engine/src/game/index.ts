@@ -29,7 +29,6 @@ import {
   mergeIntoStash,
   pathOverMessage,
   SHOP_ITEM_COST,
-  type ProgramAction,
   type ProgramStep,
   type RunState,
 } from "../run/index.js";
@@ -54,7 +53,7 @@ export type RunConfig = {
   startPosition: Coord;
   maxHp: number;
   baseAttack: number;
-  /** Maximum action+move pairs per program. Defaults to 6. */
+  /** Maximum atomic actions per program. Defaults to 10. */
   programLength?: number;
 };
 
@@ -89,7 +88,7 @@ export function isRunModeEnabled(definition: GameDefinition): boolean {
 }
 
 export function runProgramLength(definition: GameDefinition): number {
-  return definition.run?.programLength ?? 6;
+  return definition.run?.programLength ?? 10;
 }
 
 export type GameState = {
@@ -715,35 +714,94 @@ function applyTravelToPortal(
   };
 }
 
-function applyProgramAction(
+function clearPendingUse(run: RunState): RunState {
+  return run.pendingUseItemId ? { ...run, pendingUseItemId: null } : run;
+}
+
+function applyArmUseItem(state: GameState, itemId: string): GameState {
+  if (!state.run.inventory.includes(itemId)) {
+    return {
+      ...state,
+      run: markLost(state.run, `You don't have that item — path over`),
+    };
+  }
+  if (!state.items[itemId]) {
+    throw new Error(`Unknown item id: ${itemId}`);
+  }
+  if (state.run.pendingUseItemId) {
+    return {
+      ...state,
+      run: markLost(
+        state.run,
+        "You already used an item — move first — path over",
+      ),
+    };
+  }
+  return {
+    ...state,
+    run: { ...clearBump(state.run), pendingUseItemId: itemId },
+  };
+}
+
+function applyMoveAction(
   state: GameState,
   pieceId: string,
-  action: ProgramAction,
-  move: Direction,
+  direction: Direction,
 ): GameState {
-  switch (action.kind) {
-    case "none":
-      return state;
-    case "takeFromMage":
-      return applyTakeFromMage(state, pieceId, action.itemId);
-    case "buyFromShop":
-      return applyBuyFromShop(state, pieceId, action.itemId);
-    case "useItem":
-      return applyUseItemAction(state, pieceId, action.itemId, move);
-    case "extract":
-      return applyExtractAction(state, pieceId);
-    case "travelToPortal":
-      return applyTravelToPortal(state, pieceId, action.portalId);
-    default: {
-      const _exhaustive: never = action;
-      return _exhaustive;
+  const pending = state.run.pendingUseItemId ?? null;
+  let current = state;
+  if (pending) {
+    current = applyUseItemAction(current, pieceId, pending, direction);
+    if (current.run.status !== "playing") {
+      return {
+        ...current,
+        run: clearPendingUse(current.run),
+      };
     }
   }
+
+  const piece = current.pieces.find((p) => p.id === pieceId);
+  if (!piece) {
+    throw new Error(`Unknown piece id: ${pieceId}`);
+  }
+  const destination = destinationFrom(piece.position, direction);
+  if (!isInBounds(current.board.grid, destination)) {
+    return {
+      ...current,
+      run: markLost(
+        clearPendingUse(current.run),
+        "Can't move that way — path over",
+      ),
+    };
+  }
+
+  const moved = applyStep(
+    current,
+    pieceId,
+    destination,
+    pending ?? undefined,
+  );
+  return {
+    ...moved,
+    run: clearPendingUse(moved.run),
+  };
+}
+
+function requireNoPendingUse(state: GameState): GameState | null {
+  if (state.run.pendingUseItemId) {
+    return {
+      ...state,
+      run: markLost(
+        clearPendingUse(state.run),
+        "You used an item but didn't move — path over",
+      ),
+    };
+  }
+  return null;
 }
 
 /**
- * One plan step: resolve the action on the current tile, then attempt the move.
- * Travel teleports and skips the orthogonal move.
+ * Apply one atomic programmed action.
  */
 function applyProgramStep(
   state: GameState,
@@ -754,32 +812,40 @@ function applyProgramStep(
     return state;
   }
 
-  let current = applyProgramAction(state, pieceId, step.action, step.move);
-  if (current.run.status !== "playing") {
-    return current;
+  switch (step.kind) {
+    case "move":
+      return applyMoveAction(state, pieceId, step.direction);
+    case "useItem":
+      return applyArmUseItem(state, step.itemId);
+    case "takeFromMage": {
+      const blocked = requireNoPendingUse(state);
+      if (blocked) return blocked;
+      return applyTakeFromMage(state, pieceId, step.itemId);
+    }
+    case "buyFromShop": {
+      const blocked = requireNoPendingUse(state);
+      if (blocked) return blocked;
+      return applyBuyFromShop(state, pieceId, step.itemId);
+    }
+    case "extract": {
+      const blocked = requireNoPendingUse(state);
+      if (blocked) return blocked;
+      return applyExtractAction(state, pieceId);
+    }
+    case "travelToPortal": {
+      const blocked = requireNoPendingUse(state);
+      if (blocked) return blocked;
+      return applyTravelToPortal(state, pieceId, step.portalId);
+    }
+    default: {
+      const _exhaustive: never = step;
+      return _exhaustive;
+    }
   }
-  if (step.action.kind === "travelToPortal") {
-    return current;
-  }
-
-  const piece = current.pieces.find((p) => p.id === pieceId);
-  if (!piece) {
-    throw new Error(`Unknown piece id: ${pieceId}`);
-  }
-  const destination = destinationFrom(piece.position, step.move);
-  if (!isInBounds(current.board.grid, destination)) {
-    return current;
-  }
-
-  const usedItemId =
-    step.action.kind === "useItem" ? step.action.itemId : undefined;
-  return applyStep(current, pieceId, destination, usedItemId);
 }
 
 /**
- * Execute a locked-in list of action+move pairs (1..programLength).
- * Stops early if the run ends. Out-of-bounds moves are wasted after a
- * successful action.
+ * Execute a locked-in list of atomic actions (1..programLength).
  */
 function applyRunProgram(
   state: GameState,
@@ -793,7 +859,7 @@ function applyRunProgram(
   const maxSteps = runProgramLength(state.definition);
   if (steps.length < 1 || steps.length > maxSteps) {
     throw new Error(
-      `Program must contain between 1 and ${maxSteps} steps, got ${steps.length}`,
+      `Program must contain between 1 and ${maxSteps} actions, got ${steps.length}`,
     );
   }
 
@@ -803,6 +869,15 @@ function applyRunProgram(
       break;
     }
     current = applyProgramStep(current, pieceId, step);
+  }
+  if (current.run.status === "playing" && current.run.pendingUseItemId) {
+    return {
+      ...current,
+      run: markLost(
+        clearPendingUse(current.run),
+        "You used an item but didn't move — path over",
+      ),
+    };
   }
   return current;
 }

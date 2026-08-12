@@ -206,9 +206,9 @@ describe("run mode", () => {
       type: "runProgram",
       pieceId: "hero",
       steps: [
-        { action: { kind: "none" }, move: "down" },
-        { action: { kind: "none" }, move: "down" },
-        { action: { kind: "none" }, move: "up" },
+        { kind: "move", direction: "down" },
+        { kind: "move", direction: "down" },
+        { kind: "move", direction: "up" },
       ],
     });
     expect(state.run.status).toBe("lost");
@@ -254,17 +254,17 @@ describe("run mode", () => {
         pieceId: "hero",
         steps: [],
       }),
-    ).toThrow(/between 1 and 6 steps/);
+    ).toThrow(/between 1 and 6 actions/);
     expect(() =>
       applyAction(state, {
         type: "runProgram",
         pieceId: "hero",
         steps: Array.from({ length: 7 }, () => ({
-          action: { kind: "none" as const },
-          move: "up" as const,
+          kind: "move" as const,
+          direction: "up" as const,
         })),
       }),
-    ).toThrow(/between 1 and 6 steps/);
+    ).toThrow(/between 1 and 6 actions/);
   });
 
   it("accepts a short program under programLength", () => {
@@ -276,7 +276,7 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "runProgram",
       pieceId: "hero",
-      steps: [{ action: { kind: "none" }, move: "down" }],
+      steps: [{ kind: "move", direction: "down" }],
     });
     expect(state.run.status).toBe("playing");
     expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
@@ -343,7 +343,17 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: { action: { kind: "useItem", itemId: "axe" }, move: "right" },
+      step: { kind: "useItem", itemId: "axe" },
+
+      });
+
+      state = applyAction(state, {
+
+        type: "programStep",
+
+        pieceId: "hero",
+
+        step: { kind: "move", direction: "right" },
     });
     expect(state.pieces[0].position).toEqual({ x: 1, y: 0 });
     expect(state.run.status).toBe("playing");
@@ -400,7 +410,17 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: { action: { kind: "useItem", itemId: "sneak" }, move: "down" },
+      step: { kind: "useItem", itemId: "sneak" },
+
+      });
+
+      state = applyAction(state, {
+
+        type: "programStep",
+
+        pieceId: "hero",
+
+        step: { kind: "move", direction: "down" },
     });
     expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
     expect(state.run.status).toBe("won");
@@ -427,15 +447,12 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: {
-        action: { kind: "takeFromMage", itemId: "sword" },
-        move: "down",
-      },
+      step: { kind: "takeFromMage", itemId: "sword" },
     });
     expect(state.run.inventory).toEqual(["sword"]);
     expect(state.stashItemIds).toEqual([]);
     expect(getCell(state.board, { x: 0, y: 0 }).resolved).toBe(true);
-    expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
     expect(state.run.status).toBe("playing");
 
     state = applyAction(state, { type: "softReset" });
@@ -447,10 +464,7 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: {
-        action: { kind: "takeFromMage", itemId: "shield" },
-        move: "down",
-      },
+      step: { kind: "takeFromMage", itemId: "shield" },
     });
     expect(state.run.status).toBe("playing");
     expect(state.run.inventory).toEqual(["shield"]);
@@ -494,7 +508,7 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: { action: { kind: "extract" }, move: "down" },
+      step: { kind: "extract" },
     });
     expect(state.run.status).toBe("extracted");
     expect(state.run.inventory).toEqual([]);
@@ -529,10 +543,17 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: {
-        action: { kind: "useItem", itemId: "sledgehammer" },
-        move: "down",
-      },
+      step: { kind: "useItem", itemId: "sledgehammer" },
+
+      });
+
+      state = applyAction(state, {
+
+        type: "programStep",
+
+        pieceId: "hero",
+
+        step: { kind: "move", direction: "down" },
     });
     expect(state.run.status).toBe("won");
     expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
@@ -547,7 +568,7 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: { action: { kind: "extract" }, move: "down" },
+      step: { kind: "extract" },
     });
     expect(state.run.status).toBe("lost");
     expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
@@ -595,7 +616,17 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: { action: { kind: "useItem", itemId: "axe" }, move: "right" },
+      step: { kind: "useItem", itemId: "axe" },
+
+      });
+
+      state = applyAction(state, {
+
+        type: "programStep",
+
+        pieceId: "hero",
+
+        step: { kind: "move", direction: "right" },
     });
     expect(state.run.status).toBe("playing");
     expect(state.pieces[0].position).toEqual({ x: 1, y: 0 });
@@ -619,10 +650,17 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: {
-        action: { kind: "useItem", itemId: "sledgehammer" },
-        move: "down",
-      },
+      step: { kind: "useItem", itemId: "sledgehammer" },
+
+      });
+
+      state = applyAction(state, {
+
+        type: "programStep",
+
+        pieceId: "hero",
+
+        step: { kind: "move", direction: "down" },
     });
     expect(state.run.status).toBe("playing");
     expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
@@ -651,7 +689,17 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: { action: { kind: "useItem", itemId: "boots" }, move: "down" },
+      step: { kind: "useItem", itemId: "boots" },
+
+      });
+
+      state = applyAction(state, {
+
+        type: "programStep",
+
+        pieceId: "hero",
+
+        step: { kind: "move", direction: "down" },
     });
     expect(state.run.status).toBe("playing");
     expect(state.pieces[0].position).toEqual({ x: 0, y: 2 });
@@ -679,7 +727,17 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: { action: { kind: "useItem", itemId: "sword" }, move: "down" },
+      step: { kind: "useItem", itemId: "sword" },
+
+      });
+
+      state = applyAction(state, {
+
+        type: "programStep",
+
+        pieceId: "hero",
+
+        step: { kind: "move", direction: "down" },
     });
     expect(state.run.status).toBe("lost");
     expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
@@ -692,10 +750,7 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: {
-        action: { kind: "takeFromMage", itemId: "sword" },
-        move: "down",
-      },
+      step: { kind: "takeFromMage", itemId: "sword" },
     });
     expect(state.run.status).toBe("lost");
     expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
@@ -799,30 +854,18 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: {
-        action: { kind: "buyFromShop", itemId: "sword" },
-        move: "down",
-      },
+      step: { kind: "buyFromShop", itemId: "sword" },
     });
     expect(state.run.status).toBe("playing");
     expect(state.coins).toBe(4);
     expect(state.run.inventory).toEqual(["sword"]);
-    expect(state.pieces[0].position).toEqual({ x: 0, y: 1 });
+    expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
 
-    // Shop stays open for another buy after returning.
-    state = {
-      ...state,
-      pieces: state.pieces.map((p) =>
-        p.id === "hero" ? { ...p, position: { x: 0, y: 0 } } : p,
-      ),
-    };
+    // Shop stays open for another buy.
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: {
-        action: { kind: "buyFromShop", itemId: "shield" },
-        move: "down",
-      },
+      step: { kind: "buyFromShop", itemId: "shield" },
     });
     expect(state.coins).toBe(1);
     expect(state.run.inventory).toEqual(["sword", "shield"]);
@@ -845,10 +888,7 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: {
-        action: { kind: "buyFromShop", itemId: "sword" },
-        move: "down",
-      },
+      step: { kind: "buyFromShop", itemId: "sword" },
     });
     expect(state.run.status).toBe("lost");
     expect(state.coins).toBe(2);
@@ -895,10 +935,7 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: {
-        action: { kind: "travelToPortal", portalId: 2 },
-        move: "down",
-      },
+      step: { kind: "travelToPortal", portalId: 2 },
     });
     expect(state.run.status).toBe("playing");
     expect(state.pieces[0].position).toEqual({ x: 2, y: 0 });
@@ -946,10 +983,7 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: {
-        action: { kind: "travelToPortal", portalId: 2 },
-        move: "down",
-      },
+      step: { kind: "travelToPortal", portalId: 2 },
     });
     expect(state.run.status).toBe("lost");
     expect(state.pieces[0].position).toEqual({ x: 0, y: 0 });
@@ -960,10 +994,7 @@ describe("run mode", () => {
     state = applyAction(state, {
       type: "programStep",
       pieceId: "hero",
-      step: {
-        action: { kind: "travelToPortal", portalId: 1 },
-        move: "down",
-      },
+      step: { kind: "travelToPortal", portalId: 1 },
     });
     expect(state.run.status).toBe("lost");
   });

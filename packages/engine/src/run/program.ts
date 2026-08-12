@@ -1,19 +1,17 @@
 import type { Direction } from "../grid/directions.js";
+import { directionLabel } from "../grid/directions.js";
 
-/** What the hero does on a tile before moving. */
+/** One atomic programmed action (moves included). */
 export type ProgramAction =
-  | { kind: "none" }
+  | { kind: "move"; direction: Direction }
   | { kind: "takeFromMage"; itemId: string }
   | { kind: "buyFromShop"; itemId: string }
   | { kind: "useItem"; itemId: string }
   | { kind: "extract" }
   | { kind: "travelToPortal"; portalId: number };
 
-/** One committed plan step: action, then orthogonal move. */
-export type ProgramStep = {
-  action: ProgramAction;
-  move: Direction;
-};
+/** Alias: each program slot is one atomic action. */
+export type ProgramStep = ProgramAction;
 
 /** Coin cost for each shop purchase. */
 export const SHOP_ITEM_COST = 3;
@@ -21,10 +19,13 @@ export const SHOP_ITEM_COST = 3;
 /** Portal ids used by Goblin Woods travel actions. */
 export const PORTAL_IDS = [1, 2, 3, 4] as const;
 
-export function programActionLabel(action: ProgramAction, itemLabel?: string): string {
+export function programActionLabel(
+  action: ProgramAction,
+  itemLabel?: string,
+): string {
   switch (action.kind) {
-    case "none":
-      return "No action";
+    case "move":
+      return directionLabel(action.direction);
     case "takeFromMage":
       return `Take ${itemLabel ?? action.itemId} from Mage`;
     case "buyFromShop":

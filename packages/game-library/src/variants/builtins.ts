@@ -29,7 +29,7 @@ export const goblinWoodsVariant = defineVariant({
       startPosition: { x: 3, y: 6 },
       maxHp: 100,
       baseAttack: 1,
-      programLength: 6,
+      programLength: 10,
     }),
     use("boards/goblin-woods", "^1"),
   ],
