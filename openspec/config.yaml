@@ -5,36 +5,42 @@ context: |
   Domain: tile board game prototyping.
 
   Operating model (see AGENT.md):
-  - templates/<id>/ = reusable template docs/metadata; runtime in packages/engine + packages/web.
-  - prototypes/<id>/ = named game versions (config + optional extensions). Never fork packages for a normal new game.
+  - packages/engine + packages/web = shared runtime (never fork for a normal new game).
+  - packages/game-library = canonical reusable game components.
+  - prototypes/<id>/ = launchable variants composed from library components (+ optional extensions).
+  - templates/ = migration docs only; do not copy full prototype configs.
   - Register prototypes in packages/web/src/prototypes/registry.ts.
-  - Launch: ./dev.sh up <prototype> [port] for simultaneous instances.
+  - Launch: ./dev.sh up <prototype> [port]. Validate: npm run game:check / game:check:changed.
 
   OpenSpec is mandatory for every behavior change (including minor UI/rule tweaks).
   DEFAULT workflow: openspec-fasttrack (slim change → implement → archive into specs → commit+push).
   Use full openspec-propose only when the user asks to plan/propose first, or criteria are too ambiguous to implement.
   Clear multi-capability game features still use fast-track — do not propose-and-stop by default.
   Do not implement feature code before creating an OpenSpec change.
-  When gameplay rules change for a prototype with RULEBOOK.md, update that rulebook in the same change (see AGENT.md).
+  When gameplay rules change, update canonical component docs and affected RULEBOOK.md files in the same change.
 
-  Cursor skills: openspec-fasttrack (default), prototype-from-template, archive-and-push, openspec-*.
+  Cursor skills: openspec-fasttrack (default), variant-from-library, create-game-component, archive-and-push, openspec-*.
 
 rules:
   proposal:
-    - Prefer prototypes over template forks when adding a game version
+    - Prefer composing library components over template forks or copied GameDefinitions
     - Default to fast-track for clear build requests; full propose is opt-in or for blocking ambiguity
     - Even follow-up requests need an OpenSpec change (fast-track by default)
+    - Record each affected game part as reused|created|modified|pinned|migrated|deprecated|variant-local
   tasks:
     - Include registry + Dockerfile workspace package steps when adding prototypes
+    - Include game:check / affected-variant verification when changing shared components
     - End with archive + archive-and-push (commit and push) unless the user forbids it
-    - When changing gameplay rules, update the prototype RULEBOOK.md in the same change if one exists
+    - When changing gameplay rules, update component docs and prototype RULEBOOK.md in the same change if applicable
 
 operations:
   apply:
     guidance:
-      - Follow AGENT.md template/prototype rules when implementing game versions
+      - Follow AGENT.md runtime/component/variant decision tree when implementing game versions
+      - Keep component manifests, deps, versions, docs, and tests synchronized with code changes
       - Do not apply code for a behavior change that has no OpenSpec change artifacts
   archive:
     guidance:
+      - Run npm run game:check (or game:check:changed) before archive when library/variant work is involved
       - After a successful archive, follow .cursor/skills/archive-and-push: commit relevant changes and push to origin unless the user forbids push
       - Summarize archive path, commit, and push result

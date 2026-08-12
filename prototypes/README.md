@@ -1,10 +1,11 @@
-# Prototypes
+# Prototypes (variants)
 
-Named game versions built on templates. Each folder is one launchable game.
+Named launchable game versions composed from `@game-maker/game-library`.
 
-- Config: `config/game.config.ts`
+- Composition manifest resolved to `GameDefinition` in `config/game.config.ts`
 - Optional unique code: `extensions/`
-- Register new prototypes in `packages/web/src/prototypes/registry.ts`
+- Register in `packages/web/src/prototypes/registry.ts`
 - Launch: `./dev.sh up <prototype-id> [port]`
+- Validate: `npm run game:check`
 
-See root `AGENT.md` and `.cursor/skills/prototype-from-template/`.
+See root `AGENT.md` and `.cursor/skills/variant-from-library/`.

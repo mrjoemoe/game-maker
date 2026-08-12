@@ -5,6 +5,7 @@ WORKDIR /app
 # Install dependencies from lockfile when present; fall back to npm install.
 COPY package.json package-lock.json* ./
 COPY packages/engine/package.json ./packages/engine/
+COPY packages/game-library/package.json ./packages/game-library/
 COPY packages/web/package.json ./packages/web/
 COPY prototypes/meadow-v1/package.json ./prototypes/meadow-v1/
 COPY prototypes/quiet-glade/package.json ./prototypes/quiet-glade/

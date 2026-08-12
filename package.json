@@ -11,8 +11,11 @@
     "openspec": "openspec",
     "dev": "npm run dev -w @game-maker/web",
     "build": "npm run build -w @game-maker/engine && npm run build -w @game-maker/web",
-    "test": "npm run test -w @game-maker/engine",
-    "typecheck": "npm run typecheck -w @game-maker/engine && npm run typecheck -w @game-maker/web"
+    "test": "npm run test -w @game-maker/engine && npm run test -w @game-maker/game-library",
+    "typecheck": "npm run typecheck -w @game-maker/engine && npm run typecheck -w @game-maker/game-library && npm run typecheck -w @game-maker/web",
+    "game": "npm run game -w @game-maker/game-library --",
+    "game:check": "npm run game -w @game-maker/game-library -- check",
+    "game:check:changed": "npm run game -w @game-maker/game-library -- check --changed"
   },
   "repository": {
     "type": "git",

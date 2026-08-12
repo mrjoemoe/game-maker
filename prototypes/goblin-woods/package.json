@@ -9,6 +9,7 @@
     "./extensions": "./extensions/index.ts"
   },
   "dependencies": {
-    "@game-maker/engine": "*"
+    "@game-maker/engine": "*",
+    "@game-maker/game-library": "*"
   }
 }

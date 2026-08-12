@@ -1,0 +1,198 @@
+## Context
+
+The repository already shares execution code through `@game-maker/engine` and `@game-maker/web`, but reuse stops at the whole-template boundary. `meadow-v1`, `quiet-glade`, and `goblin-woods` each export a complete `GameDefinition`; even common concepts are embedded in those files. The web registry imports those completed definitions directly, and the current scaffolding skill starts from copying a prototype config.
+
+The new model separates three concerns:
+
+1. **Runtime platform** — engine and web packages that execute a resolved game.
+2. **Canonical game parts** — independently reusable data or behavior with stable identities and contracts.
+3. **Variants** — thin composition manifests selecting parts and declaring intentional differences.
+
+The design must preserve fast local TypeScript development, static Vite imports, stable prototype launch ids, and incremental migration. “Automatic” propagation means consumers reference canonical source rather than copies, and repository workflows automatically calculate and validate affected consumers. It does not mean silently rewriting variant files.
+
+## Goals / Non-Goals
+
+**Goals:**
+
+- Make tiles, pieces, items, rules, board-generation policies, feature bundles, presentation metadata, and extension behavior reusable across variants.
+- Make compatible canonical updates visible to all unpinned consumers on their next resolve/build/test.
+- Keep each variant's dependencies, pins, parameters, and overrides explicit and reviewable.
+- Detect collisions, cycles, incompatible contracts, undeclared dependencies, and affected-variant failures before archive.
+- Integrate component discovery, maintenance, documentation, impact analysis, and validation into Cursor skills and normal developer commands.
+- Migrate current prototypes without stopping simultaneous launch or forcing a one-shot rewrite.
+
+**Non-Goals:**
+
+- Publishing game parts to a remote registry or npm in the first implementation.
+- Supporting third-party untrusted component execution.
+- Replacing the engine/web runtime architecture.
+- Providing arbitrary inheritance between variants.
+- Automatically accepting breaking updates.
+- Generating polished player rulebooks entirely from metadata in the first phase.
+
+## Decisions
+
+### 1. Use composition, not variant inheritance
+
+A variant will be a manifest that selects components and supplies typed parameters:
+
+```ts
+defineVariant({
+  id: "goblin-woods",
+  components: [
+    use("core/tile-board", "^1"),
+    use("items/sword", "^1"),
+    use("tiles/goblin", "^1"),
+    use("rules/programmed-run", "^1", { programLength: 6 }),
+  ],
+  overrides: [
+    override("tiles/goblin", { presentation: { label: "Goblin" } }),
+  ],
+});
+```
+
+The resolver folds component contributions into the existing `GameDefinition`. Variants cannot extend other variants. To spin off a variant, tooling copies only the composition manifest, so both variants keep references to the same parts and diverge through explicit component selection or overrides.
+
+**Alternative considered:** prototype inheritance with parent/child config merges. Rejected because transitive inheritance makes ownership and update effects difficult to understand and creates fragile override chains.
+
+### 2. Store canonical components as typed local modules
+
+Introduce a workspace package, tentatively `packages/game-library`, with:
+
+- `src/components/<namespace>/<id>/component.ts` — typed contribution/factory.
+- `src/components/<namespace>/<id>/manifest.ts` — stable id, kind, contract version, compatibility, dependencies, lifecycle, owner, and documentation links.
+- `src/components/<namespace>/<id>/*.test.ts` — contract tests.
+- `src/catalog.ts` — explicit static exports suitable for Vite and dependency analysis.
+- `src/resolve.ts` and `src/validate.ts` — deterministic resolver and validation.
+
+Component ids use `<namespace>/<name>` and are independent from runtime ids such as tile `typeId`. Component kinds begin with `tile`, `piece`, `item`, `rule`, `board`, `feature-bundle`, `presentation`, and `extension`. The component contract is a discriminated TypeScript union so each kind has kind-specific contribution and override rules.
+
+**Alternative considered:** JSON/YAML-only manifests. Rejected because current game definitions contain constants, generators, and behavior that need TypeScript, while manifest metadata still needs to be machine-readable through typed exports.
+
+### 3. Keep one canonical current implementation and explicit retained majors
+
+References use a component id plus a compatible major range. The common path resolves the current compatible implementation, so compatible updates propagate without variant edits. When a breaking contract is required, a new retained major is added and old consumers continue to resolve their compatible major until migrated. Exact pins are allowed for time-boxed experiments and must include a reason.
+
+The repository lock/report generated by the resolver records the exact resolved component versions for diagnostics, but it is derived output and is not the source of truth.
+
+**Alternative considered:** all references always use `latest`. Rejected because it would make a breaking component update silently break every variant and prevent staged migration.
+
+### 4. Resolve at development/build time into the existing runtime contract
+
+`resolveVariant(manifest, catalog)` returns a validated `GameDefinition` plus extensions, provenance, warnings, and dependency graph. The registry will register manifests and invoke the resolver rather than importing complete definitions. The engine and web app continue consuming `GameDefinition` initially, limiting migration risk.
+
+Each resolved field retains provenance (`component id`, contract version, and optional variant override) for diagnostics. Merge policies are implemented per component kind; generic deep merge is forbidden. Duplicate runtime ids, unknown targets, cycles, unsatisfied dependencies, and incompatible version ranges are errors.
+
+**Alternative considered:** teach the engine to execute unresolved components directly. Rejected for the first phase because it couples runtime behavior to authoring and version-resolution concerns.
+
+### 5. Separate reusable parameters from variant overrides
+
+Components declare a parameter schema and a narrow override surface. Parameters are the expected way to customize reusable behavior. Overrides are explicit escape hatches for approved fields such as presentation labels/colors or balancing values. Behavior code cannot be monkey-patched by a manifest; a behavior difference requires a parameter, another component version, or a variant extension.
+
+Every resolved value has one owner. This makes it possible to answer whether a future edit belongs in the component or the variant.
+
+### 6. Make impact analysis a first-class command
+
+Add developer commands equivalent to:
+
+- `game catalog list|show|search`
+- `game variant create|resolve|graph`
+- `game component create|consumers|deprecate`
+- `game check --changed`
+
+`game check --changed` derives changed component ids from git diff, walks the catalog graph, resolves all affected variants, and runs component contract tests plus variant-specific type-check/tests. A full check remains available for CI and migration verification.
+
+Skills call these commands rather than attempting to infer the dependency graph from prose. Archive readiness depends on the check result.
+
+### 7. Integrate the model into every relevant skill
+
+Update `AGENT.md` and skills as a coordinated feature:
+
+- Replace `prototype-from-template` with `variant-from-library` (retain a redirect during migration).
+- Add `create-game-component` for catalog search, component creation, metadata, tests, docs, and consumer checks.
+- Update `openspec-propose` and `openspec-fasttrack` to record component disposition: reuse, create, modify, pin, migrate, deprecate, or variant-local.
+- Update `openspec-apply-change` to maintain manifests/dependencies/docs while code changes and to run changed-component impact checks.
+- Update archive and fast-track completion gates so unresolved catalog changes or failing affected variants block archive.
+- Update rulebook guidance to keep canonical component rules and affected variant-facing rules aligned.
+
+Skills provide decision guidance; deterministic CLI validation provides enforcement. This avoids relying on an agent remembering to manually duplicate updates.
+
+### 8. Preserve variant-local extensions but make promotion explicit
+
+Variant extensions remain supported for experiments or truly unique integration code. Extension metadata records why it is local. When a second variant needs the behavior, the workflow requires promotion into a canonical component and replacement of both local copies with component references.
+
+### 9. Retire templates incrementally
+
+`templates/tile-board` becomes migration documentation pointing to the corresponding base feature components. No new template ids are created. Existing `templateId` fields are accepted by a compatibility adapter until each prototype is represented by a variant manifest. The eventual directory name (`prototypes` versus `variants`) is a secondary migration; stable launch ids matter more than an immediate rename.
+
+### 10. Give generic, component, and variant requirements separate owners
+
+`template-prototype-model` retains only authoring, composition, launch, and migration contracts that apply to every variant. Reusable game-part behavior belongs in `game-component-library` and its component documentation/tests. Rules that define one named game belong in a dedicated variant capability, beginning with `goblin-woods-variant`.
+
+During archive, existing Goblin Woods requirements move out of `template-prototype-model` without changing behavior. Future fast-track changes target the component capability when shared behavior changes and the variant capability when Goblin Woods composition or rules change.
+
+**Alternative considered:** continue appending named-game rules to the generic model spec. Rejected because it obscures ownership and makes component impact difficult to distinguish from variant behavior.
+
+## Risks / Trade-offs
+
+- **[A shared compatible update changes many games unexpectedly]** → Require impact reports, affected-variant tests, provenance output, and clear compatibility rules before archive.
+- **[Component granularity becomes too small or too large]** → Begin with cohesive player-facing concepts and feature bundles; document extraction criteria and refactor only after a second real consumer appears.
+- **[Versioning inside one repository becomes cumbersome]** → Retain only majors needed by active pins, report stale pins, and provide migrations; do not build a remote package registry.
+- **[Override rules become another deep-merge system]** → Use kind-specific schemas and allowlists, with one owner per resolved field.
+- **[Static Vite imports conflict with dynamic catalogs]** → Generate or maintain an explicit typed catalog and registry rather than runtime filesystem discovery.
+- **[Skill instructions drift from tooling]** → Keep CLI commands authoritative, test required skill language where practical, and make archive call the same validation entry point as CI.
+- **[Migration temporarily supports two authoring models]** → Add a compatibility adapter with warnings, migrate representative variants early, and set a removal gate after all active variants resolve through manifests.
+- **[Player documentation fragments across components]** → Give each player-facing component canonical rule text and track affected variant rulebooks during impact analysis.
+
+## Migration Plan
+
+1. Define typed component, manifest, variant, provenance, lifecycle, and compatibility contracts without changing existing launches.
+2. Implement the catalog, resolver, graph validation, impact reporting, and tests in a new workspace package.
+3. Add a legacy adapter that wraps an existing `GameDefinition` as a temporary variant source.
+4. Extract a small vertical slice shared by `meadow-v1` and `quiet-glade` (base tile-board feature, simple tiles/pieces) and prove composition, overrides, propagation, and diagnostics.
+5. Convert `goblin-woods` in cohesive bundles: inventory, run rules, board generation, terrain/hazard/enemy tiles, and presentation/rulebook links.
+6. Relocate Goblin Woods requirements from the generic template/prototype spec into its dedicated variant capability, preserving all acceptance criteria.
+7. Change the web prototype registry to register variant manifests and resolve them to the unchanged runtime contract.
+8. Add authoring/impact CLI commands, package scripts, and full/changed validation in CI or the repository's equivalent completion checks.
+9. Update `AGENT.md` and all relevant Cursor skills; add variant and component authoring skills; retain a template-skill redirect.
+10. Migrate remaining prototypes, reject new monolithic configs, then remove the legacy adapter and template scaffolding path.
+
+Rollback during migration is per variant: restore its legacy registry entry while leaving the component library in place. Breaking component migrations are rolled back by restoring the prior compatible major reference, not by copying source into variants.
+
+## Baseline Decisions (resolved during apply)
+
+### Layout
+Canonical components live in **`packages/game-library`** (`@game-maker/game-library`). Content and tooling share one workspace package so Vite/TypeScript resolve via package exports without a second root mount. Docker already mounts `packages/`.
+
+### First shared vertical slice
+`meadow-v1` and `quiet-glade` share the **tile-board runtime shape**, not tile/piece content. First shared components:
+- `core/tile-board` — feature-bundle setting `templateId` and default feature scaffolding
+- Variant-local board/piece/item contributions stay in each prototype composition (or one-consumer library entries) until a second real consumer appears
+
+Propagation proof uses `core/tile-board` (and later any multi-consumer Goblin Woods parts).
+
+### Resolution reports
+Generated-only (not committed). Produced by `game check` / `resolveVariant` diagnostics.
+
+### Enforcement
+`npm run game:check` (full) and `npm run game:check:changed` wire into root scripts and archive/fast-track completion gates. No separate CI provider required initially; Docker `test` profile and local archive hooks call the same entry point.
+
+### Naming
+Keep **`prototypes/`** directory and launch ids. User-facing docs may say “variant” for composition manifests; APIs use `defineVariant` / `resolveVariant` while registry keys remain prototype ids.
+
+### Inventory snapshot
+| Concept | Current owner | Proposed component / disposition |
+|---------|---------------|----------------------------------|
+| Tile-board template binding | each prototype `templateId` | `core/tile-board` |
+| Meadow tiles/pieces | meadow-v1 config | variant-local (one consumer) |
+| Quiet Glade tiles/pieces | quiet-glade config | variant-local |
+| Goblin items (sword, pass tools, …) | goblin-woods config | `items/*` library components |
+| Goblin tile types + effects | goblin-woods config | `tiles/*` + feature bundles |
+| Random placements / walls / coins | goblin-woods board | `boards/goblin-woods-layout` |
+| Run config | goblin-woods | `rules/programmed-run` |
+| Rulebook | goblin-woods RULEBOOK.md | variant extension + component docs |
+| Registry / Docker wiring | web + Dockerfile | preserved; all prototypes as workspace deps |
+
+## Open Questions
+
+- None blocking implementation; revisit committed resolution reports only if review workflow needs them later.

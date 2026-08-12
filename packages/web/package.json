@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@game-maker/engine": "*",
+    "@game-maker/game-library": "*",
+    "@game-maker/prototype-goblin-woods": "*",
     "@game-maker/prototype-meadow-v1": "*",
     "@game-maker/prototype-quiet-glade": "*",
     "react": "^19.0.0",

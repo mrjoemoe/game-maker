@@ -79,6 +79,8 @@ Archive a completed change in the experimental workflow.
 
    Count tasks marked with `- [ ]` (incomplete) vs `- [x]` (complete).
 
+   For game-library / variant work, also run `npm run game:check` (or `game:check:changed`) and **block archive** on failure unless the user explicitly waives checks.
+
    **If incomplete tasks found:**
    - Display warning showing count of incomplete tasks
    - Ask the user to confirm they want to proceed

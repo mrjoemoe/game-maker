@@ -2,62 +2,61 @@
 
 This file is authoritative guidance for humans and agents working in this repo.
 
-## Templates vs prototypes
+## Runtime / components / variants
 
 | Layer | Path | Role |
 |-------|------|------|
-| **Template** | `templates/<template-id>/` | Reusable product shape + docs. Shared runtime stays in `packages/engine` and `packages/web`. |
-| **Prototype** | `prototypes/<prototype-id>/` | A **named game version**: config (tile names, grid, features like flip) + optional `extensions/` for unique code. |
+| **Runtime** | `packages/engine`, `packages/web` | Shared execution platform. Never fork for a normal new game. |
+| **Components** | `packages/game-library` | Canonical reusable game parts (tiles, pieces, items, rules, boards, feature bundles). |
+| **Variants** | `prototypes/<id>/` | Launchable game versions: composition manifests + optional `extensions/`. |
 
-**Always create new games as prototypes**, not by forking template/runtime source.
+**Always create new games as composed variants**, not by copying another prototype’s full definition or forking packages.
 
-1. Start from an existing prototype or `templates/tile-board/TEMPLATE.md`.
-2. Add `prototypes/<id>/config/game.config.ts` with `templateId`, `name`, `features`, tiles, pieces.
-3. Optionally add `extensions/` for special one-off behavior.
-4. Register the prototype in `packages/web/src/prototypes/registry.ts`.
-5. Launch with `./dev.sh up <id> [port]` (different ports = simultaneous playtests).
+### Decision tree (before editing)
+
+1. **Shared behavior used (or intended) by more than one variant** → change or create a **canonical component** in `@game-maker/game-library`.
+2. **Same components, different selection/parameters** → edit the **variant composition** (`defineVariant` / `use(...)`).
+3. **Approved presentation/balance tweak on one variant** → explicit **override** on an allowlisted field.
+4. **Truly one-off experiment** → variant `extensions/` with a `localReason`; promote to a component when a second consumer appears.
+
+Copied component definitions across variants are forbidden. Prefer `npm run game -- catalog search <query>` before creating anything new.
+
+### Scaffold / launch
+
+1. Use `.cursor/skills/variant-from-library/` (not template copy).
+2. Register in `packages/web/src/prototypes/registry.ts` and ensure Docker/`package.json` workspace wiring.
+3. Launch: `./dev.sh up <id> [port]`.
+4. Validate: `npm run game:check` (or `game:check:changed` after component edits).
+
+`templates/tile-board/` is migration documentation only — not the reuse mechanism.
 
 ## OpenSpec is mandatory
 
-**Every** behavior or product change in this repo MUST go through OpenSpec before (or as the first step of) implementation. Do **not** jump straight to editing `packages/`, `prototypes/`, or `templates/` for feature work.
+**Every** behavior or product change MUST go through OpenSpec before (or as the first step of) implementation.
 
-That includes “small” follow-ups such as:
+### Default: fast-track
 
-- Path programming / grid / start-position tweaks
-- Side walls, tile visuals, tallies, HUD copy
-- Rule changes (e.g. path-over when leaving meadow/forest)
-- Prototype config that changes gameplay
+**Default** for clear behavior changes: slim OpenSpec → implement → archive → commit+push (`.cursor/skills/openspec-fasttrack/SKILL.md`).
 
-### Default: fast-track (not propose-and-stop)
+Record each affected game part as: reused | created | modified | pinned | migrated | deprecated | variant-local.
 
-**Default workflow** for clear behavior changes is **fast-track**: slim OpenSpec change → implement → archive (sync into main specs) → commit+push. Details: `.cursor/skills/openspec-fasttrack/SKILL.md`.
+When changing a component, run impact analysis (`npm run game -- component consumers <id>` and `npm run game:check:changed`) and fix every affected variant before archive.
 
-Use fast-track when the user describes what to build or fix with concrete enough rules — including multi-file engine + web + prototype work and “here’s the idea, make this update.” Touching several capabilities is **not** a reason to switch to full propose.
-
-| Kind of change | Workflow |
-|----------------|----------|
-| Clear feature / rule / UI / prototype request (default) | **Fast-track** → implement → archive → commit+push |
-| User explicitly asks to propose / plan first (`/opsx-propose`) | OpenSpec propose → stop; implement only when asked |
-| Too ambiguous to implement without a design review gate | Clarify, or propose-then-wait; do not invent a long plan-only pause when criteria are already clear |
-
-**Do not** open a full propose-and-stop cycle just because the change is “large” or spans `board-engine-core` + `playtest-web-app` + a prototype.
+Use full propose only when the user asks to plan first or criteria are too ambiguous.
 
 ### After archive
 
-Always follow `.cursor/skills/archive-and-push/SKILL.md`: commit the archived change, synced specs, and implementation, then **push to `origin`**, unless the user explicitly forbids commit or push.
+Follow `.cursor/skills/archive-and-push/SKILL.md`: commit and **push to `origin`**, unless the user forbids it.
 
-### Exceptions
+## Keep rulebooks current
 
-Only skip OpenSpec / archive / push when the user clearly says so in the same request (e.g. “skip openspec”, “code only”, “don’t push”).
-
-## Keep the rulebook current
-
-When a change alters **gameplay rules** for a prototype that has a `RULEBOOK.md` (e.g. `prototypes/goblin-woods/RULEBOOK.md`), **update that rulebook in the same change** so it matches shipped behavior. The playtest **Rulebook** tab reads this file — stale rules confuse playtests. Include rulebook edits in the OpenSpec tasks, archive, and commit.
+Player-facing shared rule changes update **canonical component docs** and every affected variant `RULEBOOK.md` in the same change.
 
 ## Skills
 
-- `.cursor/skills/openspec-fasttrack/` — **default** for clear behavior changes: OpenSpec → implement → archive → commit+push
-- `.cursor/skills/prototype-from-template/` — scaffold a new prototype
+- `.cursor/skills/openspec-fasttrack/` — default clear behavior changes
+- `.cursor/skills/variant-from-library/` — scaffold a composed variant
+- `.cursor/skills/create-game-component/` — add/update library components
+- `.cursor/skills/prototype-from-template/` — redirect to variant-from-library
 - `.cursor/skills/archive-and-push/` — after archive, commit and push
-- `.cursor/skills/openspec-propose/` — plan-only; use only when asked to propose/plan first or blocked by ambiguity
-- `.cursor/skills/openspec-*` — apply / archive / explore and related OpenSpec workflows
+- `.cursor/skills/openspec-*` — propose / apply / archive / explore

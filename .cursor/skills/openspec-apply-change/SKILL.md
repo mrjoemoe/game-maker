@@ -94,6 +94,8 @@ Implement tasks from an OpenSpec change.
    - Show which task is being worked on
    - Make the code changes required
    - Keep changes minimal and focused
+   - When editing game-library components, keep source, manifests, dependency declarations, contract versions, lifecycle, documentation, examples, and tests synchronized in the same task
+   - After component/composition edits, run `npm run game:check:changed` (or `game:check`) and fix affected variants before marking complete
    - Mark task complete in the tasks file: `- [ ]` → `- [x]`
    - Continue to next task
 
@@ -102,7 +104,7 @@ Implement tasks from an OpenSpec change.
    - Implementation reveals a design issue → suggest updating artifacts
    - Error or blocker encountered → report and wait for guidance
    - User interrupts
-
+   - Affected-variant validation fails
 7. **On completion or pause, show status**
 
    Display:

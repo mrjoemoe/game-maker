@@ -2,21 +2,19 @@
 
 ## Purpose
 
-Defines how reusable templates relate to named game prototypes so multiple configurable game versions can coexist without forking template source.
+Defines how named playable game versions (variants) relate to the shared runtime and the game component library.
+
 ## Requirements
-### Requirement: Templates hold reusable source
-The repository SHALL keep reusable tile-board template source and documentation under `templates/<template-id>/`. New playable games MUST NOT be created by copying template source into a one-off fork when a prototype config is sufficient.
-
-#### Scenario: Template directory exists for tile-board
-- **WHEN** a developer inspects `templates/`
-- **THEN** a `tile-board` template is present with documentation describing how prototypes bind to it
-
 ### Requirement: Prototypes are named game versions
-Each playable game version SHALL live under `prototypes/<prototype-id>/` and SHALL include a game config that names the game, selects a template, defines tile/piece content, and declares feature flags.
+Each playable game version SHALL remain launchable by a stable prototype id under `prototypes/<prototype-id>/` during migration, but its authoritative definition SHALL be a variant composition manifest. The manifest MUST name the game, select reusable library components, declare compatibility ranges or pins, define explicit variant parameters and overrides, and identify any variant-only extensions.
 
-#### Scenario: Prototype loads distinct display name
-- **WHEN** a prototype config sets a display name different from the template id
-- **THEN** the playtest UI shows that prototype display name
+#### Scenario: Composed prototype loads distinct display name
+- **WHEN** a variant composition manifest sets a display name
+- **THEN** the playtest UI shows that name after resolving its library components
+
+#### Scenario: Legacy prototype remains launchable during migration
+- **WHEN** an active prototype has not yet been converted to a composition manifest
+- **THEN** the compatibility adapter loads its existing config and emits migration guidance
 
 ### Requirement: Config controls flip capability
 A prototype config SHALL be able to enable or disable tile flipping. When disabled, flip actions MUST NOT change tile face state.
@@ -26,11 +24,15 @@ A prototype config SHALL be able to enable or disable tile flipping. When disabl
 - **THEN** tile face states remain unchanged
 
 ### Requirement: Optional prototype extensions
-A prototype MAY include an `extensions/` directory for prototype-unique code. The absence of extensions MUST still allow the prototype to run on the selected template.
+A variant MAY include an `extensions/` directory for behavior that cannot be expressed through existing library components. Before adding variant-only extension code, the workflow MUST determine whether the behavior belongs in a reusable component. The absence of extensions MUST still allow a valid composed variant to run.
 
-#### Scenario: Prototype without extensions runs
-- **WHEN** a prototype has a valid config and no extensions
-- **THEN** the playtest app launches that prototype successfully
+#### Scenario: Variant without extensions runs
+- **WHEN** a variant has a valid composition manifest and no extensions
+- **THEN** the playtest app resolves and launches that variant successfully
+
+#### Scenario: Shared behavior is proposed as local code
+- **WHEN** behavior is intended for more than one variant
+- **THEN** the development workflow directs the change into a canonical library component instead of a variant extension
 
 ### Requirement: Simultaneous prototype launches
 The development tooling SHALL allow launching more than one prototype at a time by selecting a prototype id and a host port.
@@ -50,87 +52,23 @@ A prototype config SHALL be able to enable run mode and declare a run setup (her
 - **WHEN** a prototype omits run mode
 - **THEN** the prototype behaves as a normal flip/move tile-board game
 
-### Requirement: Goblin Woods rough tiles declare pass items
-The Goblin Woods prototype SHALL assign a pass item to each rough terrain tile type (pit, river, thicket, snare, goblin, brute, villain, castle). The prototype SHALL NOT include sword-cache or shield-cache tile types. The prototype item list SHALL include those pass items (reusing Sword where applicable). The castle’s pass item SHALL be the sledgehammer.
-
-#### Scenario: Pit requires makeshift bridge
-- **WHEN** the Goblin Woods definition is loaded
-- **THEN** the pit tile type's `passItemId` is the makeshift-bridge item
-
-#### Scenario: Castle requires sledgehammer
-- **WHEN** the Goblin Woods definition is loaded
-- **THEN** the castle tile type's `passItemId` is the sledgehammer item
-
-#### Scenario: No gear caches
-- **WHEN** the Goblin Woods definition is loaded
-- **THEN** no tile type id is sword-cache or shield-cache
-
-### Requirement: Goblin Woods Mage first tile
-The Goblin Woods hero start cell SHALL be a Mage tile (revealed at run start). The prototype SHALL include a sledgehammer item with `breaksSideWalls` available from the Mage item list. A separate Mage north of start is not required.
-
-#### Scenario: Mage sits north of start
-- **WHEN** the Goblin Woods board is loaded
-- **THEN** the start position itself is the Mage tile (the opening tile the hero occupies)
-
-#### Scenario: Start cell is Mage
-- **WHEN** the Goblin Woods board is loaded
-- **THEN** the start position’s tile type is Mage
-
 ### Requirement: Prototype rulebook file
-Run-mode prototypes that expose player-facing rules SHALL keep a `RULEBOOK.md` under `prototypes/<prototype-id>/` and MAY export that markdown via prototype extensions for the playtest UI.
+Composed variants that expose player-facing rules SHALL keep a `RULEBOOK.md` under their stable variant directory and MAY export that markdown through extensions for the playtest UI. Shared player-facing rules SHALL trace to canonical component documentation, while the variant rulebook SHALL describe the resolved rules and intentional overrides.
 
-#### Scenario: Goblin Woods has a rulebook
-- **WHEN** an agent inspects `prototypes/goblin-woods/`
-- **THEN** a `RULEBOOK.md` describing current Goblin Woods rules is present
+#### Scenario: Component rule changes
+- **WHEN** a player-facing component changes
+- **THEN** impact analysis identifies every consuming variant rulebook that must be checked
 
-### Requirement: Goblin Woods corner extraction
-The Goblin Woods board SHALL place extraction tiles on all four corner cells. Those corners SHALL be face up at run start and SHALL remain extraction points for the life of the map.
+### Requirement: Variant creation uses composition
+New game versions SHALL be created by authoring a variant composition manifest from existing library components and creating new components only for missing reusable concepts. New variants MUST NOT be scaffolded by copying another prototype's complete game definition.
 
-#### Scenario: Four corners are extraction
-- **WHEN** the Goblin Woods board is loaded
-- **THEN** cells (0,0), (width-1,0), (0,height-1), and (width-1,height-1) are extraction tiles and face up
+#### Scenario: New variant shares most game parts
+- **WHEN** a developer spins off a variant from an existing game
+- **THEN** the new manifest references the same components and declares only its intentional differences
 
-### Requirement: Goblin Woods random castle
-The Goblin Woods board SHALL place exactly one castle (goal) tile at a randomly chosen eligible cell that is not the hero start and not a corner extraction cell. That castle cell SHALL have side walls on all four sides. The castle SHALL NOT be fixed to a single hardcoded coordinate across new maps.
+### Requirement: Existing launch and registry contracts are preserved
+The component migration SHALL preserve stable prototype ids, simultaneous launch by id and port, and registry-based discovery until a replacement registry contract is implemented and all active variants have migrated.
 
-#### Scenario: Castle not on start or corner
-- **WHEN** the Goblin Woods board is loaded
-- **THEN** exactly one cell has the castle type, and that cell is neither the start position nor a corner
-
-#### Scenario: New map can move the castle
-- **WHEN** the player starts a new map after a full reset
-- **THEN** the castle cell may differ from the previous map’s castle cell (random placement)
-
-#### Scenario: Castle is fully walled
-- **WHEN** the Goblin Woods board is loaded
-- **THEN** the castle cell has side walls on north, east, south, and west
-
-### Requirement: Goblin Woods random content layout
-Aside from the start Mage and four corner extraction tiles, Goblin Woods hazard, enemy, forest, shop, and castle tiles SHALL be placed via seeded random placements. A full reset / New map SHALL re-roll the board seed so those placements and side walls can differ from the previous map. Goblin Woods SHALL place eight forest tiles and SHALL NOT place sword or shield caches.
-
-#### Scenario: New map changes content layout
-- **WHEN** the player activates New map on Goblin Woods
-- **THEN** the new board is built with a new seed and content cell coordinates are not required to match the previous map
-
-#### Scenario: Fixed anchors remain
-- **WHEN** a Goblin Woods map is created
-- **THEN** the start cell is Mage and the four corners are extraction
-
-#### Scenario: Eight forests no caches
-- **WHEN** the Goblin Woods board is loaded
-- **THEN** exactly eight cells have the forest type and zero cells are sword-cache or shield-cache
-
-### Requirement: Goblin Woods shops and coin weights
-Goblin Woods SHALL enable coin weights 40/30/20/10 for 0/1/2/3 coins and SHALL place exactly three shop tiles on random meadow cells (excluding start and corners). The prototype rulebook SHALL describe coins and shop buying.
-
-#### Scenario: Three shops on the map
-- **WHEN** the Goblin Woods board is loaded
-- **THEN** exactly three cells have the shop type
-
-### Requirement: Goblin Woods portals
-Goblin Woods SHALL place exactly four portal tiles (Portal 1–4) on random meadow cells excluding start and corners. The rulebook SHALL describe portal travel.
-
-#### Scenario: Four numbered portals
-- **WHEN** the Goblin Woods board is loaded
-- **THEN** exactly one cell of each portal-1 through portal-4 type exists
-
+#### Scenario: Two migrated variants launch together
+- **WHEN** two composed variants are started on different ports
+- **THEN** both are reachable through the existing development workflow

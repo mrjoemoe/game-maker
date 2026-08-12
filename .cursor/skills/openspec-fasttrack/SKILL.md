@@ -57,21 +57,31 @@ Create `openspec/changes/<kebab-name>/` with:
 
 Validate: `npx openspec validate <name> --strict`
 
-Typical capability targets: `board-engine-core`, `playtest-web-app`, `template-prototype-model`.
+Typical capability targets: `board-engine-core`, `playtest-web-app`, `template-prototype-model`, `game-component-library`, `goblin-woods-variant`.
+
+When the change touches game parts, the proposal/tasks MUST record each affected part as: **reused | created | modified | pinned | migrated | deprecated | variant-local**. Inspect the catalog first (`npm run game -- catalog search`).
 
 ### 2. Implement
 
 Apply tasks; keep scope to the change. Run `npm run test` / `npm run typecheck` (and playtest if UI-facing).
 
+For component or composition changes, also run:
+
+- `npm run game -- component consumers <id>` (when a shared component changes)
+- `npm run game:check:changed` (or `npm run game:check`)
+
+Keep component source, manifests, dependencies, versions, lifecycle, docs, and tests synchronized in the same change.
+
 Mark tasks `[x]` in `tasks.md` when done.
 
-If the change alters gameplay rules for a prototype that has `RULEBOOK.md`, update that rulebook in the same change (see `AGENT.md`).
+If the change alters gameplay rules for a prototype that has `RULEBOOK.md`, update that rulebook **and** any canonical component player-facing docs in the same change (see `AGENT.md`).
 
 ### 3. Archive + sync specs
 
 - Merge delta requirements into matching `openspec/specs/<capability>/spec.md`
 - Move change dir to `openspec/changes/archive/YYYY-MM-DD-<name>/`
 - Follow `.cursor/skills/openspec-archive-change/SKILL.md` when using the full archive command flow
+- **Block archive** if `game:check` / affected-variant validation fails
 
 ### 4. Commit and push
 
@@ -85,7 +95,8 @@ Follow `.cursor/skills/archive-and-push/SKILL.md`:
 ## Anti-patterns
 
 - Using full `openspec-propose` and stopping for review when the user already gave clear build criteria
-- Implementing a Goblin Woods / engine / web tweak with no OpenSpec change
+- Implementing a Goblin Woods / engine / web / library tweak with no OpenSpec change
+- Copying component definitions into prototypes instead of updating the library
 - Leaving an active change unarchived after shipping code
-- Archiving without syncing main specs
+- Archiving without syncing main specs or without affected-variant checks
 - Committing without pushing after archive (unless user said not to push)
