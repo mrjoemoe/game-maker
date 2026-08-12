@@ -74,8 +74,8 @@ export function TileView({
   const resolvedClass = tile.resolved ? " resolved" : "";
   const isSolidWall =
     tile.isFaceUp && tileEffect(tileType).kind === "wall";
-  // Show walls on face-up cells only; shared edges still live on board.edgeWalls.
-  const walls = tile.isFaceUp ? edgeWallSides : [];
+  // Always show edge walls; BoardView only passes each edge once (e/s).
+  const walls = edgeWallSides;
   const wallLabel =
     walls.length > 0 ? ` walls ${walls.join(",")}` : "";
 
@@ -88,7 +88,7 @@ export function TileView({
       aria-label={
         tile.isFaceUp
           ? `Tile ${coord.x},${coord.y} ${tileType.label}${tile.resolved ? " cleared" : ""}${wallLabel}${isSolidWall ? " blocked" : ""}`
-          : `Tile ${coord.x},${coord.y} face down`
+          : `Tile ${coord.x},${coord.y} face down${wallLabel}`
       }
     >
       {walls.map((side) => (

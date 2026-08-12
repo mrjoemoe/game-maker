@@ -37,7 +37,9 @@ export function BoardView({ game, selectedPieceId, onCellClick }: BoardViewProps
         const tileType = resolveTileType(game.board.tileTypes, tile.typeId);
         const piece = pieceAt(game.pieces, coord);
         const pieceType = piece ? game.pieceTypes[piece.typeId] : undefined;
-        const walls = cellEdgeWallSides(game.board.edgeWalls, coord);
+        const walls = cellEdgeWallSides(game.board.edgeWalls, coord).filter(
+          (side) => side === "e" || side === "s",
+        );
         return (
           <TileView
             key={coordKey(coord)}
