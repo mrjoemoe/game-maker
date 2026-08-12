@@ -9,10 +9,9 @@ import {
   createTileState,
   createTileTypeRegistry,
   createSeededRandom,
-  generateSideWalls,
+  generateConnectedEdgeWalls,
   resolveTileType,
-  type SideWallConfig,
-  type TileSide,
+  type EdgeWallConfig,
   type TileState,
   type TileTypeDefinition,
   type TileTypeRegistry,
@@ -22,19 +21,15 @@ export type CellOverride = {
   coord: Coord;
   typeId?: string;
   isFaceUp?: boolean;
-  /** Explicit side walls for this cell (skips random generation for the cell). */
-  walls?: TileSide[];
 };
 
-/** Place a tile type on one random eligible cell (seeded via sideWalls.seed). */
+/** Place a tile type on one random eligible cell (seeded via edgeWalls.seed). */
 export type RandomTilePlacement = {
   typeId: string;
   /** Only replace cells currently of this type. Defaults to defaultTileTypeId. */
   onTypeId?: string;
   /** Cells that must not receive this placement. */
   exclude?: Coord[];
-  /** When set, replaces walls on the placed cell. */
-  walls?: TileSide[];
   /** How many cells to place (default 1). */
   count?: number;
 };
@@ -45,10 +40,10 @@ export type BoardConfig = {
   defaultTileTypeId: string;
   overrides?: CellOverride[];
   /**
-   * When set, most tiles get 0 side walls, some get 1, few get 2, in random
-   * orientations. Per-cell `walls` overrides win over generation.
+   * When set, places exactly `count` undirected edge walls between cells
+   * without disconnecting the map.
    */
-  sideWalls?: SideWallConfig;
+  edgeWalls?: EdgeWallConfig;
   /** Optional seeded one-off placements (e.g. random castle). Applied last. */
   randomPlacements?: RandomTilePlacement[];
   /**
@@ -74,6 +69,8 @@ export type Board = {
   grid: GridConfig;
   tileTypes: TileTypeRegistry;
   cells: Record<string, TileState>;
+  /** Undirected edge walls between adjacent cells. */
+  edgeWalls: string[];
 };
 
 export function createBoard(config: BoardConfig): Board {
@@ -86,8 +83,6 @@ export function createBoard(config: BoardConfig): Board {
     cells[coordKey(coord)] = createTileState(config.defaultTileTypeId, true);
   }
 
-  const explicitWallKeys = new Set<string>();
-
   for (const override of config.overrides ?? []) {
     const key = coordKey(override.coord);
     if (!(key in cells)) {
@@ -97,37 +92,20 @@ export function createBoard(config: BoardConfig): Board {
     }
     const typeId = override.typeId ?? cells[key].typeId;
     resolveTileType(tileTypes, typeId);
-    const walls = override.walls ?? cells[key].walls ?? [];
-    if (override.walls) {
-      explicitWallKeys.add(key);
-    }
     cells[key] = createTileState(
       typeId,
       override.isFaceUp ?? cells[key].isFaceUp,
       cells[key].resolved ?? false,
-      walls,
+      cells[key].coins ?? 0,
     );
   }
 
-  if (config.sideWalls) {
-    const generated = generateSideWalls(Object.keys(cells), config.sideWalls);
-    for (const [key, walls] of Object.entries(generated)) {
-      if (explicitWallKeys.has(key)) {
-        continue;
-      }
-      const current = cells[key];
-      cells[key] = createTileState(
-        current.typeId,
-        current.isFaceUp,
-        current.resolved ?? false,
-        walls,
-        current.coins ?? 0,
-      );
-    }
-  }
+  const edgeWalls = config.edgeWalls
+    ? generateConnectedEdgeWalls(grid, config.edgeWalls)
+    : [];
 
   if (config.randomPlacements && config.randomPlacements.length > 0) {
-    const seed = config.sideWalls?.seed ?? 0;
+    const seed = config.edgeWalls?.seed ?? 0;
     const rng = createSeededRandom((seed ^ 0xc4571e) >>> 0);
     for (const placement of config.randomPlacements) {
       resolveTileType(tileTypes, placement.typeId);
@@ -156,7 +134,6 @@ export function createBoard(config: BoardConfig): Board {
           placement.typeId,
           current.isFaceUp,
           current.resolved ?? false,
-          placement.walls ?? current.walls ?? [],
           current.coins ?? 0,
         );
       }
@@ -164,7 +141,7 @@ export function createBoard(config: BoardConfig): Board {
   }
 
   if (config.coinWeights) {
-    const seed = config.sideWalls?.seed ?? 0;
+    const seed = config.edgeWalls?.seed ?? 0;
     const rng = createSeededRandom((seed ^ 0xc01a5) >>> 0);
     for (const key of Object.keys(cells)) {
       const current = cells[key]!;
@@ -175,7 +152,7 @@ export function createBoard(config: BoardConfig): Board {
     }
   }
 
-  return { grid, tileTypes, cells };
+  return { grid, tileTypes, cells, edgeWalls };
 }
 
 export function getCell(board: Board, coord: Coord): TileState {

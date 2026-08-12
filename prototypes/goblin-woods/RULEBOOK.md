@@ -11,7 +11,7 @@ Reach the **Castle** by programming action+move paths through a hidden forest. E
 - 7×7 board. Most tiles start face-down; start and the four **Extraction** corners are face-up.
 - You begin on the **Mage** (bottom center).
 - **Stash** starts empty; **coins** start at 0. Loadout from stash is optional each attempt.
-- **New map** re-rolls the seed: side walls, hazards, shops, portals, castle, and coin stacks all regenerate.
+- **New map** re-rolls the seed: edge walls, hazards, shops, portals, castle, and coin stacks all regenerate.
 - **Try again** (soft reset) returns you to start with full HP, keeps the revealed map, stash, and coin wallet; Mage refreshes; run inventory clears.
 
 ## Coins
@@ -61,11 +61,11 @@ If an action does not fit, the run **ends** (path over) and that step’s move d
 - **Meadow**, **Forest**, **Mage**, **Shop**, **Portal**, and **Extraction** are safe to step onto.
 - Other tiles end the path unless you **Use** the matching pass item that step.
 
-## Side walls
+## Edge walls
 
-- Leaving through a wall on **your** tile ends the path without revealing the next tile.
-- A wall only on the **next** tile ends the path and reveals it — unless you **Use** that tile’s matching pass item (see below), which opens that rim for the step.
-- **Sledgehammer**: Use on a blocked crossing to smash that edge, then move. Required for walls on **your** tile and to enter the walled **Castle**.
+- Walls sit **between** tiles (shared edges), not on tile faces. The map always places **15** walls at random so every tile stays reachable.
+- Crossing a walled edge ends the path and reveals the destination tile.
+- **Sledgehammer**: Use on a blocked crossing to smash that shared edge, then move. Also the pass item to enter the **Castle**.
 
 ## Items and pass tiles
 
@@ -78,9 +78,9 @@ If an action does not fit, the run **ends** (path over) and that step’s move d
 | Goblin | Sword |
 | Brute | Spear |
 | Villain | Charm |
-| Castle | **Sledgehammer** (**wins**; castle has walls on all sides) |
+| Castle | **Sledgehammer** (**wins**) |
 
-**Use** the matching pass item on the step you move onto that tile. That also gets you past a wall on the **destination’s** rim. A wall on your **current** tile still needs **Sledgehammer** (you can only Use one item per step).
+**Use** the matching pass item on the step you move onto that tile. That also opens a wall on the **shared edge** into that tile. **Sledgehammer** is for smashing a wall when you are not using another pass item that step (and for the Castle).
 
 Used items are **consumed**. Gear only returns to stash on **Extract** or **Castle win**.
 

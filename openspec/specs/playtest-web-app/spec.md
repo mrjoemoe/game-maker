@@ -117,8 +117,12 @@ When run mode is enabled, the playtest app SHALL show a side panel listing each 
 - **WHEN** the goblin-woods board is loaded
 - **THEN** the pit tally row indicates Makeshift Bridge (or its icon) as the pass item
 
-### Requirement: Visible side walls and path-over report
-Revealed tiles with side walls SHALL show visible wall indicators on those sides. When a run ends because the path is over, the UI SHALL display the engine’s path-over reason.
+### Requirement: Playtest UI renders edge walls
+The playtest board SHALL visually indicate walls on the shared edges between cells rather than as independent per-tile face decorations that imply ownership of only one cell. When a run ends because the path is over, the UI SHALL display the engine’s path-over reason.
+
+#### Scenario: Shared edge shows a wall segment
+- **WHEN** two adjacent cells share a walled edge and at least one is face-up
+- **THEN** the UI shows a wall segment on that boundary
 
 #### Scenario: Lose banner shows path-over reason
 - **WHEN** the run is lost with a bump message

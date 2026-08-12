@@ -78,7 +78,7 @@ export type ComponentContribution = {
     tileTypes?: TileTypeDefinition[];
     defaultTileTypeId?: string;
     overrides?: CellOverride[];
-    sideWalls?: BoardConfig["sideWalls"];
+    edgeWalls?: BoardConfig["edgeWalls"];
     randomPlacements?: RandomTilePlacement[];
     coinWeights?: BoardConfig["coinWeights"];
   };

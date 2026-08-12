@@ -1,44 +1,45 @@
 import { describe, expect, it } from "vitest";
 import {
-  generateSideWalls,
+  edgeKeyBetween,
+  generateConnectedEdgeWalls,
+  hasEdgeWall,
   isCrossingBlocked,
-  oppositeSide,
-  sideToward,
+  isGridConnected,
+  listInternalEdges,
+  verticalEdgeKey,
 } from "./sides.js";
 
-describe("tile sides", () => {
-  it("maps neighbor direction to a side", () => {
-    expect(sideToward({ x: 1, y: 1 }, { x: 1, y: 0 })).toBe("n");
-    expect(sideToward({ x: 1, y: 1 }, { x: 2, y: 1 })).toBe("e");
-    expect(oppositeSide("n")).toBe("s");
-  });
-
-  it("blocks crossing when either tile walls the shared edge", () => {
+describe("edge walls", () => {
+  it("blocks a crossing when the shared edge has a wall", () => {
     const from = { x: 0, y: 0 };
     const to = { x: 1, y: 0 };
-    expect(isCrossingBlocked(["e"], [], from, to)).toBe(true);
-    expect(isCrossingBlocked([], ["w"], from, to)).toBe(true);
-    expect(isCrossingBlocked(["n"], ["n"], from, to)).toBe(false);
+    const key = edgeKeyBetween(from, to)!;
+    expect(isCrossingBlocked([key], from, to)).toBe(true);
+    expect(isCrossingBlocked([key], to, from)).toBe(true);
+    expect(isCrossingBlocked([], from, to)).toBe(false);
   });
 
-  it("generates mostly empty walls with a stable seed", () => {
-    const keys = Array.from({ length: 49 }, (_, i) => `c${i}`);
-    const a = generateSideWalls(keys, {
-      seed: 42,
-      weights: { none: 0.7, one: 0.25, two: 0.05 },
-    });
-    const b = generateSideWalls(keys, {
-      seed: 42,
-      weights: { none: 0.7, one: 0.25, two: 0.05 },
-    });
-    expect(a).toEqual(b);
+  it("places exactly count walls while staying connected", () => {
+    const grid = { width: 7, height: 7 };
+    const walls = generateConnectedEdgeWalls(grid, { count: 15, seed: 42 });
+    expect(walls).toHaveLength(15);
+    expect(new Set(walls).size).toBe(15);
+    expect(isGridConnected(grid, walls)).toBe(true);
 
-    const counts = { 0: 0, 1: 0, 2: 0 };
-    for (const walls of Object.values(a)) {
-      counts[walls.length as 0 | 1 | 2] += 1;
-    }
-    expect(counts[0]).toBeGreaterThan(counts[1]);
-    expect(counts[1]).toBeGreaterThan(counts[2]);
-    expect(counts[0] + counts[1] + counts[2]).toBe(49);
+    const again = generateConnectedEdgeWalls(grid, { count: 15, seed: 42 });
+    expect(again).toEqual(walls);
+  });
+
+  it("lists all internal edges", () => {
+    const edges = listInternalEdges({ width: 2, height: 2 });
+    expect(edges).toHaveLength(4);
+  });
+
+  it("reports hasEdgeWall symmetrically", () => {
+    const a = { x: 1, y: 1 };
+    const b = { x: 1, y: 2 };
+    const key = verticalEdgeKey(1, 1);
+    expect(hasEdgeWall([key], a, b)).toBe(true);
+    expect(hasEdgeWall([key], b, a)).toBe(true);
   });
 });

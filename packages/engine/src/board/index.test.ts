@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createBoard, getCell } from "./index.js";
+import { isGridConnected } from "../tiles/index.js";
 
 const baseTypes = [
   { id: "grass", label: "Grass", color: "#4caf50" },
@@ -15,6 +16,7 @@ describe("board", () => {
     });
     expect(getCell(board, { x: 0, y: 0 }).typeId).toBe("grass");
     expect(getCell(board, { x: 1, y: 1 }).typeId).toBe("grass");
+    expect(board.edgeWalls).toEqual([]);
   });
 
   it("applies per-cell overrides", () => {
@@ -30,31 +32,20 @@ describe("board", () => {
       typeId: "water",
       isFaceUp: false,
       resolved: false,
-      walls: [],
       coins: 0,
     });
     expect(getCell(board, { x: 0, y: 0 }).typeId).toBe("grass");
   });
 
-  it("generates side walls with mostly empty tiles", () => {
+  it("places exactly count connected edge walls", () => {
     const board = createBoard({
       grid: { width: 7, height: 7 },
       tileTypes: baseTypes,
       defaultTileTypeId: "grass",
-      sideWalls: {
-        seed: 7,
-        weights: { none: 0.7, one: 0.25, two: 0.05 },
-      },
+      edgeWalls: { count: 15, seed: 7 },
     });
-    const counts = { 0: 0, 1: 0, 2: 0, other: 0 };
-    for (const cell of Object.values(board.cells)) {
-      const n = cell.walls?.length ?? 0;
-      if (n === 0 || n === 1 || n === 2) counts[n] += 1;
-      else counts.other += 1;
-    }
-    expect(counts.other).toBe(0);
-    expect(counts[0]).toBeGreaterThan(counts[1]);
-    expect(counts[1]).toBeGreaterThanOrEqual(counts[2]);
+    expect(board.edgeWalls).toHaveLength(15);
+    expect(isGridConnected(board.grid, board.edgeWalls)).toBe(true);
   });
 
   it("places multiple cells when randomPlacement count is set", () => {
@@ -65,14 +56,14 @@ describe("board", () => {
         { id: "pit", label: "Pit", color: "#333" },
       ],
       defaultTileTypeId: "grass",
-      sideWalls: { seed: 99, weights: { none: 1, one: 0, two: 0 } },
+      edgeWalls: { count: 0, seed: 99 },
       randomPlacements: [{ typeId: "pit", count: 3 }],
     });
     const pits = Object.values(board.cells).filter((c) => c.typeId === "pit");
     expect(pits).toHaveLength(3);
   });
 
-  it("changes random placements when the side-wall seed changes", () => {
+  it("changes random placements when the edge-wall seed changes", () => {
     const types = [
       ...baseTypes,
       { id: "pit", label: "Pit", color: "#333" },
@@ -82,7 +73,7 @@ describe("board", () => {
         grid: { width: 5, height: 5 },
         tileTypes: types,
         defaultTileTypeId: "grass",
-        sideWalls: { seed, weights: { none: 1, one: 0, two: 0 } },
+        edgeWalls: { count: 0, seed },
         randomPlacements: [{ typeId: "pit", count: 4 }],
       });
       return Object.entries(board.cells)
@@ -99,7 +90,7 @@ describe("board", () => {
       grid: { width: 5, height: 5 },
       tileTypes: baseTypes,
       defaultTileTypeId: "grass",
-      sideWalls: { seed: 11, weights: { none: 1, one: 0, two: 0 } },
+      edgeWalls: { count: 0, seed: 11 },
       coinWeights: { zero: 0.4, one: 0.3, two: 0.2, three: 0.1 },
     });
     const counts = Object.values(board.cells).map((c) => c.coins ?? 0);

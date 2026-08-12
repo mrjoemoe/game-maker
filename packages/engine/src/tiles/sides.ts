@@ -1,4 +1,10 @@
-import type { Coord } from "../grid/index.js";
+import {
+  allCoords,
+  coordKey,
+  neighbors,
+  type Coord,
+  type GridConfig,
+} from "../grid/index.js";
 
 /** Orthogonal sides of a tile (screen: n=top, s=bottom, e=right, w=left). */
 export type TileSide = "n" | "e" | "s" | "w";
@@ -33,44 +39,19 @@ export function sideToward(from: Coord, to: Coord): TileSide | null {
   return null;
 }
 
-export function normalizeWalls(walls: TileSide[] | undefined): TileSide[] {
-  if (!walls || walls.length === 0) {
-    return [];
-  }
-  const seen = new Set<TileSide>();
-  for (const side of walls) {
-    if (TILE_SIDES.includes(side)) {
-      seen.add(side);
-    }
-  }
-  return TILE_SIDES.filter((s) => seen.has(s));
-}
-
-export function tileHasWall(
-  walls: TileSide[] | undefined,
-  side: TileSide,
-): boolean {
-  return (walls ?? []).includes(side);
-}
-
 /**
- * Crossing from `from` to `to` is blocked if the origin has a wall on the exit
- * side or the destination has a wall on the entry side.
+ * Undirected edge between orthogonally adjacent cells.
+ * - `h:x,y` — wall between `(x,y)` and `(x+1,y)` (east/west shared edge)
+ * - `v:x,y` — wall between `(x,y)` and `(x,y+1)` (north/south shared edge)
  */
-export function isCrossingBlocked(
-  fromWalls: TileSide[] | undefined,
-  toWalls: TileSide[] | undefined,
-  from: Coord,
-  to: Coord,
-): boolean {
-  const exit = sideToward(from, to);
-  if (!exit) {
-    return true;
-  }
-  return (
-    tileHasWall(fromWalls, exit) || tileHasWall(toWalls, oppositeSide(exit))
-  );
-}
+export type EdgeWallKey = `h:${number},${number}` | `v:${number},${number}`;
+
+export type EdgeWallConfig = {
+  /** Exact number of edge walls to place. */
+  count: number;
+  /** PRNG seed. Omitted or overridden on New map rerolls. */
+  seed?: number;
+};
 
 /** Mulberry32 — small deterministic PRNG from a 32-bit seed. */
 export function createSeededRandom(seed: number): () => number {
@@ -83,57 +64,163 @@ export function createSeededRandom(seed: number): () => number {
   };
 }
 
-export type SideWallWeights = {
-  /** Probability of 0 side walls. Default 0.7 */
-  none?: number;
-  /** Probability of 1 side wall. Default 0.25 */
-  one?: number;
-  /** Probability of 2 side walls. Default 0.05 */
-  two?: number;
-};
-
-export type SideWallConfig = {
-  weights?: SideWallWeights;
-  /** PRNG seed for wall placement. Omitted or overridden on New map rerolls. */
-  seed?: number;
-};
-
-function pickWallCount(
-  random: () => number,
-  weights: Required<SideWallWeights>,
-): 0 | 1 | 2 {
-  const total = weights.none + weights.one + weights.two;
-  const roll = random() * total;
-  if (roll < weights.none) return 0;
-  if (roll < weights.none + weights.one) return 1;
-  return 2;
+export function horizontalEdgeKey(x: number, y: number): EdgeWallKey {
+  return `h:${x},${y}`;
 }
 
-function pickSides(random: () => number, count: 0 | 1 | 2): TileSide[] {
-  if (count === 0) return [];
-  const pool = [...TILE_SIDES];
-  for (let i = pool.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
+export function verticalEdgeKey(x: number, y: number): EdgeWallKey {
+  return `v:${x},${y}`;
+}
+
+/** Canonical edge key between two orthogonal neighbors, or null. */
+export function edgeKeyBetween(a: Coord, b: Coord): EdgeWallKey | null {
+  const exit = sideToward(a, b);
+  if (!exit) return null;
+  if (exit === "e") return horizontalEdgeKey(a.x, a.y);
+  if (exit === "w") return horizontalEdgeKey(b.x, b.y);
+  if (exit === "s") return verticalEdgeKey(a.x, a.y);
+  return verticalEdgeKey(b.x, b.y);
+}
+
+export function hasEdgeWall(
+  edgeWalls: Iterable<string> | undefined,
+  a: Coord,
+  b: Coord,
+): boolean {
+  if (!edgeWalls) return false;
+  const key = edgeKeyBetween(a, b);
+  if (!key) return true;
+  const set =
+    edgeWalls instanceof Set ? edgeWalls : new Set(edgeWalls);
+  return set.has(key);
+}
+
+/**
+ * Crossing from `from` to `to` is blocked iff the shared edge has a wall.
+ */
+export function isCrossingBlocked(
+  edgeWalls: Iterable<string> | undefined,
+  from: Coord,
+  to: Coord,
+): boolean {
+  return hasEdgeWall(edgeWalls, from, to);
+}
+
+export function listInternalEdges(grid: GridConfig): EdgeWallKey[] {
+  const edges: EdgeWallKey[] = [];
+  for (let y = 0; y < grid.height; y += 1) {
+    for (let x = 0; x < grid.width - 1; x += 1) {
+      edges.push(horizontalEdgeKey(x, y));
+    }
   }
-  return pool.slice(0, count);
+  for (let y = 0; y < grid.height - 1; y += 1) {
+    for (let x = 0; x < grid.width; x += 1) {
+      edges.push(verticalEdgeKey(x, y));
+    }
+  }
+  return edges;
 }
 
-/** Assign 0–2 random side walls to every cell (any orientation). */
-export function generateSideWalls(
-  cellKeys: string[],
-  config: SideWallConfig,
-): Record<string, TileSide[]> {
-  const weights: Required<SideWallWeights> = {
-    none: config.weights?.none ?? 0.7,
-    one: config.weights?.one ?? 0.25,
-    two: config.weights?.two ?? 0.05,
-  };
+export function isGridConnected(
+  grid: GridConfig,
+  edgeWalls: Iterable<string>,
+): boolean {
+  const blocked = edgeWalls instanceof Set ? edgeWalls : new Set(edgeWalls);
+  const cells = allCoords(grid);
+  if (cells.length === 0) return true;
+  const start = cells[0]!;
+  const seen = new Set<string>();
+  const queue: Coord[] = [start];
+  seen.add(coordKey(start));
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const next of neighbors(grid, current)) {
+      const key = coordKey(next);
+      if (seen.has(key)) continue;
+      if (hasEdgeWall(blocked, current, next)) continue;
+      seen.add(key);
+      queue.push(next);
+    }
+  }
+  return seen.size === cells.length;
+}
+
+/**
+ * Place exactly `count` undirected edge walls without disconnecting the grid.
+ * Greedy: shuffle candidates, add when the graph stays connected.
+ */
+export function generateConnectedEdgeWalls(
+  grid: GridConfig,
+  config: EdgeWallConfig,
+): EdgeWallKey[] {
+  const count = Math.max(0, Math.floor(config.count));
+  const candidates = listInternalEdges(grid);
+  if (count > candidates.length) {
+    throw new Error(
+      `Cannot place ${count} edge walls; grid only has ${candidates.length} internal edges`,
+    );
+  }
+
   const random = createSeededRandom(config.seed ?? 1);
-  const result: Record<string, TileSide[]> = {};
-  for (const key of cellKeys) {
-    const count = pickWallCount(random, weights);
-    result[key] = pickSides(random, count);
+  for (let i = candidates.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1));
+    [candidates[i], candidates[j]] = [candidates[j]!, candidates[i]!];
   }
-  return result;
+
+  const placed: EdgeWallKey[] = [];
+  const blocked = new Set<string>();
+  for (const edge of candidates) {
+    if (placed.length >= count) break;
+    blocked.add(edge);
+    if (isGridConnected(grid, blocked)) {
+      placed.push(edge);
+    } else {
+      blocked.delete(edge);
+    }
+  }
+
+  if (placed.length < count) {
+    throw new Error(
+      `Could only place ${placed.length} of ${count} edge walls while keeping the map connected`,
+    );
+  }
+  return placed;
 }
+
+export function clearEdgeWall(
+  edgeWalls: readonly string[],
+  from: Coord,
+  to: Coord,
+): string[] {
+  const key = edgeKeyBetween(from, to);
+  if (!key) return [...edgeWalls];
+  return edgeWalls.filter((e) => e !== key);
+}
+
+/** Which faces of a cell border an edge wall (for UI). */
+export function cellEdgeWallSides(
+  edgeWalls: Iterable<string> | undefined,
+  coord: Coord,
+): TileSide[] {
+  if (!edgeWalls) return [];
+  const set =
+    edgeWalls instanceof Set ? edgeWalls : new Set(edgeWalls);
+  const sides: TileSide[] = [];
+  if (coord.y > 0 && set.has(verticalEdgeKey(coord.x, coord.y - 1))) {
+    sides.push("n");
+  }
+  if (set.has(verticalEdgeKey(coord.x, coord.y))) {
+    sides.push("s");
+  }
+  if (coord.x > 0 && set.has(horizontalEdgeKey(coord.x - 1, coord.y))) {
+    sides.push("w");
+  }
+  if (set.has(horizontalEdgeKey(coord.x, coord.y))) {
+    sides.push("e");
+  }
+  return sides;
+}
+
+/** @deprecated Prefer EdgeWallConfig. */
+export type SideWallConfig = EdgeWallConfig;
+export type SideWallWeights = { none?: number; one?: number; two?: number };

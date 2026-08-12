@@ -12,6 +12,8 @@ type TileViewProps = {
   coord: Coord;
   tile: TileState;
   tileType: TileTypeDefinition;
+  /** Shared edge walls bordering this cell (from board.edgeWalls). */
+  walls?: TileSide[];
   piece?: PieceInstance;
   pieceLabel?: string;
   pieceColor?: string;
@@ -58,6 +60,7 @@ export function TileView({
   coord,
   tile,
   tileType,
+  walls: edgeWallSides = [],
   piece,
   pieceLabel,
   pieceColor,
@@ -71,7 +74,8 @@ export function TileView({
   const resolvedClass = tile.resolved ? " resolved" : "";
   const isSolidWall =
     tile.isFaceUp && tileEffect(tileType).kind === "wall";
-  const walls = tile.isFaceUp ? (tile.walls ?? []) : [];
+  // Show walls on face-up cells only; shared edges still live on board.edgeWalls.
+  const walls = tile.isFaceUp ? edgeWallSides : [];
   const wallLabel =
     walls.length > 0 ? ` walls ${walls.join(",")}` : "";
 

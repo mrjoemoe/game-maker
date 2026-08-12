@@ -34,14 +34,12 @@ import {
   type RunState,
 } from "../run/index.js";
 import {
+  clearEdgeWall,
   flipTileState,
   isCrossingBlocked,
-  oppositeSide,
   resolveTileType,
   sideToward,
   tileEffect,
-  tileHasWall,
-  type TileSide,
   type TileState,
 } from "../tiles/index.js";
 
@@ -230,68 +228,6 @@ function effectiveMaxHp(state: GameState, inventory: string[]): number {
   return totalMaxHp(state.items, inventory, runConfig.maxHp);
 }
 
-function removeWallSide(
-  walls: TileSide[] | undefined,
-  side: TileSide,
-): TileSide[] {
-  return (walls ?? []).filter((w) => w !== side);
-}
-
-function clearCrossingWalls(
-  cells: Record<string, TileState>,
-  from: Coord,
-  to: Coord,
-): Record<string, TileState> {
-  const exit = sideToward(from, to);
-  if (!exit) {
-    return cells;
-  }
-  const entry = oppositeSide(exit);
-  const fromKey = coordKey(from);
-  const toKey = coordKey(to);
-  const fromCell = cells[fromKey];
-  const toCell = cells[toKey];
-  if (!fromCell || !toCell) {
-    return cells;
-  }
-  return {
-    ...cells,
-    [fromKey]: {
-      ...fromCell,
-      walls: removeWallSide(fromCell.walls, exit),
-    },
-    [toKey]: {
-      ...toCell,
-      walls: removeWallSide(toCell.walls, entry),
-    },
-  };
-}
-
-/** Clear only the destination's entry-face wall for this crossing. */
-function clearDestEntryWall(
-  cells: Record<string, TileState>,
-  from: Coord,
-  to: Coord,
-): Record<string, TileState> {
-  const exit = sideToward(from, to);
-  if (!exit) {
-    return cells;
-  }
-  const entry = oppositeSide(exit);
-  const toKey = coordKey(to);
-  const toCell = cells[toKey];
-  if (!toCell) {
-    return cells;
-  }
-  return {
-    ...cells,
-    [toKey]: {
-      ...toCell,
-      walls: removeWallSide(toCell.walls, entry),
-    },
-  };
-}
-
 function applyStep(
   state: GameState,
   pieceId: string,
@@ -322,27 +258,16 @@ function applyStep(
     );
   }
 
-  const fromCell = state.board.cells[coordKey(piece.position)];
-  const destCell = state.board.cells[coordKey(destination)];
   if (
-    fromCell &&
-    destCell &&
-    isCrossingBlocked(fromCell.walls, destCell.walls, piece.position, destination)
+    isCrossingBlocked(state.board.edgeWalls, piece.position, destination)
   ) {
-    const exit = sideToward(piece.position, destination);
-    const blockedOnOrigin =
-      exit !== null && tileHasWall(fromCell.walls, exit);
-    // Origin walls block without peeking at the next tile.
-    const cells = blockedOnOrigin
-      ? state.board.cells
-      : revealCell(state.board.cells, coordKey(destination));
-    const message = blockedOnOrigin
-      ? "You hit a wall on this tile — path over"
-      : "You hit a wall on the next tile — path over";
+    // Edge walls sit between tiles — reveal the destination so the player sees
+    // what they bumped into across the shared edge.
+    const cells = revealCell(state.board.cells, coordKey(destination));
     return {
       ...state,
       board: { ...state.board, cells },
-      run: markLost(state.run, message),
+      run: markLost(state.run, "You hit a wall between the tiles — path over"),
     };
   }
 
@@ -548,68 +473,65 @@ function applyUseItemAction(
     };
   }
 
-  const exit = sideToward(piece.position, destination);
-  if (!exit) {
+  if (!sideToward(piece.position, destination)) {
     return {
       ...state,
       run: markLost(state.run, `That action doesn't fit this move — path over`),
     };
   }
 
-  const blockedOnOrigin = tileHasWall(fromCell.walls, exit);
-  const blockedOnDest = tileHasWall(destCell.walls, oppositeSide(exit));
+  const blocked = isCrossingBlocked(
+    state.board.edgeWalls,
+    piece.position,
+    destination,
+  );
 
   if (item.breaksSideWalls) {
-    if (!blockedOnOrigin && !blockedOnDest) {
+    if (!blocked) {
       return {
         ...state,
         run: markLost(state.run, "Sledgehammer found no wall — path over"),
       };
     }
-    // Clear walls without revealing the destination; the move reveals if it lands.
-    const cells = clearCrossingWalls(
-      state.board.cells,
-      piece.position,
-      destination,
-    );
     return {
       ...state,
-      board: { ...state.board, cells },
+      board: {
+        ...state.board,
+        edgeWalls: clearEdgeWall(
+          state.board.edgeWalls,
+          piece.position,
+          destination,
+        ),
+      },
       run: clearBump(state.run),
     };
   }
 
-  // Origin wall blocks before any peek at the destination tile.
-  if (blockedOnOrigin) {
-    return {
-      ...state,
-      run: markLost(state.run, "You hit a wall on this tile — path over"),
-    };
-  }
-
-  // Reveal destination to judge pass-item fit (and report dest-entry walls).
-  let cells = revealCell(state.board.cells, coordKey(destination));
+  // Reveal destination to judge pass-item fit.
+  const cells = revealCell(state.board.cells, coordKey(destination));
   const revealedDest = cells[coordKey(destination)];
   const destType = resolveTileType(state.board.tileTypes, revealedDest.typeId);
 
-  // Matching pass item opens the destination rim for this step so the move can
-  // enter (players cannot Use sledgehammer and a pass item in the same step).
+  // Matching pass item clears the shared edge (if any) so the move can enter.
   if (destType.passItemId === itemId) {
-    if (blockedOnDest) {
-      cells = clearDestEntryWall(cells, piece.position, destination);
-    }
     return {
       ...state,
-      board: { ...state.board, cells },
+      board: {
+        ...state.board,
+        cells,
+        edgeWalls: blocked
+          ? clearEdgeWall(state.board.edgeWalls, piece.position, destination)
+          : state.board.edgeWalls,
+      },
       run: clearBump(state.run),
     };
   }
 
-  if (blockedOnDest) {
+  if (blocked) {
     return {
       ...state,
       board: { ...state.board, cells },
-      run: markLost(state.run, "You hit a wall on the next tile — path over"),
+      run: markLost(state.run, "You hit a wall between the tiles — path over"),
     };
   }
 
@@ -1030,8 +952,8 @@ export function createInitialState(definition: GameDefinition): GameState {
   };
 }
 
-function withRerolledSideWallSeed(definition: GameDefinition): GameDefinition {
-  if (!definition.board.sideWalls) {
+function withRerolledEdgeWallSeed(definition: GameDefinition): GameDefinition {
+  if (!definition.board.edgeWalls) {
     return definition;
   }
   // Mix time into the roll so rapid New map clicks still diverge.
@@ -1043,8 +965,8 @@ function withRerolledSideWallSeed(definition: GameDefinition): GameDefinition {
     ...definition,
     board: {
       ...definition.board,
-      sideWalls: {
-        ...definition.board.sideWalls,
+      edgeWalls: {
+        ...definition.board.edgeWalls,
         seed,
       },
     },
@@ -1103,8 +1025,8 @@ export function applyAction(state: GameState, action: GameAction): GameState {
       return applySoftReset(state);
     case "reset": {
       const definition =
-        isRunModeEnabled(state.definition) && state.definition.board.sideWalls
-          ? withRerolledSideWallSeed(state.definition)
+        isRunModeEnabled(state.definition) && state.definition.board.edgeWalls
+          ? withRerolledEdgeWallSeed(state.definition)
           : state.definition;
       return createInitialState(definition);
     }

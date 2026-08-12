@@ -157,16 +157,27 @@ A run-mode definition MAY set `programLength` (default 6) as the maximum number 
 - **WHEN** a runProgram with fewer than `programLength` steps (but at least one) is applied
 - **THEN** those steps execute in order without requiring the remaining slots
 
-### Requirement: Side walls on tiles
-Board cells MAY carry zero or more orthogonal side walls. Board config MAY generate side walls with weights favoring mostly none, some one-sided, and few two-sided walls in random orientations. Crossing a walled edge SHALL end the run as lost with a reported reason. When the block is on the hero’s current tile (exit side), the destination SHALL NOT be revealed. When the block is only on the destination’s entry side, the destination SHALL be revealed.
+### Requirement: Walls live on edges between cells
+The board SHALL store walls as undirected edges between orthogonally adjacent cells, not as faces owned by a single tile. Crossing from A to B is blocked if and only if the shared edge between A and B has a wall. Crossing a walled edge SHALL end the run as lost with a reported reason and SHALL reveal the destination tile.
 
-#### Scenario: Side wall ends the path
-- **WHEN** the hero attempts to cross a side wall on the destination tile only
+#### Scenario: Approach direction does not double-count
+- **WHEN** a wall sits on the shared edge between two cells
+- **THEN** moving either direction across that edge is blocked the same way
+
+#### Scenario: Edge wall ends the path
+- **WHEN** the hero attempts to cross a walled shared edge
 - **THEN** the destination tile is revealed, the hero does not move, and the run is lost with a wall path-over message
 
-#### Scenario: Origin side wall does not reveal the next tile
-- **WHEN** the hero attempts to leave through a side wall on their current tile
-- **THEN** the destination stays face down, the hero does not move, and the run is lost with a this-tile wall path-over message
+### Requirement: Fixed-count random edge walls keep the map connected
+When edge-wall generation is enabled, the board SHALL place exactly the configured number of edge walls using a seeded RNG. After placement, every cell on the grid MUST remain reachable from every other cell via unblocked orthogonal moves.
+
+#### Scenario: Fifteen walls on Goblin Woods
+- **WHEN** a Goblin Woods map is created with edge-wall count 15
+- **THEN** the board has exactly 15 edge walls and the full grid is connected
+
+#### Scenario: New map re-rolls edges
+- **WHEN** the player activates New map
+- **THEN** edge walls are regenerated from a new seed while preserving count and connectivity
 
 ### Requirement: Safe path tiles only
 In run mode, stepping onto a tile whose effect is not empty, mage, or extraction SHALL end the run as lost and report why (e.g. found a Castle — path over), unless that step’s action used the tile’s `passItemId`. Full-cell wall tiles without a matching used pass item SHALL reveal, keep the hero in place, and end the run as lost. Mage and extraction tiles are safe to step onto. Extraction banking requires a later extract action.
@@ -180,7 +191,7 @@ In run mode, stepping onto a tile whose effect is not empty, mage, or extraction
 - **THEN** the run stays playing and does not become lost from that tile’s effect alone
 
 ### Requirement: Pass item traverses rough tiles
-A tile type MAY declare `passItemId`. When the hero uses that item as the step action and then moves onto the matching tile, the engine SHALL treat the tile as traversable: reveal it, move the hero onto it, keep the run playing (goal wins and banks), and consume the used item from the run inventory. Merely holding the item without using it that step SHALL NOT bypass the hazard. Side-wall crossings SHALL NOT be cleared by pass items.
+A tile type MAY declare `passItemId`. When the hero uses that item as the step action and then moves onto the matching tile, the engine SHALL treat the tile as traversable: reveal it, move the hero onto it, keep the run playing (goal wins and banks), and consume the used item from the run inventory. Merely holding the item without using it that step SHALL NOT bypass the hazard. Using a matching pass item SHALL also clear the shared edge wall for that crossing when one is present.
 
 #### Scenario: Wall tile with pass item is crossed
 - **WHEN** the hero uses a full-cell wall tile’s `passItemId` as the step action and moves onto that wall
@@ -236,16 +247,16 @@ A run program SHALL consist of 1 to `programLength` steps, each pairing a progra
 - **WHEN** the hero is on extraction and the step action is extract with any move
 - **THEN** the run becomes extracted and the move is not applied
 
-### Requirement: Sledgehammer breaks side walls
-An item MAY declare `breaksSideWalls`. Using that item as a step action SHALL clear side walls on the edge being crossed when that crossing is blocked and SHALL consume the item from the run inventory after the move succeeds; using it when the crossing is not blocked SHALL fail the run.
+### Requirement: Sledgehammer breaks edge walls
+An item MAY declare `breaksSideWalls`. Using that item as a step action SHALL clear the shared edge wall for the crossing being attempted when that crossing is blocked and SHALL consume the item from the run inventory after the move succeeds; using it when the crossing is not blocked SHALL fail the run.
 
 #### Scenario: Sledgehammer clears a blocked crossing
-- **WHEN** the hero uses a breaksSideWalls item and the upcoming move is blocked by a side wall
-- **THEN** those walls are cleared, the move proceeds, and the item is removed from the run inventory
+- **WHEN** the hero uses a breaksSideWalls item and the upcoming move is blocked by an edge wall
+- **THEN** that shared edge wall is cleared, the move proceeds, and the item is removed from the run inventory
 
 #### Scenario: Sledgehammer enters a walled goal
-- **WHEN** the hero uses a breaksSideWalls item whose id is the goal’s passItemId and moves onto that goal through a blocked side wall
-- **THEN** the walls are cleared, the hero wins, and the item is consumed (not banked)
+- **WHEN** the hero uses a breaksSideWalls item whose id is the goal’s passItemId and moves onto that goal through a blocked shared edge
+- **THEN** that edge wall is cleared, the hero wins, and the item is consumed (not banked)
 
 ### Requirement: Persistent stash and run loadout
 When run mode is enabled, game state SHALL include a persistent `stashItemIds` list separate from the run inventory. A new map SHALL start with an empty stash and an empty run inventory. Committing a loadout SHALL move the selected item ids from the stash into the run inventory (they leave the stash immediately). Failing a run (status lost) SHALL discard the run inventory without returning those items to the stash. Soft reset SHALL NOT re-seed run inventory from the stash or from mid-run finds.
@@ -313,12 +324,8 @@ A run program MAY include an `extract` action. While standing on an extraction t
 - **WHEN** the hero is not on an extraction tile and the step action is extract
 - **THEN** the run is lost and the hero does not move
 
-### Requirement: Random placements may set walls
-A board `randomPlacements` entry MAY declare `walls` and MAY declare `count` (default 1). The engine SHALL place that many cells of the given type onto eligible cells (seeded via the board side-wall seed), applying walls when provided. Each placed cell SHALL no longer be eligible for later placements that target the previous type.
-
-#### Scenario: Placement applies walls
-- **WHEN** a random placement for a type includes walls on all four sides
-- **THEN** the placed cell has those four side walls
+### Requirement: Random placements place typed cells
+A board `randomPlacements` entry MAY declare `count` (default 1). The engine SHALL place that many cells of the given type onto eligible cells (seeded via the board edge-wall seed). Each placed cell SHALL no longer be eligible for later placements that target the previous type.
 
 #### Scenario: Count places multiple cells
 - **WHEN** a random placement requests count 3 for a type on meadow cells
@@ -390,13 +397,13 @@ A tile type MAY declare effect kind `portal` with a numeric `portalId`. Portals 
 - **WHEN** the hero is not on a portal and programs travelToPortal
 - **THEN** the run is lost
 
-### Requirement: Matching pass item bypasses destination entry walls
-When a program step Uses an item whose id matches the destination tile's `passItemId`, the engine SHALL allow that crossing even if the destination tile has a side wall on the entry face. Exit walls on the origin tile SHALL still block unless the used item breaks side walls.
+### Requirement: Matching pass item clears shared edge walls
+When a program step Uses an item whose id matches the destination tile's `passItemId`, the engine SHALL clear the shared edge wall for that crossing (if any) so the move can enter.
 
-#### Scenario: Makeshift Bridge into a walled pit
-- **WHEN** the hero Uses makeshift-bridge while moving onto a pit that has a wall on the entry face
-- **THEN** the hero moves onto the pit, the pass item is consumed, and the run stays playing
+#### Scenario: Makeshift Bridge across a walled pit edge
+- **WHEN** the hero Uses makeshift-bridge while moving onto a pit across a walled shared edge
+- **THEN** the shared edge wall is cleared, the hero moves onto the pit, the pass item is consumed, and the run stays playing
 
-#### Scenario: Origin wall still blocks a pass item
-- **WHEN** the hero Uses a matching pass item but the origin tile has a wall on the exit face
-- **THEN** the path ends without peeking at or entering the destination
+#### Scenario: Wrong item still blocked by edge wall
+- **WHEN** the hero Uses an item that is not the destination pass item across a walled shared edge
+- **THEN** the path ends after revealing the destination

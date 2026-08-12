@@ -1,4 +1,5 @@
 import {
+  cellEdgeWallSides,
   coordKey,
   pieceAt,
   resolveTileType,
@@ -36,12 +37,14 @@ export function BoardView({ game, selectedPieceId, onCellClick }: BoardViewProps
         const tileType = resolveTileType(game.board.tileTypes, tile.typeId);
         const piece = pieceAt(game.pieces, coord);
         const pieceType = piece ? game.pieceTypes[piece.typeId] : undefined;
+        const walls = cellEdgeWallSides(game.board.edgeWalls, coord);
         return (
           <TileView
             key={coordKey(coord)}
             coord={coord}
             tile={tile}
             tileType={tileType}
+            walls={walls}
             piece={piece}
             pieceLabel={pieceType?.icon ?? pieceType?.label}
             pieceColor={pieceType?.color}

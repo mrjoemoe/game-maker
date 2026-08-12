@@ -138,8 +138,9 @@ export const itemsSledgehammer = defineComponent({
     contractVersion: "1.0.0",
     owner: "goblin-woods",
     docs: {
-      summary: "Breaks side walls; castle pass item.",
-      playerFacing: "Sledgehammer breaks side walls and opens the castle.",
+      summary: "Breaks edge walls between tiles; castle pass item.",
+      playerFacing:
+        "Sledgehammer smashes the wall between two tiles and opens the castle.",
     },
   },
   contribute: () => ({

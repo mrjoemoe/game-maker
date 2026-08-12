@@ -135,9 +135,9 @@ function applyContribution(
       b.defaultTileTypeId = contrib.board.defaultTileTypeId;
       setProv(provenance, "board.defaultTileTypeId", id, ver);
     }
-    if (contrib.board.sideWalls) {
-      b.sideWalls = contrib.board.sideWalls;
-      setProv(provenance, "board.sideWalls", id, ver);
+    if (contrib.board.edgeWalls) {
+      b.edgeWalls = contrib.board.edgeWalls;
+      setProv(provenance, "board.edgeWalls", id, ver);
     }
     if (contrib.board.coinWeights) {
       b.coinWeights = contrib.board.coinWeights;
@@ -475,7 +475,7 @@ export function resolveVariant(
       tileTypes: draft.board.tileTypes,
       defaultTileTypeId: draft.board.defaultTileTypeId,
       overrides: draft.board.overrides,
-      sideWalls: draft.board.sideWalls,
+      edgeWalls: draft.board.edgeWalls,
       randomPlacements: draft.board.randomPlacements,
       coinWeights: draft.board.coinWeights,
     },

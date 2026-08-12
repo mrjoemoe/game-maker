@@ -43,7 +43,7 @@ The Goblin Woods board SHALL place extraction tiles on all four corner cells. Th
 - **THEN** cells (0,0), (width-1,0), (0,height-1), and (width-1,height-1) are extraction tiles and face up
 
 ### Requirement: Goblin Woods random castle
-The Goblin Woods board SHALL place exactly one castle goal tile at a randomly chosen eligible cell that is not the hero start and not a corner extraction cell. That castle cell SHALL have side walls on all four sides. The castle SHALL NOT be fixed to a single hardcoded coordinate across new maps.
+The Goblin Woods board SHALL place exactly one castle goal tile at a randomly chosen eligible cell that is not the hero start and not a corner extraction cell. The castle SHALL require the sledgehammer as its pass item. The castle SHALL NOT rely on forced four-sided cell walls; map edge walls come from the global edge-wall placement. The castle SHALL NOT be fixed to a single hardcoded coordinate across new maps.
 
 #### Scenario: Castle not on start or corner
 - **WHEN** the Goblin Woods board is resolved
@@ -53,12 +53,19 @@ The Goblin Woods board SHALL place exactly one castle goal tile at a randomly ch
 - **WHEN** the player starts a new map after a full reset
 - **THEN** the castle cell may differ from the previous map's castle cell
 
-#### Scenario: Castle is fully walled
-- **WHEN** the Goblin Woods board is resolved
-- **THEN** the castle cell has side walls on north, east, south, and west
+#### Scenario: Castle requires sledgehammer
+- **WHEN** the Goblin Woods variant is resolved
+- **THEN** the castle tile type's `passItemId` is the sledgehammer
+
+### Requirement: Goblin Woods places fifteen connected edge walls
+Goblin Woods SHALL enable edge-wall generation with count 15. New map SHALL re-roll the seed. The resulting map MUST remain fully connected.
+
+#### Scenario: Fifteen connected walls
+- **WHEN** a Goblin Woods board is loaded
+- **THEN** there are exactly 15 edge walls and every cell is reachable from the start cell
 
 ### Requirement: Goblin Woods random content layout
-Aside from the start Mage and four corner extraction tiles, Goblin Woods hazard, enemy, forest, shop, portal, and castle tiles SHALL be placed through seeded random placement components. A full reset or New map SHALL re-roll the board seed so those placements and side walls can differ from the previous map. Goblin Woods SHALL place eight forest tiles and SHALL NOT place sword or shield caches.
+Aside from the start Mage and four corner extraction tiles, Goblin Woods hazard, enemy, forest, shop, portal, and castle tiles SHALL be placed through seeded random placement components. A full reset or New map SHALL re-roll the board seed so those placements and edge walls can differ from the previous map. Goblin Woods SHALL place eight forest tiles and SHALL NOT place sword or shield caches.
 
 #### Scenario: New map changes content layout
 - **WHEN** the player activates New map on Goblin Woods
@@ -86,9 +93,9 @@ Goblin Woods SHALL place exactly four portal tiles (Portal 1–4) on random mead
 - **WHEN** the Goblin Woods board is resolved
 - **THEN** exactly one cell of each portal-1 through portal-4 type exists
 
-### Requirement: Rulebook explains pass items versus side walls
-The Goblin Woods rulebook SHALL state that Using the matching pass item lets the hero enter that tile even when the destination has a rim wall, while walls on the hero's current tile still need a Sledgehammer.
+### Requirement: Rulebook explains edge walls and pass items
+The Goblin Woods rulebook SHALL state that walls sit between tiles, that fifteen connected edge walls are placed each map, and that Using a matching pass item (or sledgehammer) clears the shared edge for that crossing.
 
-#### Scenario: Rulebook covers walled pass tiles
-- **WHEN** a player reads the pass-items or side-walls section
-- **THEN** the distinction between destination rim walls (pass item) and origin walls (sledgehammer) is clear
+#### Scenario: Rulebook covers shared edges
+- **WHEN** a player reads the edge-walls or pass-items section
+- **THEN** walls are described as between-tile edges and pass/sledgehammer clearing is clear

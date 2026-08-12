@@ -13,11 +13,11 @@ const CORNERS = [
 const RANDOM_EXCLUDE = [{ ...START }, ...CORNERS.map((c) => ({ ...c }))];
 
 const overrides: CellOverride[] = [
-  { coord: { ...START }, typeId: "mage", walls: [] },
-  { coord: { x: 0, y: 0 }, typeId: "extraction", walls: [] },
-  { coord: { x: WIDTH - 1, y: 0 }, typeId: "extraction", walls: [] },
-  { coord: { x: 0, y: HEIGHT - 1 }, typeId: "extraction", walls: [] },
-  { coord: { x: WIDTH - 1, y: HEIGHT - 1 }, typeId: "extraction", walls: [] },
+  { coord: { ...START }, typeId: "mage" },
+  { coord: { x: 0, y: 0 }, typeId: "extraction" },
+  { coord: { x: WIDTH - 1, y: 0 }, typeId: "extraction" },
+  { coord: { x: 0, y: HEIGHT - 1 }, typeId: "extraction" },
+  { coord: { x: WIDTH - 1, y: HEIGHT - 1 }, typeId: "extraction" },
 ];
 
 const randomPlacements: RandomTilePlacement[] = [
@@ -34,13 +34,12 @@ const randomPlacements: RandomTilePlacement[] = [
   { typeId: "goblin", count: 1, exclude: RANDOM_EXCLUDE },
   { typeId: "brute", count: 1, exclude: RANDOM_EXCLUDE },
   { typeId: "villain", count: 1, exclude: RANDOM_EXCLUDE },
-  {
-    typeId: "castle",
-    count: 1,
-    exclude: RANDOM_EXCLUDE,
-    walls: ["n", "e", "s", "w"],
-  },
-];
+      {
+        typeId: "castle",
+        count: 1,
+        exclude: RANDOM_EXCLUDE,
+      },
+    ];
 
 /**
  * Goblin Woods tile types + seeded layout. Depends on pass/reward items.
@@ -172,9 +171,9 @@ export const boardsGoblinWoods = defineComponent({
         },
       ],
       defaultTileTypeId: "meadow",
-      sideWalls: {
+      edgeWalls: {
+        count: 15,
         seed: 42,
-        weights: { none: 0.7, one: 0.25, two: 0.05 },
       },
       coinWeights: { zero: 0.4, one: 0.3, two: 0.2, three: 0.1 },
       overrides,

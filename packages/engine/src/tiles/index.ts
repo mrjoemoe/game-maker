@@ -15,19 +15,29 @@ export type TileEffect =
   | { kind: "shop" }
   | { kind: "portal"; portalId: number };
 
-export type { TileSide, SideWallConfig, SideWallWeights } from "./sides.js";
+export type {
+  EdgeWallConfig,
+  EdgeWallKey,
+  SideWallConfig,
+  SideWallWeights,
+  TileSide,
+} from "./sides.js";
 export {
   TILE_SIDES,
+  cellEdgeWallSides,
+  clearEdgeWall,
   createSeededRandom,
-  generateSideWalls,
+  edgeKeyBetween,
+  generateConnectedEdgeWalls,
+  hasEdgeWall,
+  horizontalEdgeKey,
   isCrossingBlocked,
-  normalizeWalls,
+  isGridConnected,
+  listInternalEdges,
   oppositeSide,
   sideToward,
-  tileHasWall,
+  verticalEdgeKey,
 } from "./sides.js";
-
-import { normalizeWalls, type TileSide } from "./sides.js";
 
 export type TileTypeDefinition = {
   id: string;
@@ -37,7 +47,7 @@ export type TileTypeDefinition = {
   effect?: TileEffect;
   /**
    * When set, holding this item lets the hero traverse the tile instead of
-   * pathing over (goal tiles win). Side walls are unaffected.
+   * pathing over (goal tiles win). Edge walls are separate.
    */
   passItemId?: string;
   /** Optional free-form metadata for prototypes. */
@@ -57,8 +67,6 @@ export type TileState = {
   isFaceUp: boolean;
   /** True once a one-shot effect (enemy/powerup) on this cell has fired. */
   resolved?: boolean;
-  /** Orthogonal sides of this tile that are blocked by a wall (0–4). */
-  walls?: TileSide[];
   /** Remaining coins on this cell (0–3 typical). */
   coins?: number;
 };
@@ -96,14 +104,12 @@ export function createTileState(
   typeId: string,
   isFaceUp = true,
   resolved = false,
-  walls: TileSide[] = [],
   coins = 0,
 ): TileState {
   return {
     typeId,
     isFaceUp,
     resolved,
-    walls: normalizeWalls(walls),
     coins,
   };
 }
