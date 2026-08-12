@@ -529,7 +529,12 @@
   flex-wrap: wrap;
   gap: 0.35rem;
   margin-bottom: 0.75rem;
-  max-height: 9rem;
+  max-height: none;
+  overflow: visible;
+}
+
+.action-bank .path-action-choices {
+  max-height: min(70vh, 36rem);
   overflow: auto;
 }
 

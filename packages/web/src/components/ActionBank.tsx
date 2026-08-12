@@ -1,7 +1,6 @@
 import {
   PORTAL_IDS,
   SHOP_ITEM_COST,
-  type Direction,
   type ItemDefinition,
   type ProgramStep,
 } from "@game-maker/engine";
@@ -53,39 +52,46 @@ export function ActionBank({
     onAppend(step);
   };
 
-  const moveBtn = (direction: Direction, label: string, aria: string) => (
-    <button
-      key={direction}
-      type="button"
-      className="action-choice action-choice-move"
-      disabled={locked}
-      aria-label={aria}
-      onClick={() => append({ kind: "move", direction })}
-    >
-      {label}
-    </button>
-  );
-
   return (
     <aside className="action-bank" aria-label="Action bank">
       <h2>Actions</h2>
-      <p className="path-lede">
-        Tap an action to add it to the track (up to {programLength}). Moving one
-        space costs one action. Coins collect automatically — not an action.
-      </p>
-
-      <p className="path-compose-label">Move</p>
-      <div className="path-pad" role="group" aria-label="Move actions">
-        {moveBtn("up", "↑ Up", "Up")}
-        <div className="pad-row">
-          {moveBtn("left", "← Left", "Left")}
-          {moveBtn("down", "↓ Down", "Down")}
-          {moveBtn("right", "→ Right", "Right")}
-        </div>
-      </div>
-
-      <p className="path-compose-label">Other actions</p>
-      <div className="path-action-choices" role="group" aria-label="Other actions">
+      <div className="path-action-choices" role="group" aria-label="Actions">
+        <button
+          type="button"
+          className="action-choice"
+          disabled={locked}
+          aria-label="Up"
+          onClick={() => append({ kind: "move", direction: "up" })}
+        >
+          ↑ Up
+        </button>
+        <button
+          type="button"
+          className="action-choice"
+          disabled={locked}
+          aria-label="Left"
+          onClick={() => append({ kind: "move", direction: "left" })}
+        >
+          ← Left
+        </button>
+        <button
+          type="button"
+          className="action-choice"
+          disabled={locked}
+          aria-label="Down"
+          onClick={() => append({ kind: "move", direction: "down" })}
+        >
+          ↓ Down
+        </button>
+        <button
+          type="button"
+          className="action-choice"
+          disabled={locked}
+          aria-label="Right"
+          onClick={() => append({ kind: "move", direction: "right" })}
+        >
+          → Right
+        </button>
         <button
           type="button"
           className="action-choice"

@@ -255,6 +255,7 @@ export function App() {
                     onToggleLoadout={toggleLoadout}
                     onCommitLoadout={commitLoadout}
                   />
+                  <TileTally game={state.game} />
                 </div>
                 <div className="run-sidebar">
                   <ActionBank
@@ -271,7 +272,6 @@ export function App() {
                       )
                     }
                   />
-                  <TileTally game={state.game} />
                 </div>
               </>
             ) : (

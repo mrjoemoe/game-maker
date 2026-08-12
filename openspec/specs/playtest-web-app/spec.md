@@ -80,7 +80,7 @@ Revealed tiles SHALL display an indicator of their effect (enemy, trap, powerup,
 - **THEN** those corners show an extraction indicator
 
 ### Requirement: Path planner UI
-When run mode is enabled, the playtest app SHALL provide an action bank on the right of the board and a horizontal action track below the board (above inventory). The bank SHALL include left, up, down, and right as actions along with take, buy, use, travel, and extract. Clicking a bank action SHALL append it to the track left-to-right up to `programLength` (default 10). The track SHALL highlight the executing action while running. Use-item actions SHALL be enabled for items held or taken/bought earlier in the queued program. Run SHALL be enabled with at least one queued action. A queued Extract SHALL prevent appending further actions. Collecting coins SHALL NOT appear as a bank action.
+When run mode is enabled, the playtest app SHALL provide an action bank on the right of the board and a horizontal action track below the board (above inventory). The bank SHALL list left, up, down, and right in the same compact action list as take, buy, use, travel, and extract, without instructional lede copy and without a separate move pad. Clicking a bank action SHALL append it to the track left-to-right up to `programLength` (10 for Goblin Woods). The track SHALL highlight the executing action while running. Use-item actions SHALL be enabled for items held or taken/bought earlier in the queued program. Run SHALL be enabled with at least one queued action. A queued Extract SHALL prevent appending further actions. Collecting coins SHALL NOT appear as a bank action. The tile tally SHALL NOT sit in the action-bank column; it SHALL appear below inventory so the bank has vertical room for more choices.
 
 #### Scenario: Direction appends to track
 - **WHEN** the player clicks Right in the action bank
@@ -118,8 +118,16 @@ When run mode is enabled, the playtest app SHALL provide an action bank on the r
 - **WHEN** the player queues Extract
 - **THEN** additional actions cannot be appended until Undo or Clear
 
+#### Scenario: Moves share the action list
+- **WHEN** the action bank is shown
+- **THEN** directional moves appear among the other action buttons without a separate move pad or lede paragraph
+
+#### Scenario: Tile tally is below inventory
+- **WHEN** run mode is shown
+- **THEN** the tile tally is not stacked under the action bank on the right
+
 ### Requirement: Tile count tally
-When run mode is enabled, the playtest app SHALL show a side panel listing each tile type on the map with a count. When a tile type declares a `passItemId`, the tally row SHALL show that item (label and/or icon) as the gear used to pass it.
+When run mode is enabled, the playtest app SHALL show a panel listing each tile type on the map with a count, placed below inventory rather than in the action-bank column. When a tile type declares a `passItemId`, the tally row SHALL show that item (label and/or icon) as the gear used to pass it.
 
 #### Scenario: Tally lists meadow count
 - **WHEN** the goblin-woods board is loaded
