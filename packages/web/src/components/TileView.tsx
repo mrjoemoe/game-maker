@@ -14,6 +14,8 @@ type TileViewProps = {
   tileType: TileTypeDefinition;
   /** Shared edge walls bordering this cell (from board.edgeWalls). */
   walls?: TileSide[];
+  /** Debug: show face-up content without changing game state. */
+  forceFaceUp?: boolean;
   piece?: PieceInstance;
   pieceLabel?: string;
   pieceColor?: string;
@@ -61,19 +63,21 @@ export function TileView({
   tile,
   tileType,
   walls: edgeWallSides = [],
+  forceFaceUp = false,
   piece,
   pieceLabel,
   pieceColor,
   selected,
   onClick,
 }: TileViewProps) {
-  const faceStyle: CSSProperties = tile.isFaceUp
+  const shownFaceUp = tile.isFaceUp || forceFaceUp;
+  const faceStyle: CSSProperties = shownFaceUp
     ? { background: tileType.color }
     : { background: "var(--face-down)" };
-  const icon = tile.isFaceUp ? effectIcon(tileType, tile.resolved) : null;
+  const icon = shownFaceUp ? effectIcon(tileType, tile.resolved) : null;
   const resolvedClass = tile.resolved ? " resolved" : "";
   const isSolidWall =
-    tile.isFaceUp && tileEffect(tileType).kind === "wall";
+    shownFaceUp && tileEffect(tileType).kind === "wall";
   // Always show edge walls; BoardView only passes each edge once (e/s).
   const walls = edgeWallSides;
   const wallLabel =
@@ -82,12 +86,12 @@ export function TileView({
   return (
     <button
       type="button"
-      className={`tile${selected ? " selected" : ""}${tile.isFaceUp ? "" : " face-down"}${resolvedClass}${isSolidWall ? " solid-wall" : ""}`}
+      className={`tile${selected ? " selected" : ""}${shownFaceUp ? "" : " face-down"}${resolvedClass}${isSolidWall ? " solid-wall" : ""}${forceFaceUp && !tile.isFaceUp ? " debug-peek" : ""}`}
       style={faceStyle}
       onClick={onClick}
       aria-label={
-        tile.isFaceUp
-          ? `Tile ${coord.x},${coord.y} ${tileType.label}${tile.resolved ? " cleared" : ""}${wallLabel}${isSolidWall ? " blocked" : ""}`
+        shownFaceUp
+          ? `Tile ${coord.x},${coord.y} ${tileType.label}${tile.resolved ? " cleared" : ""}${wallLabel}${isSolidWall ? " blocked" : ""}${forceFaceUp && !tile.isFaceUp ? " debug peek" : ""}`
           : `Tile ${coord.x},${coord.y} face down${wallLabel}`
       }
     >
@@ -103,14 +107,14 @@ export function TileView({
         <span className="solid-wall-frame" aria-hidden="true" />
       ) : null}
       {icon ? <span className="tile-icon">{icon}</span> : null}
-      {tile.isFaceUp && (tile.coins ?? 0) > 0 ? (
+      {shownFaceUp && (tile.coins ?? 0) > 0 ? (
         <span className="tile-coins" aria-label={`${tile.coins} coins`}>
           <span aria-hidden="true">🪙</span>
           <span className="tile-coins-count">{tile.coins}</span>
         </span>
       ) : null}
       <span className="tile-label">
-        {tile.isFaceUp ? tileType.label : "Hidden"}
+        {shownFaceUp ? tileType.label : "Hidden"}
       </span>
       {piece ? (
         <span

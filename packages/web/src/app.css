@@ -299,6 +299,49 @@
   font-weight: 650;
 }
 
+.debug-panel {
+  background: var(--panel);
+  border: 1px dashed #9a7b4f;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.debug-panel h2 {
+  margin: 0 0 0.5rem;
+  font-family: "Fraunces", "Palatino Linotype", serif;
+  font-size: 1.25rem;
+  font-weight: 650;
+}
+
+.debug-toggle {
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  background: #f7f2e8;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.45rem 0.7rem;
+  cursor: pointer;
+}
+
+.debug-toggle.active {
+  border-color: #8a5a2b;
+  background: #f0e0c8;
+}
+
+.debug-note {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.tile.debug-peek {
+  outline: 1px dashed rgba(138, 90, 43, 0.55);
+  outline-offset: -2px;
+}
+
 .tally-lede {
   margin: 0 0 0.75rem;
   color: var(--muted);

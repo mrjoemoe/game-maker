@@ -11,6 +11,7 @@ import { useCallback, useRef, useState } from "react";
 import { ActionBank } from "./components/ActionBank";
 import { ActionTrack } from "./components/ActionTrack";
 import { BoardView } from "./components/BoardView";
+import { DebugPanel } from "./components/DebugPanel";
 import { InventoryPanel } from "./components/InventoryPanel";
 import { RulebookPanel } from "./components/RulebookPanel";
 import { RunHud } from "./components/RunHud";
@@ -41,6 +42,7 @@ export function App() {
   const [path, setPath] = useState<ProgramStep[]>([]);
   const [executingIndex, setExecutingIndex] = useState<number | null>(null);
   const [selectedLoadout, setSelectedLoadout] = useState<string[]>([]);
+  const [debugRevealAll, setDebugRevealAll] = useState(false);
   const executingRef = useRef(false);
   const cancelRef = useRef(false);
   const gameRef = useRef(state.game);
@@ -81,6 +83,7 @@ export function App() {
     executingRef.current = false;
     clearPath();
     setSelectedLoadout([]);
+    setDebugRevealAll(false);
     dispatch({ type: "game", action: { type: "reset" } });
   };
 
@@ -236,6 +239,7 @@ export function App() {
                     game={state.game}
                     selectedPieceId={state.selectedPieceId}
                     onCellClick={onCellClick}
+                    forceRevealAll={debugRevealAll}
                   />
                   <ActionTrack
                     programLength={programLength}
@@ -256,6 +260,12 @@ export function App() {
                     onCommitLoadout={commitLoadout}
                   />
                   <TileTally game={state.game} />
+                  <DebugPanel
+                    revealAll={debugRevealAll}
+                    onToggleRevealAll={() =>
+                      setDebugRevealAll((prev) => !prev)
+                    }
+                  />
                 </div>
                 <div className="run-sidebar">
                   <ActionBank

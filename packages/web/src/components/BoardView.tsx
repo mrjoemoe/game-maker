@@ -12,9 +12,16 @@ type BoardViewProps = {
   game: GameState;
   selectedPieceId: string | null;
   onCellClick: (coord: Coord) => void;
+  /** Debug: show every tile face-up without mutating game state. */
+  forceRevealAll?: boolean;
 };
 
-export function BoardView({ game, selectedPieceId, onCellClick }: BoardViewProps) {
+export function BoardView({
+  game,
+  selectedPieceId,
+  onCellClick,
+  forceRevealAll = false,
+}: BoardViewProps) {
   const { width, height } = game.board.grid;
   const rows: Coord[][] = [];
   for (let y = 0; y < height; y += 1) {
@@ -47,6 +54,7 @@ export function BoardView({ game, selectedPieceId, onCellClick }: BoardViewProps
             tile={tile}
             tileType={tileType}
             walls={walls}
+            forceFaceUp={forceRevealAll}
             piece={piece}
             pieceLabel={pieceType?.icon ?? pieceType?.label}
             pieceColor={pieceType?.color}
