@@ -75,7 +75,7 @@ Timeline Game SHALL keep three facedown piles: **Omega events** (person, place, 
 - **THEN** it describes Omega events, action cards, and blueprints as separate piles
 
 ### Requirement: Device costs in the rulebook
-The Timeline Game rulebook Devices section SHALL list the build cost for each device A–H: parts, minerals, crystals to run, culture / science / politics, uses, and how many of that blueprint are in the deck.
+The Timeline Game rulebook Devices section SHALL list the build cost for each device A–H: parts, minerals, crystals to run, culture / science / politics, uses, and how many of that blueprint are in the deck. Pruner’s effect SHALL say it cuts a loose tail from the head back to the latest junction.
 
 #### Scenario: Brancher cost is listed
 - **WHEN** a player reads the Devices section of Timeline Game’s rulebook
@@ -84,6 +84,10 @@ The Timeline Game rulebook Devices section SHALL list the build cost for each de
 #### Scenario: Every device has a numeric cost
 - **WHEN** a player reads the Devices table
 - **THEN** each of devices A–H has parts, minerals, crystal, society, uses, and blueprint-count numbers rather than only high/low wording
+
+#### Scenario: Pruner cuts a loose tail
+- **WHEN** a player reads Pruner’s effect
+- **THEN** it describes cutting from the head down to the latest junction, not deleting descendant forks
 
 ### Requirement: Blueprint deck counts
 Timeline Game SHALL put the listed number of each device blueprint into the blueprint pile: Brancher 12, Reverser 12, Relocator 6, Pruner 3, Merger 3, Rewriter 24, Preserver 3, Jumper 12.

@@ -332,6 +332,62 @@ export function descendantIds(
   return out;
 }
 
+export function isJunctionNode(state: TimelineState, nodeId: string): boolean {
+  const node = getNode(state, nodeId);
+  if (node.childIds.length > 1) return true;
+  if (node.parentIds.length > 1) return true;
+  if (
+    node.childIds.some(
+      (id) => getNode(state, id).branchId !== node.branchId,
+    )
+  ) {
+    return true;
+  }
+  return Object.values(state.branches).some(
+    (branch) => branch.mergedIntoNodeId === nodeId,
+  );
+}
+
+export function looseTailNodeIds(
+  state: TimelineState,
+  branchId: string,
+): string[] {
+  const branch = getBranch(state, branchId);
+  if (branch.mergedIntoNodeId) return [];
+  const head = getNode(state, branch.headNodeId);
+  if (isJunctionNode(state, head.id) || isPreservedNode(state, head.id)) {
+    return [];
+  }
+  const removed: string[] = [];
+  let current: TimelineNode | null = head;
+  let stoppedAtJunction = false;
+  while (current) {
+    if (current.id === state.epochNodeId) break;
+    if (
+      removed.length > 0 &&
+      (isJunctionNode(state, current.id) || isPreservedNode(state, current.id))
+    ) {
+      stoppedAtJunction = true;
+      break;
+    }
+    removed.push(current.id);
+    const parentId =
+      current.parentIds.find((id) => {
+        const parent = state.nodes[id];
+        return parent?.branchId === current!.branchId;
+      }) ?? current.parentIds[0];
+    if (!parentId) break;
+    const parent = getNode(state, parentId);
+    if (parent.branchId !== current.branchId) {
+      stoppedAtJunction = true;
+      break;
+    }
+    current = parent;
+  }
+  if (!stoppedAtJunction) return [];
+  return removed;
+}
+
 export function pathHasTrio(
   state: TimelineState,
   headNodeId: string,
@@ -953,46 +1009,63 @@ function applyRelocator(
 function applyPruner(
   state: TimelineState,
   config: TimelineConfig,
-  branchId: string,
+  nodeId: string,
 ): TimelineState {
-  if (isPrimary(state, branchId)) {
-    return log(state, "Cannot prune Prime.");
-  }
-  const locked = manipulationBlocked(state, branchId);
-  if (locked) return log(state, locked);
+  const node = getNode(state, nodeId);
+  const branchId = node.branchId;
   const branch = getBranch(state, branchId);
-  const root = getNode(state, branch.rootNodeId);
-  const removed = new Set<string>([root.id, ...descendantIds(state, root.id)]);
+  const tail = looseTailNodeIds(state, branchId);
+  if (!tail.includes(nodeId)) {
+    return log(
+      state,
+      "Pruner can only cut a loose end, from the head down to the latest junction.",
+    );
+  }
+  const removed = new Set(tail);
   const nodes = { ...state.nodes };
-  for (const parentId of root.parentIds) {
-    if (removed.has(parentId)) continue;
-    const parent = nodes[parentId];
-    if (!parent) continue;
-    nodes[parentId] = {
-      ...parent,
-      childIds: parent.childIds.filter((id) => !removed.has(id)),
-    };
+  let newHeadId: string | null = null;
+  for (const id of removed) {
+    const gone = state.nodes[id];
+    if (!gone) continue;
+    for (const parentId of gone.parentIds) {
+      if (removed.has(parentId)) continue;
+      const parent = nodes[parentId];
+      if (!parent) continue;
+      nodes[parentId] = {
+        ...parent,
+        childIds: parent.childIds.filter((childId) => !removed.has(childId)),
+      };
+      if (parent.branchId === branchId) newHeadId = parentId;
+    }
   }
   let next: TimelineState = { ...state, nodes };
   for (const id of removed) {
-    const node = state.nodes[id];
-    if (node?.card) {
-      const def = cardById(config, node.card.cardId);
-      if (def) next = returnCard(next, config, node.card.cardId);
+    const gone = state.nodes[id];
+    if (gone?.card) {
+      const def = cardById(config, gone.card.cardId);
+      if (def) next = returnCard(next, config, gone.card.cardId);
     }
   }
   const remainingNodes = { ...next.nodes };
   for (const id of removed) delete remainingNodes[id];
   const remainingBranches = { ...next.branches };
-  for (const br of Object.values(next.branches)) {
-    if (removed.has(br.rootNodeId) || removed.has(br.headNodeId)) {
-      delete remainingBranches[br.id];
-    }
+  const dropWholeBranch = removed.has(branch.rootNodeId);
+  if (dropWholeBranch) {
+    delete remainingBranches[branchId];
+  } else if (newHeadId && remainingNodes[newHeadId]) {
+    remainingBranches[branchId] = {
+      ...branch,
+      headNodeId: newHeadId,
+    };
   }
-  delete remainingBranches[branchId];
   let travelerNodeId = next.travelerNodeId;
   if (removed.has(travelerNodeId)) {
-    travelerNodeId = branch.forkNodeId ?? next.epochNodeId;
+    travelerNodeId =
+      (!dropWholeBranch && newHeadId && remainingNodes[newHeadId]
+        ? newHeadId
+        : null) ??
+      branch.forkNodeId ??
+      next.epochNodeId;
   }
   next = {
     ...next,
@@ -1002,7 +1075,9 @@ function applyPruner(
   };
   return log(
     next,
-    `Pruner: ${branch.label} collapsed. Events returned to decks.`,
+    dropWholeBranch
+      ? `Pruner: ${branch.label} was loose and returned to decks.`
+      : `Pruner: cut ${branch.label} back to the last junction.`,
   );
 }
 
@@ -1425,7 +1500,7 @@ export function applyTimelineAction(
       );
     case "devicePruner":
       return withSlottedDevice(state, config, "pruner", () =>
-        applyPruner(state, config, action.branchId),
+        applyPruner(state, config, action.nodeId),
       );
     case "deviceMerger":
       return withSlottedDevice(state, config, "merger", () =>

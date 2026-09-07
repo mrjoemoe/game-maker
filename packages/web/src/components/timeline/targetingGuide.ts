@@ -82,7 +82,7 @@ export function targetingGuide(targeting: Targeting): TargetingGuide | null {
         letter: "D",
         title: "Pruner",
         step: "Step 1 of 1",
-        how: "Click any card on the branch to cut. Prime cannot be pruned.",
+        how: "Click a card on a loose end. Pruner cuts from that head down to the latest junction.",
       };
     case "merger-first":
       return {

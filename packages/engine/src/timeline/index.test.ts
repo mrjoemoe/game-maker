@@ -352,11 +352,44 @@ describe("timeline", () => {
     const fork = Object.values(state.branches).find((b) => b.index === 2)!;
     expect(state.nodes[fork.rootNodeId].card?.cardId).toBe("get-parts");
     const before = state.actionDeck.filter((id) => id === "get-parts").length;
-    state = apply(state, { type: "devicePruner", branchId: fork.id });
+    state = apply(state, { type: "devicePruner", nodeId: fork.headNodeId });
     expect(state.branches[fork.id]).toBeUndefined();
     expect(state.actionDeck.filter((id) => id === "get-parts").length).toBe(
       before + 1,
     );
+  });
+
+  it("Pruner cuts Prime only down to the latest fork", () => {
+    const start = createInitialTimeline(config);
+    const paris = nodeByCard("paris", start);
+    let state = brancherFrom(start, paris.id);
+    const culture = nodeByCard("culture", state);
+    const chrono = nodeByCard("chrono", state);
+    state = apply(state, { type: "devicePruner", nodeId: culture.id });
+    expect(state.nodes[culture.id]).toBeUndefined();
+    expect(state.nodes[chrono.id]).toBeUndefined();
+    expect(state.nodes[paris.id]).toBeTruthy();
+    expect(state.branches[state.primaryBranchId].headNodeId).toBe(paris.id);
+    expect(Object.keys(state.branches).length).toBe(2);
+  });
+
+  it("Pruner refuses a merged branch", () => {
+    const start = createInitialTimeline(config);
+    const paris = nodeByCard("paris", start);
+    let state = brancherFrom(start, paris.id);
+    const fork = Object.values(state.branches).find((b) => b.index === 2)!;
+    const into = nodeByCard("chrono", state);
+    state = apply(state, {
+      type: "deviceMerger",
+      fromBranchId: fork.id,
+      intoNodeId: into.id,
+    });
+    const next = apply(state, {
+      type: "devicePruner",
+      nodeId: fork.headNodeId,
+    });
+    expect(next.branches[fork.id]).toBeTruthy();
+    expect(next.log.at(-1)).toMatch(/loose end|junction/i);
   });
 
   it("Merger ends one branch at the other branch’s head", () => {

@@ -58,7 +58,7 @@ const DEVICES: TimelineDeviceDefinition[] = [
     id: "pruner",
     letter: "D",
     label: "Pruner",
-    summary: "Cut a branch and return its events",
+    summary: "Cut a loose tail back to the latest junction",
     uses: 1,
     blueprintCopies: 3,
     requirements: {
@@ -291,7 +291,7 @@ export const coreTimeline = defineComponent({
     id: "core/timeline",
     kind: "feature-bundle",
     schemaVersion: 1,
-    contractVersion: "1.5.0",
+    contractVersion: "1.6.0",
     owner: "platform",
     docs: {
       summary:

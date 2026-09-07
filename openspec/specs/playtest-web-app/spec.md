@@ -315,6 +315,13 @@ The Play tab SHALL mark the continuing head that a merge enters, with an arrow o
 - **WHEN** Prime has merged into Branch 4
 - **THEN** Branch 4’s continuing head shows that Prime joins there and the merge wire ends with an arrow on that card
 
+### Requirement: Pruner highlights loose tails
+While Pruner is armed, the Play tab SHALL highlight only nodes on a loose tail (head down to the latest junction), not every card.
+
+#### Scenario: Only loose ends light up
+- **WHEN** Pruner is armed and a side branch is loose
+- **THEN** that branch’s tail cards are highlighted and a merged or junction-locked timeline is not
+
 ### Requirement: Play and Rulebook tabs for Timeline Game
 Timeline Game SHALL offer Play and Rulebook tabs at `/play` and `/rulebook`. Rulebook SHALL show the variant `RULEBOOK.md`.
 

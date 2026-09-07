@@ -1,0 +1,1 @@
+A junction is a node with another timeline attached (extra child/parent, a fork, or a merge-in). Walk from the branch head toward epoch and stop before that node. Epoch with no extra fork is not a junction, so linear Prime cannot be stripped. Merged heads are attached at both ends and have no loose tail. Preserved cards are a stop, not a full-branch ban.

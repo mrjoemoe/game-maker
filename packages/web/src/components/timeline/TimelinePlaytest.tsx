@@ -8,6 +8,7 @@ import {
   isActionCard,
   isPrimary,
   jumperTargets,
+  looseTailNodeIds,
   societyOnPath,
   type DeviceId,
   type GameState,
@@ -171,12 +172,20 @@ export function TimelinePlaytest({
       case "play":
       case "brancher":
       case "relocator-branch":
-      case "pruner":
       case "merger-first":
       case "merger-second":
       case "rewriter-node":
       case "preserver":
         for (const id of Object.keys(timeline.nodes)) nodes.add(id);
+        break;
+      case "pruner":
+        for (const id of Object.keys(timeline.nodes)) {
+          const here = timeline.nodes[id];
+          if (!here) continue;
+          if (looseTailNodeIds(timeline, here.branchId).includes(id)) {
+            nodes.add(id);
+          }
+        }
         break;
       default:
         break;
@@ -236,7 +245,7 @@ export function TimelinePlaytest({
         setTargeting({ kind: "idle" });
         return;
       case "pruner":
-        dispatch({ type: "devicePruner", branchId: node.branchId });
+        dispatch({ type: "devicePruner", nodeId });
         setTargeting({ kind: "idle" });
         return;
       case "merger-first":

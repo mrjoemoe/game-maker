@@ -77,7 +77,7 @@ Build with parts, minerals, crystals, and culture / science / politics on the pa
 | A | **Brancher** | 2 parts, 5 minerals, 2 crystals · C 4 / S 2 / P 0 · 2 uses · 12 blueprints | Fork a new timeline from a chosen moment **and lay an action card from your hand** as the first card on that branch. |
 | B | **Reverser** | 3 parts, 1 mineral, 1 crystal · C 5 / S 5 / P 5 · 3 uses · 12 blueprints | Jump to an ancestor. |
 | C | **Relocator** | 3 parts, 3 minerals, 3 crystals · C 2 / S 4 / P 1 · 1 use · 6 blueprints | Move a fork to a new parent. |
-| D | **Pruner** | 3 parts, 3 minerals, 4 crystals · C 3 / S 3 / P 3 · 1 use · 3 blueprints | Delete a non-prime branch (and its descendant forks); return cards to their matching piles. |
+| D | **Pruner** | 3 parts, 3 minerals, 4 crystals · C 3 / S 3 / P 3 · 1 use · 3 blueprints | Cut a **loose** tail from the head down to the latest junction (fork, merge-in, or preserved card). Joined-at-both-ends timelines cannot be pruned. Return cut cards to their matching piles. |
 | E | **Merger** | 5 parts, 1 mineral, 4 crystals · C 1 / S 1 / P 5 · 1 use · 3 blueprints | Join the **heads** of two timelines. The first timeline ends there; the second can still grow. No third branch. |
 | F | **Rewriter** | 1 part, 3 minerals, 1 crystal · C 1 / S 3 / P 1 · 3 uses · 24 blueprints | Swap a card in your hand with a card already on the timeline. Cannot swap Omega events into the hand. |
 | G | **Preserver** | 1 part, 1 mineral, 5 crystals · C 1 / S 1 / P 1 · 1 use · 3 blueprints | Lock the cards already laid on that timeline **up to the chosen moment**. Later cards can still be played and edited. |

@@ -402,6 +402,8 @@ describe("resolution and propagation", () => {
     expect(rulebook).toContain(
       "Lock the cards already laid on that timeline **up to the chosen moment**.",
     );
+    expect(rulebook).toMatch(/loose/);
+    expect(rulebook).toMatch(/latest junction/);
     const qty = (n: number, one: string, many: string) =>
       n === 1 ? `1 ${one}` : `${n} ${many}`;
     for (const device of devices) {
