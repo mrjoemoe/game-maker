@@ -62,20 +62,19 @@ If you reach a path of 20 cards, gain **2 crystals** and your turn ends. Next tu
 
 ## Devices
 
-Build with parts, minerals, **1 crystal**, and the path’s culture / science / politics. Placeholder costs:
+Build with parts, minerals, **1 crystal**, and culture / science / politics on the path from epoch to you. Each device has **3 uses**. Debug mode does not spend costs or uses.
 
-| | Device | Effect |
-|---|---------|--------|
-| A | **Brancher** | Fork a new timeline from a chosen moment **and lay an action card from your hand** as the first card on that branch. High minerals, med parts, low society. |
-| B | **Reverser** | Jump to an ancestor. High society, med parts. |
-| C | **Relocator** | Move a fork to a new parent. Science > culture > politics. |
-| D | **Pruner** | Delete a non-prime branch (and its descendant forks); return event cards to decks. Medium everything. |
-| E | **Merger** | End one timeline into another: branch 1 stops at the join and play continues on branch 2. No third branch. High parts and politics. |
-| F | **Rewriter** | Swap a card in your hand with a card already on the timeline. |
-| G | **Preserver** | Lock a timeline so others cannot manipulate it. Low everything. |
-| H | **Jumper** | Skip ahead up to 3 spaces. Low everything. |
+| | Device | Cost | Effect |
+|---|---------|------|--------|
+| A | **Brancher** | 2 parts, 5 minerals, 1 crystal · C 4 / S 2 / P 0 | Fork a new timeline from a chosen moment **and lay an action card from your hand** as the first card on that branch. |
+| B | **Reverser** | 3 parts, 1 mineral, 1 crystal · C 5 / S 5 / P 5 | Jump to an ancestor. |
+| C | **Relocator** | 3 parts, 3 minerals, 1 crystal · C 2 / S 4 / P 1 | Move a fork to a new parent. |
+| D | **Pruner** | 3 parts, 3 minerals, 1 crystal · C 3 / S 3 / P 3 | Delete a non-prime branch (and its descendant forks); return event cards to the action deck. |
+| E | **Merger** | 5 parts, 1 mineral, 1 crystal · C 1 / S 1 / P 5 | End one timeline into another: branch 1 stops at the join and play continues on branch 2. No third branch. |
+| F | **Rewriter** | 1 part, 3 minerals, 1 crystal · C 1 / S 3 / P 1 | Swap a card in your hand with a card already on the timeline. |
+| G | **Preserver** | 1 part, 1 mineral, 1 crystal · C 1 / S 1 / P 1 | Lock a timeline so others cannot manipulate it. |
+| H | **Jumper** | 1 part, 1 mineral, 1 crystal · C 1 / S 1 / P 1 | Skip ahead up to 3 spaces. |
 
-Devices have limited uses. Debug mode does not spend costs or uses.
 
 ## Debug playtest
 

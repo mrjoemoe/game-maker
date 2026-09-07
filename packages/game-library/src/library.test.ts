@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   createCatalog,
@@ -365,6 +368,28 @@ describe("resolution and propagation", () => {
       "preserver",
       "jumper",
     ]);
+  });
+
+  it("lists each timeline device cost in the rulebook", () => {
+    const catalog = createDefaultCatalog();
+    const devices =
+      resolveVariant(timelineGameVariant, catalog).definition.timeline
+        ?.devices ?? [];
+    const rulebook = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        "../../../prototypes/timeline-game/RULEBOOK.md",
+      ),
+      "utf8",
+    );
+    const qty = (n: number, one: string, many: string) =>
+      n === 1 ? `1 ${one}` : `${n} ${many}`;
+    for (const device of devices) {
+      const r = device.requirements;
+      expect(rulebook).toContain(
+        `${qty(r.parts, "part", "parts")}, ${qty(r.minerals, "mineral", "minerals")}, ${qty(r.crystals, "crystal", "crystals")} · C ${r.culture} / S ${r.science} / P ${r.politics}`,
+      );
+    }
   });
 
   it("lists consumers of core/tile-board", () => {

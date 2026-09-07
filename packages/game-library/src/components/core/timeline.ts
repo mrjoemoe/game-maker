@@ -264,7 +264,7 @@ export const coreTimeline = defineComponent({
       summary:
         "Time-travel timeline template: branching graph, branch mats, player mat, and devices A–H.",
       playerFacing:
-        "You are a time traveler repairing the past. Walk timelines, place events, and complete person–place–thing objectives.",
+        "You are a time traveler repairing the past. Walk timelines, place events, and complete person–place–thing objectives. Device build costs (parts, minerals, crystal, culture, science, politics) are listed in the Timeline Game rulebook.",
       developerNotes:
         "Contributes templateId timeline, a dummy 1×1 board for resolver compatibility, and the action-card/device catalog (no random-event deck). Debug mode defaults on. playerCount defaults to 1 (solo playtest).",
     },
