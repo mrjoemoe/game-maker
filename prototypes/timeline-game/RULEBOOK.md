@@ -9,7 +9,7 @@ Each player has 3 objectives. Complete all 3 to win. An objective is a **person*
 ## Setup
 
 - **1-player** playtest (further edits target this mode).
-- The **Prime** timeline starts at **Epoch** (bottom of the timestream; later cards stack **up**. Rows **1–20** mark depth toward the 20-card cap).
+- The **Prime** timeline starts with **one card: Origin** (epoch). Origin sits at the bottom of the timestream; later cards stack **up**. Rows **1–20** mark depth toward the 20-card cap. Other events stay in the Omega pile until played.
 - Prime has a branch mat for society (culture, science, politics) and **no crystals**.
 - Three facedown piles sit beside the timestream: **Omega events** (yellow backs), **action cards** (green backs), and **blueprints**.
 - Draw 2 action cards from the green pile at the start of each turn. Hand limit 7.

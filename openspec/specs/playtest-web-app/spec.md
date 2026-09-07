@@ -260,7 +260,7 @@ When the active prototype enables timeline mode, the Play tab SHALL render a bra
 
 #### Scenario: Seeded timeline is visible
 - **WHEN** Timeline Game loads on the Play tab
-- **THEN** the epoch node sits at the bottom with a primary branch mat, at least one event node stacked above it, and row numbers 1–20 along the time axis
+- **THEN** the epoch Origin node sits at the bottom with a primary branch mat, no other starting cards stacked above it, and row numbers 1–20 along the time axis
 
 #### Scenario: Hover shows society at that moment
 - **WHEN** the player hovers a timeline card

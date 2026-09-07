@@ -291,13 +291,13 @@ export const coreTimeline = defineComponent({
     id: "core/timeline",
     kind: "feature-bundle",
     schemaVersion: 1,
-    contractVersion: "1.6.0",
+    contractVersion: "1.7.0",
     owner: "platform",
     docs: {
       summary:
         "Time-travel timeline template: branching graph, branch mats, player mat, and devices A–H.",
       playerFacing:
-        "You are a time traveler repairing the past. Walk timelines, place Omega events, and complete person–place–thing objectives. Action cards (green backs) go in your hand. Each blueprint shows how many uses the built device has; crystal cost is paid to run it. Device costs and deck counts are listed in the Timeline Game rulebook.",
+        "You are a time traveler repairing the past. Prime starts with Origin only. Walk timelines, place Omega events, and complete person–place–thing objectives. Action cards (green backs) go in your hand. Each blueprint shows how many uses the built device has; crystal cost is paid to run it. Device costs and deck counts are listed in the Timeline Game rulebook.",
       developerNotes:
         "Contributes templateId timeline, a dummy 1×1 board for resolver compatibility, and three card piles (Omega events, action cards, blueprints). Debug mode defaults on. playerCount defaults to 1 (solo playtest).",
     },
@@ -354,7 +354,7 @@ export const coreTimeline = defineComponent({
             thingId: "astrolabe",
           },
         ],
-        seedCardIds: ["ada", "paris", "chronometer", "culture-1"],
+        seedCardIds: [],
         startingHand: ["get-parts", "science-1", "draw-random"],
         startingResources: { parts: 3, minerals: 3, crystals: 1 },
       },

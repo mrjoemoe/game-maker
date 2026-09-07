@@ -1,3 +1,4 @@
+import { createInitialState } from "@game-maker/engine";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -345,6 +346,16 @@ describe("resolution and propagation", () => {
     expect(result.definition.features?.timelineMode).toBe(true);
     expect(result.definition.timeline?.debugMode).toBe(true);
     expect(result.definition.timeline?.playerCount).toBe(1);
+    expect(result.definition.timeline?.seedCardIds ?? []).toEqual([]);
+    const start = createInitialState(result.definition);
+    expect(start.timeline).toBeTruthy();
+    expect(Object.keys(start.timeline!.nodes)).toEqual([
+      start.timeline!.epochNodeId,
+    ]);
+    expect(start.timeline!.nodes[start.timeline!.epochNodeId].card).toBeNull();
+    expect(
+      start.timeline!.branches[start.timeline!.primaryBranchId].headNodeId,
+    ).toBe(start.timeline!.epochNodeId);
     const cards = result.definition.timeline?.cards ?? [];
     const cardIds = cards.map((c) => c.id);
     expect(cardIds).toContain("draw-random");
@@ -393,6 +404,7 @@ describe("resolution and propagation", () => {
       ),
       "utf8",
     );
+    expect(rulebook).toMatch(/one card: Origin/);
     expect(rulebook).toMatch(/Omega events/);
     expect(rulebook).toMatch(/Random Event/);
     expect(rulebook).toMatch(/Draw Blueprint/);

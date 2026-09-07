@@ -200,6 +200,16 @@ function brancherFrom(
 }
 
 describe("timeline", () => {
+  it("empty seed is only Origin", () => {
+    const state = createInitialTimeline({ ...config, seedCardIds: [] });
+    expect(Object.keys(state.nodes)).toEqual([state.epochNodeId]);
+    expect(state.nodes[state.epochNodeId].card).toBeNull();
+    expect(state.branches[state.primaryBranchId].headNodeId).toBe(
+      state.epochNodeId,
+    );
+    expect(state.travelerNodeId).toBe(state.epochNodeId);
+  });
+
   it("starts at epoch with a seeded prime branch and no crystals on prime", () => {
     const state = createInitialTimeline(config);
     expect(state.travelerNodeId).toBe(state.epochNodeId);
