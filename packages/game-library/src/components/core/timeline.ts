@@ -136,6 +136,10 @@ function events(): TimelineCardDefinition[] {
     "Hypatia",
     "Newton",
     "Hatshepsut",
+    "Galileo",
+    "Darwin",
+    "Franklin",
+    "Cleopatra",
   ];
   const places = [
     "Paris",
@@ -144,6 +148,10 @@ function events(): TimelineCardDefinition[] {
     "Venice",
     "Tenochtitlan",
     "Baghdad",
+    "London",
+    "Cairo",
+    "Athens",
+    "Rome",
   ];
   const things = [
     "Chronometer",
@@ -152,6 +160,10 @@ function events(): TimelineCardDefinition[] {
     "Astrolabe",
     "Loom",
     "Compass",
+    "Telescope",
+    "Steam Engine",
+    "Abacus",
+    "Porcelain",
   ];
   return [
     ...persons.map((label) => ({
@@ -245,6 +257,18 @@ const CARDS: TimelineCardDefinition[] = [
     societyKind: "politics",
     societyValue: 2,
   },
+  {
+    id: "draw-random",
+    label: "Random Event",
+    family: "random-draw",
+    copies: 4,
+  },
+  {
+    id: "draw-blueprint",
+    label: "Draw Blueprint",
+    family: "draw-blueprint",
+    copies: 4,
+  },
   ...DEVICES.map((d) => ({
     id: `blueprint-${d.id}`,
     label: `${d.label} Blueprint`,
@@ -258,15 +282,15 @@ export const coreTimeline = defineComponent({
     id: "core/timeline",
     kind: "feature-bundle",
     schemaVersion: 1,
-    contractVersion: "1.1.0",
+    contractVersion: "1.2.0",
     owner: "platform",
     docs: {
       summary:
         "Time-travel timeline template: branching graph, branch mats, player mat, and devices A–H.",
       playerFacing:
-        "You are a time traveler repairing the past. Walk timelines, place events, and complete person–place–thing objectives. Device build costs (parts, minerals, crystal, culture, science, politics) are listed in the Timeline Game rulebook.",
+        "You are a time traveler repairing the past. Walk timelines, place Omega events, and complete person–place–thing objectives. Action cards (green backs) go in your hand. Device build costs are listed in the Timeline Game rulebook.",
       developerNotes:
-        "Contributes templateId timeline, a dummy 1×1 board for resolver compatibility, and the action-card/device catalog (no random-event deck). Debug mode defaults on. playerCount defaults to 1 (solo playtest).",
+        "Contributes templateId timeline, a dummy 1×1 board for resolver compatibility, and three card piles (Omega events, action cards, blueprints). Debug mode defaults on. playerCount defaults to 1 (solo playtest).",
     },
   },
   contribute: ({ params }) => {
@@ -322,7 +346,7 @@ export const coreTimeline = defineComponent({
           },
         ],
         seedCardIds: ["ada", "paris", "chronometer", "culture-1"],
-        startingHand: ["tesla", "get-parts", "science-1", "blueprint-brancher"],
+        startingHand: ["get-parts", "science-1", "draw-random"],
         startingResources: { parts: 3, minerals: 3, crystals: 1 },
       },
     };

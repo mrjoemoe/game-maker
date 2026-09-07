@@ -1,4 +1,5 @@
 import type {
+  CardPile,
   DeviceId,
   ObjectiveSpec,
   PlacedCard,
@@ -15,6 +16,7 @@ import type {
 export type {
   BuiltDevice,
   CardFamily,
+  CardPile,
   DeviceId,
   DeviceRequirements,
   EventKind,
@@ -47,7 +49,15 @@ export function cardById(
 export function isActionCard(
   def: TimelineCardDefinition | undefined,
 ): boolean {
-  return Boolean(def);
+  return Boolean(def) && cardPile(def) === "action";
+}
+
+export function cardPile(
+  def: TimelineCardDefinition | undefined,
+): CardPile {
+  if (def?.family === "event") return "omega";
+  if (def?.family === "blueprint") return "blueprint";
+  return "action";
 }
 
 export function deviceById(
@@ -97,8 +107,41 @@ function shuffle(
   return { ids: out, state: current };
 }
 
-function returnCard(state: TimelineState, cardId: string): TimelineState {
+function returnCard(
+  state: TimelineState,
+  config: TimelineConfig,
+  cardId: string,
+): TimelineState {
+  const pile = cardPile(cardById(config, cardId));
+  if (pile === "omega") {
+    return { ...state, omegaDeck: [...state.omegaDeck, cardId] };
+  }
+  if (pile === "blueprint") {
+    return { ...state, blueprintDeck: [...state.blueprintDeck, cardId] };
+  }
   return { ...state, actionDeck: [...state.actionDeck, cardId] };
+}
+
+function consumedCounts(ids: string[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const id of ids) {
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function pileCardIds(
+  config: TimelineConfig,
+  pile: CardPile,
+  consumed: Map<string, number>,
+): string[] {
+  const ids: string[] = [];
+  for (const card of config.cards) {
+    if (cardPile(card) !== pile) continue;
+    const copies = Math.max(1, card.copies ?? 1) - (consumed.get(card.id) ?? 0);
+    for (let i = 0; i < copies; i += 1) ids.push(card.id);
+  }
+  return ids;
 }
 
 export function getNode(state: TimelineState, id: string): TimelineNode {
@@ -576,6 +619,8 @@ export function createInitialTimeline(
     travelerNodeId: epochId,
     hand: [],
     actionDeck: [],
+    omegaDeck: [],
+    blueprintDeck: [],
     player: {
       parts: config.startingResources?.parts ?? 0,
       minerals: config.startingResources?.minerals ?? 0,
@@ -596,22 +641,33 @@ export function createInitialTimeline(
     rngSeed,
   };
 
-  const used = new Set<string>(config.seedCardIds ?? []);
+  const seedIds = config.seedCardIds ?? [];
   let cursor = epochId;
-  for (const cardId of config.seedCardIds ?? []) {
+  for (const cardId of seedIds) {
     const made = newCardInstance(state, cardId);
     const appended = appendChild(made.state, cursor, primaryId, made.card);
     state = appended.state;
     cursor = appended.node.id;
   }
 
-  const actionIds = config.cards
-    .filter((c) => !used.has(c.id))
-    .map((c) => c.id);
-  const shuffledAction = shuffle(actionIds, state);
+  const consumed = consumedCounts([
+    ...(config.seedCardIds ?? []),
+    ...(config.startingHand ?? []),
+  ]);
+  const shuffledOmega = shuffle(pileCardIds(config, "omega", consumed), state);
+  const shuffledAction = shuffle(
+    pileCardIds(config, "action", consumed),
+    shuffledOmega.state,
+  );
+  const shuffledBlueprints = shuffle(
+    pileCardIds(config, "blueprint", consumed),
+    shuffledAction.state,
+  );
   state = {
-    ...shuffledAction.state,
+    ...shuffledBlueprints.state,
+    omegaDeck: shuffledOmega.ids,
     actionDeck: shuffledAction.ids,
+    blueprintDeck: shuffledBlueprints.ids,
   };
 
   for (const cardId of config.startingHand ?? []) {
@@ -631,7 +687,7 @@ function drawFrom(
 ): TimelineState {
   const pile = state.actionDeck;
   if (pile.length === 0) {
-    return log(state, "The action deck is empty.");
+    return log(state, "The action pile is empty.");
   }
   const cardId = pile[0];
   const rest = pile.slice(1);
@@ -647,6 +703,46 @@ function drawFrom(
   );
 }
 
+function resolvePlayedFromHand(
+  state: TimelineState,
+  config: TimelineConfig,
+  held: PlacedCard,
+): { state: TimelineState; card: PlacedCard } | { error: string } {
+  const def = cardById(config, held.cardId);
+  let next: TimelineState = {
+    ...state,
+    hand: state.hand.filter((c) => c.instanceId !== held.instanceId),
+  };
+  if (def?.family === "random-draw") {
+    if (next.omegaDeck.length === 0) {
+      return { error: "The Omega event pile is empty." };
+    }
+    const omegaId = next.omegaDeck[0];
+    const rest = next.omegaDeck.slice(1);
+    next = {
+      ...next,
+      omegaDeck: rest,
+      actionDeck: [...next.actionDeck, held.cardId],
+    };
+    const made = newCardInstance(next, omegaId);
+    return { state: made.state, card: made.card };
+  }
+  if (def?.family === "draw-blueprint") {
+    if (next.blueprintDeck.length === 0) {
+      return { error: "The blueprint pile is empty." };
+    }
+    const blueprintId = next.blueprintDeck[0];
+    const rest = next.blueprintDeck.slice(1);
+    const made = newCardInstance({ ...next, blueprintDeck: rest }, blueprintId);
+    next = {
+      ...made.state,
+      hand: [...made.state.hand, made.card],
+    };
+    return { state: next, card: held };
+  }
+  return { state: next, card: held };
+}
+
 function playCard(
   state: TimelineState,
   config: TimelineConfig,
@@ -657,10 +753,9 @@ function playCard(
   if (!held) return log(state, "That card is not in hand.");
   getNode(state, atNodeId);
   const def = cardById(config, held.cardId);
-  const without = {
-    ...state,
-    hand: state.hand.filter((c) => c.instanceId !== instanceId),
-  };
+  const prepared = resolvePlayedFromHand(state, config, held);
+  if ("error" in prepared) return log(state, prepared.error);
+  const { state: without, card: toPlace } = prepared;
 
   const head = isHead(without, atNodeId);
   let placed: { node: TimelineNode; state: TimelineState };
@@ -681,7 +776,7 @@ function playCard(
     ) {
       return log(state, "This branch cannot grow past 10 cards.");
     }
-    placed = appendChild(without, atNodeId, branchId, held);
+    placed = appendChild(without, atNodeId, branchId, toPlace);
   } else {
     if (
       !without.debugMode &&
@@ -689,7 +784,7 @@ function playCard(
     ) {
       return log(state, "No more than 12 branches.");
     }
-    const forked = createFork(without, atNodeId, held);
+    const forked = createFork(without, atNodeId, toPlace);
     placed = { node: forked.node, state: forked.state };
     placed.state = log(
       placed.state,
@@ -697,10 +792,20 @@ function playCard(
     );
   }
 
+  const placedDef = cardById(config, toPlace.cardId);
   let next = moveTraveler(placed.state, config, placed.node.id, {
     resolve: false,
   });
   next = resolveArrival(next, config, placed.node.id);
+  if (def?.family === "random-draw") {
+    return log(
+      next,
+      `Random Event: ${placedDef?.label ?? toPlace.cardId} enters the timeline.`,
+    );
+  }
+  if (def?.family === "draw-blueprint") {
+    return log(next, `Drew a blueprint into hand.`);
+  }
   return log(next, `Played ${def?.label ?? held.cardId}.`);
 }
 
@@ -730,14 +835,13 @@ function applyBrancher(
   if (!isActionCard(def)) {
     return log(state, "Brancher needs an action card from your hand.");
   }
-  const without = {
-    ...state,
-    hand: state.hand.filter((c) => c.instanceId !== instanceId),
-  };
-  const forked = createFork(without, fromNodeId, held);
+  const prepared = resolvePlayedFromHand(state, config, held);
+  if ("error" in prepared) return log(state, prepared.error);
+  const forked = createFork(prepared.state, fromNodeId, prepared.card);
+  const placedDef = cardById(config, prepared.card.cardId);
   let next = log(
     forked.state,
-    `Brancher: ${forked.branch.label} opens with ${def?.label ?? held.cardId}. Gained a crystal.`,
+    `Brancher: ${forked.branch.label} opens with ${placedDef?.label ?? prepared.card.cardId}. Gained a crystal.`,
   );
   next = moveTraveler(next, config, forked.node.id, { resolve: false });
   next = resolveArrival(next, config, forked.node.id);
@@ -838,7 +942,7 @@ function applyPruner(
     const node = state.nodes[id];
     if (node?.card) {
       const def = cardById(config, node.card.cardId);
-      if (def) next = returnCard(next, node.card.cardId);
+      if (def) next = returnCard(next, config, node.card.cardId);
     }
   }
   const remainingNodes = { ...next.nodes };
@@ -933,6 +1037,9 @@ function applyRewriter(
   if (!held) return log(state, "Rewriter needs a card from your hand.");
   const incoming = cardById(config, held.cardId);
   const outgoing = cardById(config, placed.cardId);
+  if (cardPile(incoming) === "omega" || cardPile(outgoing) === "omega") {
+    return log(state, "Rewriter cannot swap Omega events into the hand.");
+  }
   const next: TimelineState = {
     ...state,
     hand: state.hand.map((card) =>

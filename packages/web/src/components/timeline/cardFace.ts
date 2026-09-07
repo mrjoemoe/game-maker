@@ -24,5 +24,7 @@ export function cardTypeLabel(
   if (def.resourceKind) return def.resourceKind;
   if (def.inventionKind) return def.inventionKind;
   if (def.family === "blueprint") return "blueprint";
+  if (def.family === "random-draw") return "omega";
+  if (def.family === "draw-blueprint") return "blueprint";
   return def.family;
 }

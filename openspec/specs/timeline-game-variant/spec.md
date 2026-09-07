@@ -48,16 +48,24 @@ Timeline Game Rewriter SHALL swap a played timeline card with a card in hand. Th
 - **WHEN** a player reads the Devices section of Timeline Game’s rulebook
 - **THEN** Rewriter is described as swapping a hand card with a card on the timeline
 
-### Requirement: Action deck only
-Timeline Game SHALL use a single action deck. It SHALL NOT include a random-event deck, a “draw a random event” card, or random-event cards (setback, windfall, blank, chaos, transport, shift). The rulebook SHALL NOT require playing a random event after action cards.
+### Requirement: Omega, action, and blueprint piles
+Timeline Game SHALL keep three facedown piles: **Omega events** (person, place, thing; 30 cards), **action cards** (society, invention, resource, Random Event, Draw Blueprint), and **blueprints**. Hand draws SHALL come from the action pile. Playing Random Event SHALL place the top Omega card on the timeline. Playing Draw Blueprint SHALL add the top blueprint to the hand.
 
-#### Scenario: Catalog has no random-event cards
+#### Scenario: Thirty Omega events
 - **WHEN** Timeline Game is resolved from `core/timeline`
-- **THEN** the card list has no Random Event draw card and no random-event cards
+- **THEN** there are 30 person/place/thing cards
 
-#### Scenario: Rulebook has no random event step
-- **WHEN** a player reads the Turn and Cards sections of Timeline Game’s rulebook
-- **THEN** those sections do not tell the player to draw or play a random event
+#### Scenario: Random Event places Omega
+- **WHEN** the player plays a Random Event action on a timeline moment
+- **THEN** the top Omega event is placed there and the Random Event card is not left on that node
+
+#### Scenario: Draw Blueprint fills the hand
+- **WHEN** the player plays Draw Blueprint
+- **THEN** the top blueprint is added to the hand
+
+#### Scenario: Rulebook names the three piles
+- **WHEN** a player reads the Cards section of Timeline Game’s rulebook
+- **THEN** it describes Omega events, action cards, and blueprints as separate piles
 
 ### Requirement: Device costs in the rulebook
 The Timeline Game rulebook Devices section SHALL list the build cost for each device A–H: parts, minerals, crystals, and the required culture, science, and politics.

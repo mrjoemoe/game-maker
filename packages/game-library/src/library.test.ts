@@ -345,8 +345,11 @@ describe("resolution and propagation", () => {
     expect(result.definition.features?.timelineMode).toBe(true);
     expect(result.definition.timeline?.debugMode).toBe(true);
     expect(result.definition.timeline?.playerCount).toBe(1);
-    const cardIds = result.definition.timeline?.cards.map((c) => c.id) ?? [];
-    expect(cardIds).not.toContain("draw-random");
+    const cards = result.definition.timeline?.cards ?? [];
+    const cardIds = cards.map((c) => c.id);
+    expect(cardIds).toContain("draw-random");
+    expect(cardIds).toContain("draw-blueprint");
+    expect(cards.filter((c) => c.family === "event")).toHaveLength(30);
     expect(cardIds).not.toContain("setback");
     expect(cardIds).not.toContain("windfall");
     expect(cardIds).not.toContain("blank-beat");
@@ -354,9 +357,17 @@ describe("resolution and propagation", () => {
     expect(cardIds).not.toContain("rip-current");
     expect(cardIds).not.toContain("slipstream");
     expect(
-      new Set(result.definition.timeline?.cards.map((c) => c.family)),
+      new Set(cards.map((c) => c.family)),
     ).toEqual(
-      new Set(["event", "resource", "invention", "society", "blueprint"]),
+      new Set([
+        "event",
+        "resource",
+        "invention",
+        "society",
+        "blueprint",
+        "random-draw",
+        "draw-blueprint",
+      ]),
     );
     expect(result.definition.timeline?.devices.map((d) => d.id)).toEqual([
       "brancher",
@@ -382,6 +393,9 @@ describe("resolution and propagation", () => {
       ),
       "utf8",
     );
+    expect(rulebook).toMatch(/Omega events/);
+    expect(rulebook).toMatch(/Random Event/);
+    expect(rulebook).toMatch(/Draw Blueprint/);
     const qty = (n: number, one: string, many: string) =>
       n === 1 ? `1 ${one}` : `${n} ${many}`;
     for (const device of devices) {

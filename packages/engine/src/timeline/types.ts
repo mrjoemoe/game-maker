@@ -8,7 +8,11 @@ export type CardFamily =
   | "resource"
   | "invention"
   | "society"
-  | "blueprint";
+  | "blueprint"
+  | "random-draw"
+  | "draw-blueprint";
+
+export type CardPile = "omega" | "action" | "blueprint";
 
 export type DeviceId =
   | "brancher"
@@ -31,6 +35,8 @@ export type TimelineCardDefinition = {
   societyKind?: SocietyKind;
   societyValue?: number;
   deviceId?: DeviceId;
+  /** Extra copies in the matching pile. Defaults to 1. */
+  copies?: number;
 };
 
 export type DeviceRequirements = {
@@ -137,6 +143,8 @@ export type TimelineState = {
   travelerNodeId: string;
   hand: PlacedCard[];
   actionDeck: string[];
+  omegaDeck: string[];
+  blueprintDeck: string[];
   player: PlayerMat;
   debugMode: boolean;
   status: TimelineStatus;

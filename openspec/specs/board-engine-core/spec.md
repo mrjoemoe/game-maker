@@ -439,7 +439,7 @@ A game definition MAY enable timeline mode and supply a timeline config (cards, 
 - **THEN** the traveler occupies the epoch node, branch 1 exists, and the player mat tracks parts, minerals, and crystals
 
 ### Requirement: Debug skips timeline constraints
-When timeline debug mode is enabled, the engine SHALL allow drawing from the action deck, playing any held card, taking crystals, and using any device without checking resource, society, blueprint, device-slot, hand-size, or branch-length requirements. The engine SHALL NOT maintain a separate random-event deck.
+When timeline debug mode is enabled, the engine SHALL allow drawing from the action pile, playing any held card, taking crystals, and using any device without checking resource, society, blueprint, device-slot, hand-size, or branch-length requirements. The engine SHALL maintain separate **Omega**, **action**, and **blueprint** piles.
 
 #### Scenario: Device used without resources in debug
 - **WHEN** debug mode is on and Brancher is used from a node
@@ -447,10 +447,10 @@ When timeline debug mode is enabled, the engine SHALL allow drawing from the act
 
 #### Scenario: Draw uses the action pile
 - **WHEN** a draw action is applied
-- **THEN** the top action-deck card moves into the hand and no random-event pile is consulted
+- **THEN** the top action-pile card moves into the hand
 
 ### Requirement: Place cards to extend or fork time
-Playing a card onto a branch head SHALL append a new revealed node on that branch. Playing a card onto a non-head node SHALL fork a new branch from that node, place a branch mat with 1 crystal, and grant the player 1 crystal.
+Playing a card onto a branch head SHALL append a new revealed node on that branch. Playing a card onto a non-head node SHALL fork a new branch from that node, place a branch mat with 1 crystal, and grant the player 1 crystal. Playing a **Random Event** action SHALL instead place the top **Omega** event from that pile onto the chosen moment.
 
 #### Scenario: Play at head appends
 - **WHEN** a card is played on a branch head
@@ -459,6 +459,10 @@ Playing a card onto a branch head SHALL append a new revealed node on that branc
 #### Scenario: Play off-head forks
 - **WHEN** a card is played on a node that is not a branch head
 - **THEN** a new branch is created from that node with a branch mat and the card on its first node
+
+#### Scenario: Random Event draws Omega onto the timeline
+- **WHEN** Random Event is played on a node
+- **THEN** that node’s new card is the top Omega event, not the Random Event action
 
 ### Requirement: Traveler can move through time
 The engine SHALL support moving the traveler to another existing node, including stepping toward the current branch head or toward epoch. Moving onto a node SHALL resolve that node’s card (resource gains apply to the player mat). Passing a fork branch mat with remaining crystals MAY take one crystal.
@@ -507,11 +511,15 @@ Merger SHALL attach the **head of the incoming branch** to a chosen node on a **
 - **THEN** A’s head lists B’s node as a child, B’s node lists A’s head as an extra parent, A is marked merged, no new branch exists, and the traveler occupies B’s node
 
 ### Requirement: Rewriter replaces a played card
-Rewriter SHALL swap one already-played card on a chosen timeline node with one card from the player’s hand. The timeline card SHALL move into the hand and the hand card SHALL occupy that node. Rewriter SHALL NOT return cards to a draw pile or pick a replacement from the catalog.
+Rewriter SHALL swap one already-played card on a chosen timeline node with one card from the player’s hand. The timeline card SHALL move into the hand and the hand card SHALL occupy that node. Rewriter SHALL NOT return cards to a draw pile or pick a replacement from the catalog. Rewriter SHALL refuse the swap when either card is an Omega event.
 
 #### Scenario: Rewrite swaps a card
 - **WHEN** Rewriter is applied with a timeline node that has a card and a card instance from hand
 - **THEN** the node shows the former hand card and that former timeline card is in the hand
+
+#### Scenario: Rewrite refuses Omega
+- **WHEN** Rewriter is applied with an Omega event in hand or on the chosen node
+- **THEN** the swap does not occur
 
 ### Requirement: Preserver locks a timeline
 Preserver SHALL mark a branch as preserved. Relocator, Pruner, Merger, and Rewriter SHALL refuse that branch while it is preserved unless debug mode is on.

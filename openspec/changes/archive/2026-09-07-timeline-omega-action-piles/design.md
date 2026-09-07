@@ -1,0 +1,1 @@
+Omega cards never enter the hand in normal play. Random Event is an action: consume it, return it to the action pile, place the drawn Omega card on the chosen moment. Draw Blueprint is an action that stays on the timeline and adds one blueprint to hand. Rewriter refuses Omega cards so they cannot be swapped into hand. `core/timeline` 1.2.0.

@@ -4,6 +4,7 @@ import {
   cardById,
   descendantIds,
   deviceById,
+  cardPile,
   isActionCard,
   isPrimary,
   jumperTargets,
@@ -28,6 +29,63 @@ type TimelinePlaytestProps = {
   onGame: (game: GameState) => void;
   onReset: () => void;
 };
+
+function FacedownPile({
+  label,
+  count,
+  variant,
+  onDraw,
+}: {
+  label: string;
+  count: number;
+  variant: "omega" | "action" | "blueprint";
+  onDraw?: () => void;
+}) {
+  const layers = Math.min(Math.max(count, 1), 30);
+  const inner = (
+    <>
+      <span className="tl-pile-label">{label}</span>
+      <span
+        className="tl-pile-stack"
+        style={{ height: `${5.6 + (layers - 1) * 0.12}rem` }}
+      >
+        {Array.from({ length: layers }, (_, i) => (
+          <span
+            key={i}
+            className="tl-pile-card"
+            style={{
+              transform: `translate(${i * 0.7}px, ${-i * 2}px)`,
+              zIndex: i,
+              opacity: count === 0 ? 0.35 : 1,
+            }}
+          />
+        ))}
+      </span>
+      <span className="tl-pile-count">{count}</span>
+    </>
+  );
+  if (onDraw) {
+    return (
+      <button
+        type="button"
+        className={`tl-pile ${variant}`}
+        onClick={onDraw}
+        disabled={count === 0}
+        aria-label={`Draw from ${label}, ${count} remaining`}
+      >
+        {inner}
+      </button>
+    );
+  }
+  return (
+    <div
+      className={`tl-pile ${variant}`}
+      aria-label={`${label}, ${count} remaining`}
+    >
+      {inner}
+    </div>
+  );
+}
 
 const DEVICE_ORDER: DeviceId[] = [
   "brancher",
@@ -516,6 +574,7 @@ export function TimelinePlaytest({
                         return;
                       }
                       if (targeting.kind === "rewriter-card") {
+                        if (cardPile(def) === "omega") return;
                         dispatch({
                           type: "deviceRewriter",
                           nodeId: targeting.nodeId,
@@ -537,13 +596,23 @@ export function TimelinePlaytest({
               })
             )}
           </div>
-          <div className="tl-draws">
-            <button
-              type="button"
-              onClick={() => dispatch({ type: "draw" })}
-            >
-              Draw action
-            </button>
+          <div className="tl-piles" aria-label="Card piles">
+            <FacedownPile
+              label="Omega events"
+              count={timeline.omegaDeck.length}
+              variant="omega"
+            />
+            <FacedownPile
+              label="Actions"
+              count={timeline.actionDeck.length}
+              variant="action"
+              onDraw={() => dispatch({ type: "draw" })}
+            />
+            <FacedownPile
+              label="Blueprints"
+              count={timeline.blueprintDeck.length}
+              variant="blueprint"
+            />
           </div>
         </section>
       </div>

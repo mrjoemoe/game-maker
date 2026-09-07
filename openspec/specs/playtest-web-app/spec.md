@@ -309,7 +309,7 @@ When the active prototype has a rulebook, the playtest app SHALL show Play at `/
 - **THEN** the path changes to `/play` or `/rulebook` and the playtest game state is not reset
 
 ### Requirement: Player mat and debug device dock
-The Play tab SHALL show a player mat (parts, minerals, crystals, up to 3 device slots, blueprints, objectives). In debug mode it SHALL provide always-available Device A–H controls with targeting instructions, plus a debug draw from the **action** deck and the ability to add any catalog card to hand. It SHALL NOT offer a Draw random control. Hand cards SHALL use the same type coloring as timeline cards (not an unmarked white face). While a device is armed, the Play tab SHALL show a **top banner** naming that device and the next click required to use it; the matching dock control SHALL appear armed until the player completes the action or cancels. Timeline nodes SHALL NOT be labeled or drawn as Open rift tiles. Merger targeting copy SHALL tell the player which branch ends and which branch it continues into.
+The Play tab SHALL show a player mat (parts, minerals, crystals, up to 3 device slots, blueprints, objectives). In debug mode it SHALL provide always-available Device A–H controls with targeting instructions, plus a debug draw from the **green action pile** and the ability to add any catalog card to hand. It SHALL NOT offer a Draw random control. Hand cards SHALL use the same type coloring as timeline cards (not an unmarked white face). While a device is armed, the Play tab SHALL show a **top banner** naming that device and the next click required to use it; the matching dock control SHALL appear armed until the player completes the action or cancels. Timeline nodes SHALL NOT be labeled or drawn as Open rift tiles. Merger targeting copy SHALL tell the player which branch ends and which branch it continues into.
 
 #### Scenario: Branch from the dock
 - **WHEN** the player activates Brancher, a timeline node, and an action card in hand
@@ -325,7 +325,7 @@ The Play tab SHALL show a player mat (parts, minerals, crystals, up to 3 device 
 - **THEN** the banner tells the player to click an action card in hand to lay on the new branch
 
 #### Scenario: Debug draw into hand
-- **WHEN** the player uses debug draw-action
+- **WHEN** the player activates the green action pile
 - **THEN** a card appears in the hand panel with a visible type color and label
 
 #### Scenario: Merger names the ending branch
@@ -334,7 +334,18 @@ The Play tab SHALL show a player mat (parts, minerals, crystals, up to 3 device 
 
 #### Scenario: No draw-random control
 - **WHEN** Timeline Game is shown on the Play tab
-- **THEN** the hand panel offers Draw action and does not offer Draw random
+- **THEN** the hand panel shows the three facedown piles and does not offer a Draw random control
+
+### Requirement: Facedown card piles
+The Play tab SHALL show three facedown piles: Omega events with **yellow** backs, action cards with **green** backs, and blueprints. The Omega pile SHALL represent the remaining person/place/thing cards. Clicking the action pile SHALL draw into the hand.
+
+#### Scenario: Omega pile is yellow
+- **WHEN** Timeline Game is shown on the Play tab
+- **THEN** a facedown Omega pile with a yellow back is visible with a remaining-card count
+
+#### Scenario: Action pile draws
+- **WHEN** the player activates the green action pile
+- **THEN** the top action card is added to the hand
 
 ### Requirement: Rewriter targeting uses the hand
 While Rewriter is armed, the Play tab SHALL instruct the player to click a timeline card, then a card in hand. Completing those two clicks SHALL swap those cards. The debug catalog SHALL NOT apply Rewriter.

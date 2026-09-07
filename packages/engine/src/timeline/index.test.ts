@@ -29,11 +29,22 @@ const config: TimelineConfig = {
       societyKind: "culture",
       societyValue: 1,
     },
+    { id: "get-parts", label: "Get Parts", family: "resource", resourceKind: "parts" },
     {
-      id: "get-parts",
-      label: "Get Parts",
-      family: "resource",
-      resourceKind: "parts",
+      id: "draw-random",
+      label: "Random Event",
+      family: "random-draw",
+    },
+    {
+      id: "draw-blueprint",
+      label: "Draw Blueprint",
+      family: "draw-blueprint",
+    },
+    {
+      id: "blueprint-brancher",
+      label: "Brancher Blueprint",
+      family: "blueprint",
+      deviceId: "brancher",
     },
   ],
   devices: [
@@ -162,7 +173,7 @@ const config: TimelineConfig = {
     { id: "obj-1", personId: "ada", placeId: "paris", thingId: "chrono" },
   ],
   seedCardIds: ["ada", "paris", "chrono", "culture"],
-  startingHand: ["tesla", "get-parts"],
+  startingHand: ["get-parts"],
   startingResources: { parts: 0, minerals: 0, crystals: 0 },
 };
 
@@ -177,7 +188,7 @@ function apply(state: ReturnType<typeof createInitialTimeline>, action: Paramete
 function brancherFrom(
   state: ReturnType<typeof createInitialTimeline>,
   fromNodeId: string,
-  cardId = "tesla",
+  cardId = "get-parts",
 ) {
   const card = state.hand.find((c) => c.cardId === cardId)!;
   return apply(state, {
@@ -195,7 +206,9 @@ describe("timeline", () => {
     expect(state.branches[state.primaryBranchId].index).toBe(1);
     expect(nodeByCard("ada", state)).toBeTruthy();
     expect(state.debugMode).toBe(true);
-    expect(state.hand).toHaveLength(2);
+    expect(state.hand).toHaveLength(1);
+    expect(state.omegaDeck.length).toBeGreaterThan(0);
+    expect(state.blueprintDeck).toContain("blueprint-brancher");
   });
 
   it("steps forward along the seeded past", () => {
@@ -206,15 +219,15 @@ describe("timeline", () => {
 
   it("plays a card at the head to append", () => {
     let state = createInitialTimeline(config);
-    const tesla = state.hand.find((c) => c.cardId === "tesla")!;
+    const parts = state.hand.find((c) => c.cardId === "get-parts")!;
     const head = state.branches[state.primaryBranchId].headNodeId;
     expect(isHead(state, head)).toBe(true);
     state = apply(state, {
       type: "playCard",
-      instanceId: tesla.instanceId,
+      instanceId: parts.instanceId,
       atNodeId: head,
     });
-    expect(state.nodes[state.travelerNodeId].card?.cardId).toBe("tesla");
+    expect(state.nodes[state.travelerNodeId].card?.cardId).toBe("get-parts");
     expect(state.branches[state.primaryBranchId].headNodeId).toBe(
       state.travelerNodeId,
     );
@@ -223,19 +236,19 @@ describe("timeline", () => {
   it("Brancher forks a new mat with a crystal and a card from hand", () => {
     const start = createInitialTimeline(config);
     const paris = nodeByCard("paris", start);
-    const tesla = start.hand.find((c) => c.cardId === "tesla")!;
+    const parts = start.hand.find((c) => c.cardId === "get-parts")!;
     const next = apply(start, {
       type: "deviceBrancher",
       fromNodeId: paris.id,
-      instanceId: tesla.instanceId,
+      instanceId: parts.instanceId,
     });
     expect(Object.keys(next.branches).length).toBe(2);
     const fork = Object.values(next.branches).find((b) => b.index === 2)!;
     expect(fork.crystals).toBe(1);
     expect(next.player.crystals).toBe(1);
     expect(next.travelerNodeId).toBe(fork.rootNodeId);
-    expect(next.nodes[fork.rootNodeId].card?.cardId).toBe("tesla");
-    expect(next.hand.find((c) => c.instanceId === tesla.instanceId)).toBeUndefined();
+    expect(next.nodes[fork.rootNodeId].card?.cardId).toBe("get-parts");
+    expect(next.hand.find((c) => c.instanceId === parts.instanceId)).toBeUndefined();
     expect(next.nodes[paris.id].childIds.length).toBeGreaterThan(
       start.nodes[paris.id].childIds.length,
     );
@@ -255,14 +268,14 @@ describe("timeline", () => {
   it("works with zero resources in debug", () => {
     const start = createInitialTimeline(config);
     expect(start.player.parts).toBe(0);
-    const tesla = start.hand.find((c) => c.cardId === "tesla")!;
+    const parts = start.hand.find((c) => c.cardId === "get-parts")!;
     const next = apply(start, {
       type: "deviceBrancher",
       fromNodeId: start.epochNodeId,
-      instanceId: tesla.instanceId,
+      instanceId: parts.instanceId,
     });
     expect(Object.keys(next.branches).length).toBe(2);
-    expect(next.nodes[Object.values(next.branches).find((b) => b.index === 2)!.rootNodeId].card?.cardId).toBe("tesla");
+    expect(next.nodes[Object.values(next.branches).find((b) => b.index === 2)!.rootNodeId].card?.cardId).toBe("get-parts");
   });
 
   it("Reverser jumps to an ancestor", () => {
@@ -298,21 +311,21 @@ describe("timeline", () => {
     expect(cycled.log.at(-1)).toMatch(/loop/i);
   });
 
-  it("Pruner deletes a fork and returns its event cards", () => {
+  it("Pruner deletes a fork and returns its cards to the matching pile", () => {
     const start = createInitialTimeline(config);
-    const tesla = start.hand.find((c) => c.cardId === "tesla")!;
+    const parts = start.hand.find((c) => c.cardId === "get-parts")!;
     const paris = nodeByCard("paris", start);
     let state = apply(start, {
       type: "playCard",
-      instanceId: tesla.instanceId,
+      instanceId: parts.instanceId,
       atNodeId: paris.id,
     });
     const fork = Object.values(state.branches).find((b) => b.index === 2)!;
-    expect(state.nodes[fork.rootNodeId].card?.cardId).toBe("tesla");
-    const before = state.actionDeck.filter((id) => id === "tesla").length;
+    expect(state.nodes[fork.rootNodeId].card?.cardId).toBe("get-parts");
+    const before = state.actionDeck.filter((id) => id === "get-parts").length;
     state = apply(state, { type: "devicePruner", branchId: fork.id });
     expect(state.branches[fork.id]).toBeUndefined();
-    expect(state.actionDeck.filter((id) => id === "tesla").length).toBe(
+    expect(state.actionDeck.filter((id) => id === "get-parts").length).toBe(
       before + 1,
     );
   });
@@ -344,22 +357,67 @@ describe("timeline", () => {
 
   it("Rewriter swaps a hand card with a timeline card", () => {
     const start = createInitialTimeline(config);
-    const ada = nodeByCard("ada", start);
-    const tesla = start.hand.find((c) => c.cardId === "tesla")!;
-    const deckTesla = start.actionDeck.filter((id) => id === "tesla").length;
+    const culture = nodeByCard("culture", start);
+    const parts = start.hand.find((c) => c.cardId === "get-parts")!;
     const next = apply(start, {
+      type: "deviceRewriter",
+      nodeId: culture.id,
+      instanceId: parts.instanceId,
+    });
+    expect(next.nodes[culture.id].card?.cardId).toBe("get-parts");
+    expect(next.hand.some((c) => c.cardId === "culture")).toBe(true);
+    expect(next.hand.some((c) => c.instanceId === parts.instanceId)).toBe(
+      false,
+    );
+  });
+
+  it("Rewriter refuses Omega event cards", () => {
+    let state = createInitialTimeline(config);
+    state = apply(state, { type: "debugAddCard", cardId: "tesla" });
+    const tesla = state.hand.find((c) => c.cardId === "tesla")!;
+    const ada = nodeByCard("ada", state);
+    const next = apply(state, {
       type: "deviceRewriter",
       nodeId: ada.id,
       instanceId: tesla.instanceId,
     });
-    expect(next.nodes[ada.id].card?.cardId).toBe("tesla");
-    expect(next.hand.some((c) => c.cardId === "ada")).toBe(true);
-    expect(next.hand.some((c) => c.instanceId === tesla.instanceId)).toBe(
-      false,
-    );
-    expect(next.actionDeck.filter((id) => id === "tesla").length).toBe(
-      deckTesla,
-    );
+    expect(next.nodes[ada.id].card?.cardId).toBe("ada");
+    expect(next.log.at(-1)).toMatch(/Omega/i);
+  });
+
+  it("Random Event places the top Omega card and returns to the action pile", () => {
+    const start = createInitialTimeline({
+      ...config,
+      startingHand: ["draw-random"],
+    });
+    const top = start.omegaDeck[0];
+    const card = start.hand.find((c) => c.cardId === "draw-random")!;
+    const next = apply(start, {
+      type: "playCard",
+      instanceId: card.instanceId,
+      atNodeId: start.travelerNodeId,
+    });
+    expect(next.nodes[next.travelerNodeId].card?.cardId).toBe(top);
+    expect(next.hand.some((c) => c.cardId === "draw-random")).toBe(false);
+    expect(next.actionDeck.includes("draw-random")).toBe(true);
+    expect(next.omegaDeck.length).toBe(start.omegaDeck.length - 1);
+  });
+
+  it("Draw Blueprint adds a blueprint to hand and stays on the timeline", () => {
+    const start = createInitialTimeline({
+      ...config,
+      startingHand: ["draw-blueprint"],
+    });
+    const card = start.hand.find((c) => c.cardId === "draw-blueprint")!;
+    const top = start.blueprintDeck[0];
+    const next = apply(start, {
+      type: "playCard",
+      instanceId: card.instanceId,
+      atNodeId: start.travelerNodeId,
+    });
+    expect(next.nodes[next.travelerNodeId].card?.cardId).toBe("draw-blueprint");
+    expect(next.hand.some((c) => c.cardId === top)).toBe(true);
+    expect(next.blueprintDeck.length).toBe(start.blueprintDeck.length - 1);
   });
 
   it("Preserver locks a branch", () => {
@@ -392,7 +450,7 @@ describe("timeline", () => {
     expect(state.player.completedCount).toBe(1);
   });
 
-  it("draws from the action deck", () => {
+  it("draws from the action pile", () => {
     const start = createInitialTimeline(config);
     expect(start.actionDeck.length).toBeGreaterThan(0);
     const next = apply(start, { type: "draw" });

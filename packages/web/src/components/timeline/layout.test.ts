@@ -55,6 +55,8 @@ function stateWith(
     travelerNodeId: "n0",
     hand: [],
     actionDeck: [],
+    omegaDeck: [],
+    blueprintDeck: [],
     player: {
       parts: 0,
       minerals: 0,
