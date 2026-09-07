@@ -1,0 +1,1 @@
+No router library. Pathname `/play` and `/rulebook` via `history.pushState`, with Vite’s SPA fallback for refresh. `/` and unknown paths canonicalize to `/play`. `/rulebook` without a rulebook also goes to Play. Tab clicks are same-document links so game state stays mounted.

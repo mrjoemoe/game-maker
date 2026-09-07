@@ -50,6 +50,8 @@
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
 }
 
 .app-tab.active {

@@ -24,13 +24,13 @@ import {
   useGameSession,
   type InteractionMode,
 } from "./store/gameSession";
+import { pathForTab } from "./store/playtestRoute";
+import { sameDocumentNav, usePlaytestTab } from "./store/usePlaytestTab";
 import "./app.css";
 
 const prototypeId = import.meta.env.VITE_PROTOTYPE as string | undefined;
 const active = resolvePrototype(prototypeId);
 const STEP_MS = 420;
-
-type AppTab = "play" | "rulebook";
 
 export function App() {
   const [state, dispatch] = useGameSession(active.definition);
@@ -40,7 +40,8 @@ export function App() {
   const heroId = state.game.definition.run?.heroPieceId;
   const programLength = runProgramLength(state.game.definition);
   const rulebook = active.extensions.rulebook;
-  const [tab, setTab] = useState<AppTab>("play");
+  const showRulebookTab = Boolean(rulebook);
+  const [tab, setTab] = usePlaytestTab(showRulebookTab);
 
   const [path, setPath] = useState<ProgramStep[]>([]);
   const [executingIndex, setExecutingIndex] = useState<number | null>(null);
@@ -162,7 +163,6 @@ export function App() {
   }, [heroId, path, programLength, dispatch]);
 
   const allItems = Object.values(state.game.items);
-  const showRulebookTab = Boolean(rulebook);
 
   return (
     <div className={timelineMode ? "app app-timeline" : "app"}>
@@ -177,20 +177,30 @@ export function App() {
 
       {showRulebookTab ? (
         <nav className="app-tabs" aria-label="Playtest views">
-          <button
-            type="button"
+          <a
+            href={pathForTab("play")}
             className={tab === "play" ? "app-tab active" : "app-tab"}
-            onClick={() => setTab("play")}
+            aria-current={tab === "play" ? "page" : undefined}
+            onClick={(event) => {
+              if (!sameDocumentNav(event)) return;
+              event.preventDefault();
+              setTab("play");
+            }}
           >
             Play
-          </button>
-          <button
-            type="button"
+          </a>
+          <a
+            href={pathForTab("rulebook")}
             className={tab === "rulebook" ? "app-tab active" : "app-tab"}
-            onClick={() => setTab("rulebook")}
+            aria-current={tab === "rulebook" ? "page" : undefined}
+            onClick={(event) => {
+              if (!sameDocumentNav(event)) return;
+              event.preventDefault();
+              setTab("rulebook");
+            }}
           >
             Rulebook
-          </button>
+          </a>
         </nav>
       ) : null}
 

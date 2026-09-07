@@ -287,11 +287,26 @@ When the active prototype enables timeline mode, the Play tab SHALL render a bra
 - **THEN** one new column is to the left of the primary branch and the other is to the right
 
 ### Requirement: Play and Rulebook tabs for Timeline Game
-Timeline Game SHALL offer Play and Rulebook tabs. Rulebook SHALL show the variant `RULEBOOK.md`.
+Timeline Game SHALL offer Play and Rulebook tabs at `/play` and `/rulebook`. Rulebook SHALL show the variant `RULEBOOK.md`.
 
 #### Scenario: Open Timeline Game rulebook
-- **WHEN** the player selects the Rulebook tab
+- **WHEN** the player selects the Rulebook tab or opens `/rulebook`
 - **THEN** the Timeline Game rules markdown is shown instead of the timeline canvas
+
+### Requirement: Play and Rulebook routes
+When the active prototype has a rulebook, the playtest app SHALL show Play at `/play` and Rulebook at `/rulebook`. Visiting `/` SHALL show Play at `/play`. Changing tabs SHALL update the path without resetting the playtest session.
+
+#### Scenario: Rulebook URL
+- **WHEN** the player opens `/rulebook` on a prototype that has a rulebook
+- **THEN** the Rulebook view is shown and the address is `/rulebook`
+
+#### Scenario: Play URL
+- **WHEN** the player opens `/play` or `/`
+- **THEN** the Play view is shown and the address is `/play`
+
+#### Scenario: Tab switch keeps the session
+- **WHEN** the player switches between Play and Rulebook
+- **THEN** the path changes to `/play` or `/rulebook` and the playtest game state is not reset
 
 ### Requirement: Player mat and debug device dock
 The Play tab SHALL show a player mat (parts, minerals, crystals, up to 3 device slots, blueprints, objectives). In debug mode it SHALL provide always-available Device A–H controls with targeting instructions, plus a debug draw from the **action** deck and the ability to add any catalog card to hand. It SHALL NOT offer a Draw random control. Hand cards SHALL use the same type coloring as timeline cards (not an unmarked white face). While a device is armed, the Play tab SHALL show a **top banner** naming that device and the next click required to use it; the matching dock control SHALL appear armed until the player completes the action or cancels. Timeline nodes SHALL NOT be labeled or drawn as Open rift tiles. Merger targeting copy SHALL tell the player which branch ends and which branch it continues into.
