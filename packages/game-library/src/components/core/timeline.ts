@@ -100,7 +100,7 @@ const DEVICES: TimelineDeviceDefinition[] = [
     id: "preserver",
     letter: "G",
     label: "Preserver",
-    summary: "Lock a timeline from edits",
+    summary: "Lock cards already laid up to a chosen moment",
     uses: 3,
     requirements: {
       parts: 1,
@@ -282,7 +282,7 @@ export const coreTimeline = defineComponent({
     id: "core/timeline",
     kind: "feature-bundle",
     schemaVersion: 1,
-    contractVersion: "1.3.0",
+    contractVersion: "1.4.0",
     owner: "platform",
     docs: {
       summary:

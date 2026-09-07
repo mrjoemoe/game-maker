@@ -48,6 +48,13 @@ Timeline Game Rewriter SHALL swap a played timeline card with a card in hand. Th
 - **WHEN** a player reads the Devices section of Timeline Game’s rulebook
 - **THEN** Rewriter is described as swapping a hand card with a card on the timeline
 
+### Requirement: Preserver locks a prefix in the rulebook
+The Timeline Game rulebook SHALL describe Preserver as locking the cards already laid up to a chosen moment, not the whole future of that timeline.
+
+#### Scenario: Rulebook describes the prefix
+- **WHEN** a player reads the Devices section of Timeline Game’s rulebook
+- **THEN** Preserver is described as locking what has already been laid, not the entire timeline
+
 ### Requirement: Omega, action, and blueprint piles
 Timeline Game SHALL keep three facedown piles: **Omega events** (person, place, thing; 30 cards), **action cards** (society, invention, resource, Random Event, Draw Blueprint), and **blueprints**. Hand draws SHALL come from the action pile. Playing Random Event SHALL place the top Omega card on the timeline. Playing Draw Blueprint SHALL add the top blueprint to the hand.
 

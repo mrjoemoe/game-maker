@@ -124,6 +124,7 @@ export {
   isAncestor,
   isBranchEntry,
   isHead,
+  isPreservedNode,
   isPrimary,
   jumperTargets,
   nextAlongBranch,

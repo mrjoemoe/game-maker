@@ -122,7 +122,7 @@ export function targetingGuide(targeting: Targeting): TargetingGuide | null {
         letter: "G",
         title: "Preserver",
         step: "Step 1 of 1",
-        how: "Click any card on the timeline to lock or unlock it.",
+        how: "Click a card to lock everything already laid on that timeline up to that moment. Later cards stay unlocked. Click it again to unlock.",
       };
     case "jumper":
       return {

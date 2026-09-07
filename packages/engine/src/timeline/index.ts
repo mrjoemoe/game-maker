@@ -463,7 +463,6 @@ function createFork(
     parentBranchId: from.branchId,
     forkNodeId: fromNodeId,
     crystals: 1,
-    preserved: false,
   };
   const parent = {
     ...from,
@@ -573,13 +572,40 @@ function moveTraveler(
   return next;
 }
 
+export function isPreservedNode(state: TimelineState, nodeId: string): boolean {
+  const node = getNode(state, nodeId);
+  const throughId = getBranch(state, node.branchId).preservedThroughNodeId;
+  if (!throughId) return false;
+  if (throughId === nodeId) return true;
+  let current: string | null = throughId;
+  const seen = new Set<string>();
+  while (current && !seen.has(current)) {
+    seen.add(current);
+    const here = getNode(state, current);
+    const parentOnBranch = here.parentIds.find((id) => {
+      const parent = state.nodes[id];
+      return parent?.branchId === here.branchId;
+    });
+    current = parentOnBranch ?? null;
+    if (current === nodeId) return true;
+  }
+  return false;
+}
+
+function branchHasPreservedPrefix(
+  state: TimelineState,
+  branchId: string,
+): boolean {
+  return Boolean(getBranch(state, branchId).preservedThroughNodeId);
+}
+
 function manipulationBlocked(
   state: TimelineState,
   branchId: string,
 ): string | null {
   if (state.debugMode) return null;
-  if (getBranch(state, branchId).preserved) {
-    return `${getBranch(state, branchId).label} is preserved.`;
+  if (branchHasPreservedPrefix(state, branchId)) {
+    return `${getBranch(state, branchId).label} has a preserved past.`;
   }
   return null;
 }
@@ -608,7 +634,6 @@ export function createInitialTimeline(
     parentBranchId: null,
     forkNodeId: null,
     crystals: 0,
-    preserved: false,
   };
 
   let state: TimelineState = {
@@ -761,6 +786,13 @@ function playCard(
   const { state: without, card: toPlace } = prepared;
 
   const head = isHead(without, atNodeId);
+  if (
+    !head &&
+    !without.debugMode &&
+    isPreservedNode(without, atNodeId)
+  ) {
+    return log(state, "That moment is preserved.");
+  }
   let placed: { node: TimelineNode; state: TimelineState };
   if (head) {
     const branchId = getNode(without, atNodeId).branchId;
@@ -822,11 +854,9 @@ function applyBrancher(
   if (getBranch(state, getNode(state, fromNodeId).branchId).mergedIntoNodeId) {
     return log(state, "That timeline has already merged.");
   }
-  const locked = manipulationBlocked(
-    state,
-    getNode(state, fromNodeId).branchId,
-  );
-  if (locked) return log(state, locked);
+  if (!state.debugMode && isPreservedNode(state, fromNodeId)) {
+    return log(state, "That moment is preserved.");
+  }
   if (
     !state.debugMode &&
     Object.keys(state.branches).length >= (config.maxBranches ?? 12)
@@ -993,10 +1023,6 @@ function applyMerger(
   if (destBranch.mergedIntoNodeId) {
     return log(state, `${destBranch.label} has already merged.`);
   }
-  const locked =
-    manipulationBlocked(state, fromBranchId) ??
-    manipulationBlocked(state, destBranch.id);
-  if (locked) return log(state, locked);
   const head = getNode(state, incoming.headNodeId);
   const destHead = getNode(state, destBranch.headNodeId);
   if (destHead.id === head.id) {
@@ -1031,8 +1057,9 @@ function applyRewriter(
   const node = getNode(state, nodeId);
   const placed = node.card;
   if (!placed) return log(state, "Nothing here to rewrite.");
-  const locked = manipulationBlocked(state, node.branchId);
-  if (locked) return log(state, locked);
+  if (!state.debugMode && isPreservedNode(state, nodeId)) {
+    return log(state, "That moment is preserved.");
+  }
   const held = state.hand.find((c) => c.instanceId === instanceId);
   if (!held) return log(state, "Rewriter needs a card from your hand.");
   const incoming = cardById(config, held.cardId);
@@ -1056,20 +1083,29 @@ function applyRewriter(
   );
 }
 
-function applyPreserver(state: TimelineState, branchId: string): TimelineState {
-  const branch = getBranch(state, branchId);
-  const preserved = !branch.preserved;
-  return log(
-    {
-      ...state,
-      branches: {
-        ...state.branches,
-        [branchId]: { ...branch, preserved },
-      },
+function applyPreserver(
+  state: TimelineState,
+  config: TimelineConfig,
+  nodeId: string,
+): TimelineState {
+  const node = getNode(state, nodeId);
+  const branch = getBranch(state, node.branchId);
+  const unlock = branch.preservedThroughNodeId === nodeId;
+  const def = node.card ? cardById(config, node.card.cardId) : undefined;
+  const next: TimelineState = {
+    ...state,
+    branches: {
+      ...state.branches,
+      [branch.id]: unlock
+        ? { ...branch, preservedThroughNodeId: undefined }
+        : { ...branch, preservedThroughNodeId: nodeId },
     },
-    preserved
-      ? `Preserver: ${branch.label} is locked.`
-      : `Preserver: ${branch.label} is unlocked.`,
+  };
+  return log(
+    next,
+    unlock
+      ? `Preserver: ${branch.label} is unlocked.`
+      : `Preserver: ${branch.label} is locked through ${def?.label ?? "this moment"}.`,
   );
 }
 
@@ -1326,7 +1362,7 @@ export function applyTimelineAction(
     case "deviceRewriter":
       return applyRewriter(state, config, action.nodeId, action.instanceId);
     case "devicePreserver":
-      return applyPreserver(state, action.branchId);
+      return applyPreserver(state, config, action.nodeId);
     case "deviceJumper":
       return applyJumper(state, config, action.toNodeId);
     case "debugBuildDevice":

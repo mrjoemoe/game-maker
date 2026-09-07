@@ -21,7 +21,6 @@ function branch(
     parentBranchId,
     forkNodeId: parentBranchId,
     crystals: 0,
-    preserved: false,
   };
 }
 

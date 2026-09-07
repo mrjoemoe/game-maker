@@ -3,6 +3,7 @@ import {
   applyTimelineAction,
   createInitialTimeline,
   isHead,
+  isPreservedNode,
   jumperTargets,
   objectiveIsPresent,
   type TimelineConfig,
@@ -448,13 +449,45 @@ describe("timeline", () => {
     expect(next.blueprintDeck.length).toBe(start.blueprintDeck.length - 1);
   });
 
-  it("Preserver locks a branch", () => {
+  it("Preserver locks only cards up to the chosen moment", () => {
     const start = createInitialTimeline(config);
-    const next = apply(start, {
+    const ada = nodeByCard("ada", start);
+    const culture = nodeByCard("culture", start);
+    const locked = apply(start, {
       type: "devicePreserver",
-      branchId: start.primaryBranchId,
+      nodeId: ada.id,
     });
-    expect(next.branches[start.primaryBranchId].preserved).toBe(true);
+    expect(locked.branches[start.primaryBranchId].preservedThroughNodeId).toBe(
+      ada.id,
+    );
+    expect(isPreservedNode(locked, ada.id)).toBe(true);
+    expect(isPreservedNode(locked, culture.id)).toBe(false);
+    const parts = locked.hand.find((c) => c.cardId === "get-parts")!;
+    const grown = apply(locked, {
+      type: "playCard",
+      instanceId: parts.instanceId,
+      atNodeId: locked.branches[locked.primaryBranchId].headNodeId,
+    });
+    expect(isPreservedNode(grown, ada.id)).toBe(true);
+    expect(isPreservedNode(grown, grown.travelerNodeId)).toBe(false);
+  });
+
+  it("Rewriter refuses a preserved card when debug is off", () => {
+    const quiet = { ...config, debugMode: false };
+    let state = createInitialTimeline(quiet);
+    const ada = nodeByCard("ada", state);
+    state = applyTimelineAction(state, quiet, {
+      type: "devicePreserver",
+      nodeId: ada.id,
+    });
+    const parts = state.hand.find((c) => c.cardId === "get-parts")!;
+    const next = applyTimelineAction(state, quiet, {
+      type: "deviceRewriter",
+      nodeId: ada.id,
+      instanceId: parts.instanceId,
+    });
+    expect(next.nodes[ada.id].card?.cardId).toBe("ada");
+    expect(next.log.at(-1)).toMatch(/preserved/i);
   });
 
   it("Jumper skips ahead up to 3 spaces", () => {

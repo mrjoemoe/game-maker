@@ -1,0 +1,1 @@
+Store `preservedThroughNodeId` on the branch. A node is locked when it is that card or a same-branch ancestor of it. Toggle off by clicking the same through-card again. Playing at the current head always appends an unlocked card.

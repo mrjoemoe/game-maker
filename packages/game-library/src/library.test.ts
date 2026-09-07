@@ -393,8 +393,14 @@ describe("resolution and propagation", () => {
       ),
       "utf8",
     );
+    expect(rulebook).toMatch(/Omega events/);
+    expect(rulebook).toMatch(/Random Event/);
+    expect(rulebook).toMatch(/Draw Blueprint/);
     expect(rulebook).toContain(
       "Join the **heads** of two timelines. The first timeline ends there; the second can still grow.",
+    );
+    expect(rulebook).toContain(
+      "Lock the cards already laid on that timeline **up to the chosen moment**.",
     );
     const qty = (n: number, one: string, many: string) =>
       n === 1 ? `1 ${one}` : `${n} ${many}`;

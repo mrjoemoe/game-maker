@@ -256,7 +256,7 @@ When run mode is enabled, the playtest app SHALL provide a Debug section with a 
 - **THEN** play-revealed tiles stay face-up and never-revealed tiles are face-down again
 
 ### Requirement: Timeline playtest canvas
-When the active prototype enables timeline mode, the Play tab SHALL render a branching timeline with **epoch at the bottom** and later nodes stacked **upward** on separate branch columns, plus a **1–20 row ruler** for path depth. The traveler token SHALL appear on the current node. Timeline nodes SHALL be compact (about half the previous card height). Hovering a timeline node SHALL show the cumulative culture, science, and politics on the path from epoch to that node. Wires SHALL distinguish **same-branch stems** from **fork** and **merge** connectors: forks and merges SHALL route through gutters and row gaps so they do not overlap cards or branch mats. When no local path can miss those tiles, the connector SHALL split: each end SHALL show the **same letter** so the join is still readable. A **preserved** branch SHALL have a yellow column wash behind its lane so the lock is obvious. The **primary** branch SHALL sit in the horizontal center of the timestream so later branches can open to its left and its right.
+When the active prototype enables timeline mode, the Play tab SHALL render a branching timeline with **epoch at the bottom** and later nodes stacked **upward** on separate branch columns, plus a **1–20 row ruler** for path depth. The traveler token SHALL appear on the current node. Timeline nodes SHALL be compact (about half the previous card height). Hovering a timeline node SHALL show the cumulative culture, science, and politics on the path from epoch to that node. Wires SHALL distinguish **same-branch stems** from **fork** and **merge** connectors: forks and merges SHALL route through gutters and row gaps so they do not overlap cards or branch mats. When no local path can miss those tiles, the connector SHALL split: each end SHALL show the **same letter** so the join is still readable. A **preserved prefix** SHALL have a yellow wash behind the locked cards and the branch mat, not behind cards laid after the lock. The **primary** branch SHALL sit in the horizontal center of the timestream so later branches can open to its left and its right.
 
 #### Scenario: Seeded timeline is visible
 - **WHEN** Timeline Game loads on the Play tab
@@ -275,8 +275,8 @@ When the active prototype enables timeline mode, the Play tab SHALL render a bra
 - **THEN** each end of the connector is labeled with the same letter and the stroke does not cross the blocking tile
 
 #### Scenario: Preserved branch is yellow
-- **WHEN** a branch is preserved
-- **THEN** that branch’s column has a yellow background behind its cards and mat
+- **WHEN** a branch is preserved through a mid-path card and later cards exist beyond that lock
+- **THEN** the yellow wash covers the locked cards and mat and does not cover the later unlocked cards
 
 #### Scenario: Primary branch starts centered
 - **WHEN** Timeline Game loads on the Play tab
@@ -285,6 +285,13 @@ When the active prototype enables timeline mode, the Play tab SHALL render a bra
 #### Scenario: Forks open left and right
 - **WHEN** two branches are created from the primary timeline
 - **THEN** one new column is to the left of the primary branch and the other is to the right
+
+### Requirement: Preserver prefix wash
+The Play tab SHALL paint a yellow wash behind the preserved prefix of a branch (locked cards and the branch mat), not behind cards laid after the lock.
+
+#### Scenario: Wash stops at the lock
+- **WHEN** a branch is preserved through a mid-path card and later cards exist beyond that lock
+- **THEN** the yellow wash covers the locked cards and mat and does not cover the later unlocked cards
 
 ### Requirement: Head-to-head merge wire
 The Play tab SHALL draw a merge connector from the ended branch’s last card to the destination branch’s head. That connector SHALL NOT splice into the destination stem as if the destination card had an extra parent.

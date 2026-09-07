@@ -107,7 +107,8 @@ export type TimelineBranch = {
   parentBranchId: string | null;
   forkNodeId: string | null;
   crystals: number;
-  preserved: boolean;
+  /** Last same-branch card locked by Preserver (inclusive). Later cards stay free. */
+  preservedThroughNodeId?: string;
   /** Set when this timeline merged into another branch’s head and no longer grows. */
   mergedIntoNodeId?: string;
 };
@@ -173,7 +174,7 @@ export type TimelineAction =
   | { type: "devicePruner"; branchId: string }
   | { type: "deviceMerger"; fromBranchId: string; intoNodeId: string }
   | { type: "deviceRewriter"; nodeId: string; instanceId: string }
-  | { type: "devicePreserver"; branchId: string }
+  | { type: "devicePreserver"; nodeId: string }
   | { type: "deviceJumper"; toNodeId: string }
   | { type: "debugBuildDevice"; deviceId: DeviceId }
   | { type: "claimObjective"; objectiveId: string }

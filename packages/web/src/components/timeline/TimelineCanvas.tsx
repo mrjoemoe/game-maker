@@ -2,6 +2,7 @@ import {
   cardById,
   isBranchEntry,
   isHead,
+  isPreservedNode,
   societyOnBranch,
   societyOnPath,
   type TimelineConfig,
@@ -9,7 +10,7 @@ import {
 } from "@game-maker/engine";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cardFaceClass, cardTypeLabel } from "./cardFace";
-import { layoutTimeline, MAX_TRACK_ROWS, NODE_H, NODE_W, PAD } from "./layout";
+import { layoutTimeline, MAX_TRACK_ROWS, MAT_H, NODE_H, NODE_W } from "./layout";
 import { planWires } from "./wires";
 
 type TimelineCanvasProps = {
@@ -72,9 +73,13 @@ export function TimelineCanvas({
         style={{ width: layout.width, height: layout.height }}
       >
         {Object.values(state.branches).map((branch) => {
-          if (!branch.preserved) return null;
+          const throughId = branch.preservedThroughNodeId;
+          if (!throughId) return null;
           const mat = layout.mats[branch.id];
-          if (!mat) return null;
+          const through = layout.nodes[throughId];
+          if (!mat || !through) return null;
+          const top = through.y - 8;
+          const bottom = mat.y + MAT_H + 8;
           return (
             <div
               key={`lock-${branch.id}`}
@@ -82,8 +87,8 @@ export function TimelineCanvas({
               style={{
                 left: mat.x - 8,
                 width: NODE_W + 16,
-                top: PAD / 2,
-                height: layout.height - PAD,
+                top,
+                height: Math.max(bottom - top, NODE_H),
               }}
               aria-hidden="true"
             />
@@ -160,14 +165,14 @@ export function TimelineCanvas({
               key={branch.id}
               type="button"
               className={`tl-mat${primary ? " primary" : ""}${
-                branch.preserved ? " preserved" : ""
+                branch.preservedThroughNodeId ? " preserved" : ""
               }${highlightedBranches.has(branch.id) ? " lit" : ""}`}
               style={{ left: mat.x, top: mat.y }}
               onClick={() => onMatClick(branch.id)}
             >
               <span className="tl-mat-index">
                 {branch.index}
-                {branch.preserved ? " 🔒" : ""}
+                {branch.preservedThroughNodeId ? " 🔒" : ""}
               </span>
               <strong>{branch.label}</strong>
               <span className="tl-dice">
@@ -195,6 +200,7 @@ export function TimelineCanvas({
           const ended =
             Boolean(state.branches[node.branchId]?.mergedIntoNodeId) &&
             node.id === state.branches[node.branchId]?.headNodeId;
+          const locked = isPreservedNode(state, node.id);
           const kind = cardFaceClass(def, epoch);
           const rowLabel = epoch ? "E" : String(node.depth);
           return (
@@ -203,7 +209,7 @@ export function TimelineCanvas({
               type="button"
               className={`tl-node tl-face ${kind}${here ? " here" : ""}${
                 head ? " head" : ""
-              }${ended ? " merged" : ""}${
+              }${ended ? " merged" : ""}${locked ? " locked" : ""}${
                 entry && !epoch ? " entry" : ""
               }${highlightedNodes.has(node.id) ? " lit" : ""}`}
               style={{ left: pos.x, top: pos.y }}
@@ -219,7 +225,7 @@ export function TimelineCanvas({
               <span className="tl-row-chip">{rowLabel}</span>
               <span className="tl-kicker">
                 {epoch ? "Epoch" : cardTypeLabel(def)}
-                {ended ? " · merged" : head && !epoch ? " · head" : ""}
+                {ended ? " · merged" : locked ? " · locked" : head && !epoch ? " · head" : ""}
               </span>
               <span className="tl-title">
                 {epoch ? "Origin" : def?.label ?? "Confluence"}

@@ -236,7 +236,7 @@ export function TimelinePlaytest({
         setTargeting({ kind: "rewriter-card", nodeId });
         return;
       case "preserver":
-        dispatch({ type: "devicePreserver", branchId: node.branchId });
+        dispatch({ type: "devicePreserver", nodeId });
         setTargeting({ kind: "idle" });
         return;
       case "jumper":
