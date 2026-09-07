@@ -4,6 +4,7 @@ import {
   cardById,
   descendantIds,
   deviceById,
+  isActionCard,
   isPrimary,
   jumperTargets,
   societyOnPath,
@@ -83,6 +84,9 @@ export function TimelinePlaytest({
       case "rewriter-card":
         nodes.add(targeting.nodeId);
         break;
+      case "brancher-card":
+        nodes.add(targeting.fromNodeId);
+        break;
       case "play":
       case "brancher":
       case "relocator-branch":
@@ -129,8 +133,10 @@ export function TimelinePlaytest({
         setTargeting({ kind: "idle" });
         return;
       case "brancher":
-        dispatch({ type: "deviceBrancher", fromNodeId: nodeId });
-        setTargeting({ kind: "idle" });
+        setTargeting({ kind: "brancher-card", fromNodeId: nodeId });
+        return;
+      case "brancher-card":
+        setTargeting({ kind: "brancher-card", fromNodeId: nodeId });
         return;
       case "reverser":
         dispatch({ type: "deviceReverser", toNodeId: nodeId });
@@ -483,8 +489,9 @@ export function TimelinePlaytest({
               timeline.hand.map((card) => {
                 const def = cardById(config, card.cardId);
                 const armed =
-                  targeting.kind === "play" &&
-                  targeting.instanceId === card.instanceId;
+                  (targeting.kind === "play" &&
+                    targeting.instanceId === card.instanceId) ||
+                  (targeting.kind === "brancher-card" && isActionCard(def));
                 return (
                   <button
                     key={card.instanceId}
@@ -492,12 +499,22 @@ export function TimelinePlaytest({
                     className={`tl-card tl-face ${cardFaceClass(def)}${
                       armed ? " armed" : ""
                     }`}
-                    onClick={() =>
+                    onClick={() => {
+                      if (targeting.kind === "brancher-card") {
+                        if (!isActionCard(def)) return;
+                        dispatch({
+                          type: "deviceBrancher",
+                          fromNodeId: targeting.fromNodeId,
+                          instanceId: card.instanceId,
+                        });
+                        setTargeting({ kind: "idle" });
+                        return;
+                      }
                       setTargeting({
                         kind: "play",
                         instanceId: card.instanceId,
-                      })
-                    }
+                      });
+                    }}
                   >
                     <span>{cardTypeLabel(def)}</span>
                     <strong>{def?.label ?? card.cardId}</strong>

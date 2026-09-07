@@ -5,7 +5,7 @@ export function cardFaceClass(
   isEpoch = false,
 ): string {
   if (isEpoch) return "epoch";
-  if (!def) return "rift";
+  if (!def) return "confluence";
   if (def.family === "event") return def.eventKind ?? "event";
   if (def.family === "society") return def.societyKind ?? "society";
   if (def.family === "resource") return def.resourceKind ?? "resource";
@@ -18,7 +18,7 @@ export function cardTypeLabel(
   isEpoch = false,
 ): string {
   if (isEpoch) return "Epoch";
-  if (!def) return "Rift";
+  if (!def) return "Confluence";
   if (def.eventKind) return def.eventKind;
   if (def.societyKind) return def.societyKind;
   if (def.resourceKind) return def.resourceKind;

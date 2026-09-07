@@ -4,6 +4,7 @@ export type Targeting =
   | { kind: "idle" }
   | { kind: "play"; instanceId: string }
   | { kind: "brancher" }
+  | { kind: "brancher-card"; fromNodeId: string }
   | { kind: "reverser" }
   | { kind: "relocator-branch" }
   | { kind: "relocator-parent"; branchId: string }
@@ -40,8 +41,16 @@ export function targetingGuide(targeting: Targeting): TargetingGuide | null {
         deviceId: "brancher",
         letter: "A",
         title: "Brancher",
-        step: "Step 1 of 1",
+        step: "Step 1 of 2",
         how: "Click the timeline card where the new branch should split off.",
+      };
+    case "brancher-card":
+      return {
+        deviceId: "brancher",
+        letter: "A",
+        title: "Brancher",
+        step: "Step 2 of 2",
+        how: "Click an action card in your hand to lay on the new branch.",
       };
     case "reverser":
       return {

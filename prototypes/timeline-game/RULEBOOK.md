@@ -67,7 +67,7 @@ Build with parts, minerals, **1 crystal**, and the path’s culture / science / 
 
 | | Device | Effect |
 |---|---------|--------|
-| A | **Brancher** | Fork a new timeline from a chosen moment. High minerals, med parts, low society. |
+| A | **Brancher** | Fork a new timeline from a chosen moment **and lay an action card from your hand** as the first card on that branch. High minerals, med parts, low society. |
 | B | **Reverser** | Jump to an ancestor. High society, med parts. |
 | C | **Relocator** | Move a fork to a new parent. Science > culture > politics. |
 | D | **Pruner** | Delete a non-prime branch (and its descendant forks); return event cards to decks. Medium everything. |

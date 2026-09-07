@@ -174,6 +174,19 @@ function apply(state: ReturnType<typeof createInitialTimeline>, action: Paramete
   return applyTimelineAction(state, config, action);
 }
 
+function brancherFrom(
+  state: ReturnType<typeof createInitialTimeline>,
+  fromNodeId: string,
+  cardId = "tesla",
+) {
+  const card = state.hand.find((c) => c.cardId === cardId)!;
+  return apply(state, {
+    type: "deviceBrancher",
+    fromNodeId,
+    instanceId: card.instanceId,
+  });
+}
+
 describe("timeline", () => {
   it("starts at epoch with a seeded prime branch and no crystals on prime", () => {
     const state = createInitialTimeline(config);
@@ -207,28 +220,49 @@ describe("timeline", () => {
     );
   });
 
-  it("Brancher forks a new mat with a crystal", () => {
+  it("Brancher forks a new mat with a crystal and a card from hand", () => {
     const start = createInitialTimeline(config);
     const paris = nodeByCard("paris", start);
-    const next = apply(start, { type: "deviceBrancher", fromNodeId: paris.id });
+    const tesla = start.hand.find((c) => c.cardId === "tesla")!;
+    const next = apply(start, {
+      type: "deviceBrancher",
+      fromNodeId: paris.id,
+      instanceId: tesla.instanceId,
+    });
     expect(Object.keys(next.branches).length).toBe(2);
     const fork = Object.values(next.branches).find((b) => b.index === 2)!;
     expect(fork.crystals).toBe(1);
     expect(next.player.crystals).toBe(1);
     expect(next.travelerNodeId).toBe(fork.rootNodeId);
+    expect(next.nodes[fork.rootNodeId].card?.cardId).toBe("tesla");
+    expect(next.hand.find((c) => c.instanceId === tesla.instanceId)).toBeUndefined();
     expect(next.nodes[paris.id].childIds.length).toBeGreaterThan(
       start.nodes[paris.id].childIds.length,
     );
   });
 
-  it("works with zero resources in debug", () => {
+  it("Brancher without a valid card does not fork", () => {
     const start = createInitialTimeline(config);
-    expect(start.player.parts).toBe(0);
     const next = apply(start, {
       type: "deviceBrancher",
       fromNodeId: start.epochNodeId,
+      instanceId: "missing",
+    });
+    expect(Object.keys(next.branches).length).toBe(1);
+    expect(next.log.at(-1)).toMatch(/action card/i);
+  });
+
+  it("works with zero resources in debug", () => {
+    const start = createInitialTimeline(config);
+    expect(start.player.parts).toBe(0);
+    const tesla = start.hand.find((c) => c.cardId === "tesla")!;
+    const next = apply(start, {
+      type: "deviceBrancher",
+      fromNodeId: start.epochNodeId,
+      instanceId: tesla.instanceId,
     });
     expect(Object.keys(next.branches).length).toBe(2);
+    expect(next.nodes[Object.values(next.branches).find((b) => b.index === 2)!.rootNodeId].card?.cardId).toBe("tesla");
   });
 
   it("Reverser jumps to an ancestor", () => {
@@ -246,7 +280,7 @@ describe("timeline", () => {
     const start = createInitialTimeline(config);
     const paris = nodeByCard("paris", start);
     const ada = nodeByCard("ada", start);
-    let state = apply(start, { type: "deviceBrancher", fromNodeId: paris.id });
+    let state = brancherFrom(start, paris.id);
     const fork = Object.values(state.branches).find((b) => b.index === 2)!;
     state = apply(state, {
       type: "deviceRelocator",
@@ -287,7 +321,7 @@ describe("timeline", () => {
     const start = createInitialTimeline(config);
     const paris = nodeByCard("paris", start);
     const ada = nodeByCard("ada", start);
-    let state = apply(start, { type: "deviceBrancher", fromNodeId: paris.id });
+    let state = brancherFrom(start, paris.id);
     const fork = Object.values(state.branches).find((b) => b.index === 2)!;
     state = apply(state, {
       type: "deviceMerger",

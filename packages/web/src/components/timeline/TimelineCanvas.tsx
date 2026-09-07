@@ -182,7 +182,7 @@ export function TimelineCanvas({
                 {head && !epoch ? " · head" : ""}
               </span>
               <span className="tl-title">
-                {epoch ? "Origin" : def?.label ?? "Open rift"}
+                {epoch ? "Origin" : def?.label ?? "Confluence"}
               </span>
             </button>
           );
@@ -194,7 +194,13 @@ export function TimelineCanvas({
             style={{ left: hoverPos.x + NODE_W + 8, top: hoverPos.y }}
             role="status"
           >
-            <strong>{hovered.card ? "At this moment" : "Empty moment"}</strong>
+            <strong>
+              {hovered.card
+                ? "At this moment"
+                : hovered.id === state.epochNodeId
+                  ? "Epoch"
+                  : "Confluence"}
+            </strong>
             <span>Culture {hoverSociety.culture}</span>
             <span>Science {hoverSociety.science}</span>
             <span>Politics {hoverSociety.politics}</span>

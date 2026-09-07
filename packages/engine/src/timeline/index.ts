@@ -47,6 +47,12 @@ export function cardById(
   return config.cards.find((c) => c.id === cardId);
 }
 
+export function isActionCard(
+  def: TimelineCardDefinition | undefined,
+): boolean {
+  return Boolean(def && def.family !== "random-event");
+}
+
 export function deviceById(
   config: TimelineConfig,
   deviceId: DeviceId,
@@ -400,7 +406,7 @@ function appendChild(
 function createFork(
   state: TimelineState,
   fromNodeId: string,
-  card: PlacedCard | null,
+  card: PlacedCard,
 ): { node: TimelineNode; branch: TimelineBranch; state: TimelineState } {
   const from = getNode(state, fromNodeId);
   const branchAlloc = alloc(state, "b");
@@ -782,6 +788,7 @@ function applyBrancher(
   state: TimelineState,
   config: TimelineConfig,
   fromNodeId: string,
+  instanceId: string,
 ): TimelineState {
   getNode(state, fromNodeId);
   const locked = manipulationBlocked(
@@ -795,12 +802,26 @@ function applyBrancher(
   ) {
     return log(state, "No more than 12 branches.");
   }
-  const forked = createFork(state, fromNodeId, null);
+  const held = state.hand.find((c) => c.instanceId === instanceId);
+  if (!held) {
+    return log(state, "Brancher needs an action card from your hand.");
+  }
+  const def = cardById(config, held.cardId);
+  if (!isActionCard(def)) {
+    return log(state, "Brancher needs an action card, not a random event.");
+  }
+  const without = {
+    ...state,
+    hand: state.hand.filter((c) => c.instanceId !== instanceId),
+  };
+  const forked = createFork(without, fromNodeId, held);
   let next = log(
     forked.state,
-    `Brancher: ${forked.branch.label} opens. Gained a crystal.`,
+    `Brancher: ${forked.branch.label} opens with ${def?.label ?? held.cardId}. Gained a crystal.`,
   );
-  return moveTraveler(next, config, forked.node.id, { resolve: false });
+  next = moveTraveler(next, config, forked.node.id, { resolve: false });
+  next = resolveArrival(next, config, forked.node.id);
+  return next;
 }
 
 function applyReverser(
@@ -1278,7 +1299,12 @@ export function applyTimelineAction(
     case "playCard":
       return playCard(state, config, action.instanceId, action.atNodeId);
     case "deviceBrancher":
-      return applyBrancher(state, config, action.fromNodeId);
+      return applyBrancher(
+        state,
+        config,
+        action.fromNodeId,
+        action.instanceId,
+      );
     case "deviceReverser":
       return applyReverser(state, config, action.toNodeId);
     case "deviceRelocator":

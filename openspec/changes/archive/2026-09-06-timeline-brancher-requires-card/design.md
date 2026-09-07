@@ -1,0 +1,1 @@
+Brancher is two clicks: timestream moment, then a hand action card (not a random event). The engine refuses Brancher if that card is missing. Empty `card: null` nodes remain only for Epoch and Merger confluence; the UI never calls those a rift.

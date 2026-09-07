@@ -10,7 +10,7 @@ const DEVICES: TimelineDeviceDefinition[] = [
     id: "brancher",
     letter: "A",
     label: "Brancher",
-    summary: "Fork a new timeline from a moment",
+    summary: "Fork a timeline and play a card onto it",
     uses: 3,
     requirements: {
       parts: 2,

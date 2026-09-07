@@ -172,7 +172,7 @@ export type TimelineAction =
     }
   | { type: "takeCrystal"; branchId: string }
   | { type: "playCard"; instanceId: string; atNodeId: string }
-  | { type: "deviceBrancher"; fromNodeId: string }
+  | { type: "deviceBrancher"; fromNodeId: string; instanceId: string }
   | { type: "deviceReverser"; toNodeId: string }
   | { type: "deviceRelocator"; branchId: string; newParentNodeId: string }
   | { type: "devicePruner"; branchId: string }

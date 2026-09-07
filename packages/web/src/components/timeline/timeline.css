@@ -363,10 +363,10 @@
   background: #4a4454;
 }
 
-.tl-face.rift {
-  background: transparent;
-  border: 1.5px dashed #8d99ae;
-  color: #cdd6e0;
+.tl-face.confluence {
+  background: #1b3a3a;
+  border: 1.5px dashed #7dd3c7;
+  color: #cde8e4;
 }
 
 .tl-node.head {
