@@ -10,5 +10,6 @@
       "@game-maker/engine": ["../engine/src/index.ts"]
     }
   },
-  "include": ["src", "../../prototypes/**/*.ts"]
+  "include": ["src", "../../prototypes/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"]
 }

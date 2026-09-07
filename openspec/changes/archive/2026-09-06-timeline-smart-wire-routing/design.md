@@ -1,0 +1,1 @@
+Search a padded bounding box around the two cards: try elbow routes on column gutters and row gaps, then a short orthogonal A*. Ignore the two cards being joined. If that box has no clear path, draw two stubs and the same letter (a, b, c…) at each stub instead of wrapping around the whole canvas.

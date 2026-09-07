@@ -9,14 +9,8 @@ import {
 } from "@game-maker/engine";
 import { useEffect, useRef, useState } from "react";
 import { cardFaceClass, cardTypeLabel } from "./cardFace";
-import {
-  layoutTimeline,
-  MAX_TRACK_ROWS,
-  NODE_H,
-  NODE_W,
-  wireKind,
-  wirePath,
-} from "./layout";
+import { layoutTimeline, MAX_TRACK_ROWS, NODE_H, NODE_W } from "./layout";
+import { planWires } from "./wires";
 
 type TimelineCanvasProps = {
   state: TimelineState;
@@ -51,18 +45,7 @@ export function TimelineCanvas({
     ? societyOnPath(state, config, hovered.id)
     : null;
   const hoverPos = hoveredId ? layout.nodes[hoveredId] : null;
-  const wires = Object.values(state.nodes).flatMap((node) =>
-    node.parentIds.flatMap((parentId) => {
-      const parent = state.nodes[parentId];
-      const from = layout.nodes[parentId];
-      const to = layout.nodes[node.id];
-      if (!parent || !from || !to) return [];
-      const kind = wireKind(parent, node);
-      return [
-        { key: `${parentId}-${node.id}`, kind, d: wirePath(from, to, kind) },
-      ];
-    }),
-  );
+  const wires = planWires(state, layout);
 
   return (
     <div className="tl-stream" aria-label="Timestream" ref={streamRef}>
@@ -87,20 +70,37 @@ export function TimelineCanvas({
               />
             </g>
           ))}
-          {wires.map((wire) => (
-            <path
-              key={`${wire.key}-halo`}
-              d={wire.d}
-              className={`tl-wire-halo ${wire.kind}`}
-            />
-          ))}
-          {wires.map((wire) => (
-            <path
-              key={wire.key}
-              d={wire.d}
-              className={`tl-wire ${wire.kind}`}
-            />
-          ))}
+          {wires.flatMap((wire) =>
+            wire.parts.map((d, i) => (
+              <path
+                key={`${wire.key}-halo-${i}`}
+                d={d}
+                className={`tl-wire-halo ${wire.kind}`}
+              />
+            )),
+          )}
+          {wires.flatMap((wire) =>
+            wire.parts.map((d, i) => (
+              <path
+                key={`${wire.key}-${i}`}
+                d={d}
+                className={`tl-wire ${wire.kind}`}
+              />
+            )),
+          )}
+          {wires.flatMap((wire) =>
+            wire.labels.map((label, i) => (
+              <g
+                key={`${wire.key}-j${i}`}
+                className={`tl-jump ${wire.kind}`}
+              >
+                <circle cx={label.x} cy={label.y} r={10} />
+                <text x={label.x} y={label.y}>
+                  {label.letter}
+                </text>
+              </g>
+            )),
+          )}
         </svg>
 
         {layout.rows.map((row) => (

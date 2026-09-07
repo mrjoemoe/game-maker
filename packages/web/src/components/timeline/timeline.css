@@ -186,6 +186,29 @@
   stroke-dasharray: 9 6;
 }
 
+.tl-jump circle {
+  fill: #0b1018;
+  stroke: #6ee7ff;
+  stroke-width: 2.2;
+}
+
+.tl-jump.merge circle {
+  stroke: #9dffd4;
+}
+
+.tl-jump text {
+  fill: #6ee7ff;
+  font-size: 11px;
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.tl-jump.merge text {
+  fill: #9dffd4;
+}
+
 .tl-grid {
   stroke: rgba(232, 197, 71, 0.12);
   stroke-width: 1;
