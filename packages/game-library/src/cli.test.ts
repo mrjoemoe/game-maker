@@ -6,10 +6,16 @@ import {
   goblinWoodsVariant,
   meadowV1Variant,
   quietGladeVariant,
+  timelineGameVariant,
 } from "./variants/builtins.js";
 import { checkChanged, checkFull } from "./check.js";
 
-const variants = [meadowV1Variant, quietGladeVariant, goblinWoodsVariant];
+const variants = [
+  meadowV1Variant,
+  quietGladeVariant,
+  goblinWoodsVariant,
+  timelineGameVariant,
+];
 
 describe("game CLI helpers", () => {
   it("maps changed paths to component ids", () => {

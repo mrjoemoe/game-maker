@@ -1,0 +1,579 @@
+import {
+  ancestorIds,
+  applyAction,
+  cardById,
+  descendantIds,
+  deviceById,
+  isPrimary,
+  jumperTargets,
+  societyOnPath,
+  type DeviceId,
+  type GameState,
+  type TimelineAction,
+  type TimelineCardDefinition,
+} from "@game-maker/engine";
+import { useEffect, useMemo, useState } from "react";
+import { TimelineCanvas } from "./TimelineCanvas";
+import "./timeline.css";
+
+type TimelinePlaytestProps = {
+  game: GameState;
+  onGame: (game: GameState) => void;
+  onReset: () => void;
+};
+
+type Targeting =
+  | { kind: "idle" }
+  | { kind: "play"; instanceId: string }
+  | { kind: "brancher" }
+  | { kind: "reverser" }
+  | { kind: "relocator-branch" }
+  | { kind: "relocator-parent"; branchId: string }
+  | { kind: "pruner" }
+  | { kind: "merger-first" }
+  | { kind: "merger-second"; branchId: string }
+  | { kind: "rewriter-node" }
+  | { kind: "rewriter-card"; nodeId: string }
+  | { kind: "preserver" }
+  | { kind: "jumper" };
+
+const DEVICE_ORDER: DeviceId[] = [
+  "brancher",
+  "reverser",
+  "relocator",
+  "pruner",
+  "merger",
+  "rewriter",
+  "preserver",
+  "jumper",
+];
+
+function instruction(targeting: Targeting): string {
+  switch (targeting.kind) {
+    case "idle":
+      return "Click a node to move. Use the dock to fire a device.";
+    case "play":
+      return "Click a head to append, or an earlier node to fork a new branch.";
+    case "brancher":
+      return "Brancher — click the moment to fork from.";
+    case "reverser":
+      return "Reverser — click an ancestor to jump into the past.";
+    case "relocator-branch":
+      return "Relocator — click a node on the branch to move.";
+    case "relocator-parent":
+      return "Relocator — click the new parent node.";
+    case "pruner":
+      return "Pruner — click a node on the branch to cut.";
+    case "merger-first":
+      return "Merger — click a node on the first branch.";
+    case "merger-second":
+      return "Merger — click a node on the second branch.";
+    case "rewriter-node":
+      return "Rewriter — click the played card to replace.";
+    case "rewriter-card":
+      return "Rewriter — pick a replacement from the catalog below.";
+    case "preserver":
+      return "Preserver — click a node on the timeline to lock or unlock.";
+    case "jumper":
+      return "Jumper — click a node up to 3 spaces ahead.";
+    default:
+      return "";
+  }
+}
+
+export function TimelinePlaytest({
+  game,
+  onGame,
+  onReset,
+}: TimelinePlaytestProps) {
+  const [targeting, setTargeting] = useState<Targeting>({ kind: "idle" });
+  const timeline = game.timeline;
+  const config = game.definition.timeline;
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setTargeting({ kind: "idle" });
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const highlighted = useMemo(() => {
+    const nodes = new Set<string>();
+    const branches = new Set<string>();
+    if (!timeline || !config) return { nodes, branches };
+    switch (targeting.kind) {
+      case "reverser":
+        for (const id of ancestorIds(timeline, timeline.travelerNodeId)) {
+          nodes.add(id);
+        }
+        break;
+      case "jumper":
+        for (const id of jumperTargets(timeline, config)) nodes.add(id);
+        break;
+      case "relocator-parent": {
+        const root = timeline.branches[targeting.branchId]?.rootNodeId;
+        const blocked = root
+          ? new Set([root, ...descendantIds(timeline, root)])
+          : new Set<string>();
+        for (const id of Object.keys(timeline.nodes)) {
+          if (!blocked.has(id)) nodes.add(id);
+        }
+        branches.add(targeting.branchId);
+        break;
+      }
+      case "rewriter-card":
+        nodes.add(targeting.nodeId);
+        break;
+      case "play":
+      case "brancher":
+      case "relocator-branch":
+      case "pruner":
+      case "merger-first":
+      case "merger-second":
+      case "rewriter-node":
+      case "preserver":
+        for (const id of Object.keys(timeline.nodes)) nodes.add(id);
+        break;
+      default:
+        break;
+    }
+    return { nodes, branches };
+  }, [targeting, timeline, config]);
+
+  if (!timeline || !config) {
+    return <p>Timeline failed to load.</p>;
+  }
+
+  const dispatch = (op: TimelineAction) => {
+    onGame(applyAction(game, { type: "timeline", op }));
+  };
+
+  const pathSociety = societyOnPath(timeline, config, timeline.travelerNodeId);
+  const traveler = timeline.nodes[timeline.travelerNodeId];
+  const branch = traveler
+    ? timeline.branches[traveler.branchId]
+    : undefined;
+
+  const onNodeClick = (nodeId: string) => {
+    const node = timeline.nodes[nodeId];
+    if (!node) return;
+    switch (targeting.kind) {
+      case "idle":
+        dispatch({ type: "moveTo", nodeId });
+        return;
+      case "play":
+        dispatch({
+          type: "playCard",
+          instanceId: targeting.instanceId,
+          atNodeId: nodeId,
+        });
+        setTargeting({ kind: "idle" });
+        return;
+      case "brancher":
+        dispatch({ type: "deviceBrancher", fromNodeId: nodeId });
+        setTargeting({ kind: "idle" });
+        return;
+      case "reverser":
+        dispatch({ type: "deviceReverser", toNodeId: nodeId });
+        setTargeting({ kind: "idle" });
+        return;
+      case "relocator-branch":
+        if (isPrimary(timeline, node.branchId)) return;
+        setTargeting({ kind: "relocator-parent", branchId: node.branchId });
+        return;
+      case "relocator-parent":
+        dispatch({
+          type: "deviceRelocator",
+          branchId: targeting.branchId,
+          newParentNodeId: nodeId,
+        });
+        setTargeting({ kind: "idle" });
+        return;
+      case "pruner":
+        dispatch({ type: "devicePruner", branchId: node.branchId });
+        setTargeting({ kind: "idle" });
+        return;
+      case "merger-first":
+        setTargeting({ kind: "merger-second", branchId: node.branchId });
+        return;
+      case "merger-second":
+        dispatch({
+          type: "deviceMerger",
+          branchIdA: targeting.branchId,
+          branchIdB: node.branchId,
+        });
+        setTargeting({ kind: "idle" });
+        return;
+      case "rewriter-node":
+        if (!node.card) return;
+        setTargeting({ kind: "rewriter-card", nodeId });
+        return;
+      case "preserver":
+        dispatch({ type: "devicePreserver", branchId: node.branchId });
+        setTargeting({ kind: "idle" });
+        return;
+      case "jumper":
+        dispatch({ type: "deviceJumper", toNodeId: nodeId });
+        setTargeting({ kind: "idle" });
+        return;
+      default:
+        return;
+    }
+  };
+
+  const onMatClick = (branchId: string) => {
+    if (targeting.kind === "idle") {
+      dispatch({ type: "takeCrystal", branchId });
+      return;
+    }
+    const root = timeline.branches[branchId]?.rootNodeId;
+    if (root) onNodeClick(root);
+  };
+
+  const armDevice = (id: DeviceId) => {
+    const map: Record<DeviceId, Targeting> = {
+      brancher: { kind: "brancher" },
+      reverser: { kind: "reverser" },
+      relocator: { kind: "relocator-branch" },
+      pruner: { kind: "pruner" },
+      merger: { kind: "merger-first" },
+      rewriter: { kind: "rewriter-node" },
+      preserver: { kind: "preserver" },
+      jumper: { kind: "jumper" },
+    };
+    setTargeting(map[id]);
+  };
+
+  const cardsByFamily = config.cards.reduce<
+    Record<string, TimelineCardDefinition[]>
+  >((acc, card) => {
+    const key = card.eventKind ?? card.family;
+    acc[key] = [...(acc[key] ?? []), card];
+    return acc;
+  }, {});
+
+  return (
+    <div className="tl-play">
+      <section className="tl-toolbar" aria-label="Timeline controls">
+        <div className="tl-instructions">
+          <p>{instruction(targeting)}</p>
+          {branch ? (
+            <p className="tl-where">
+              {branch.label}
+              {branch.headNodeId === timeline.travelerNodeId
+                ? " · HEAD"
+                : ""}
+              {" · "}
+              C {pathSociety.culture} · S {pathSociety.science} · P{" "}
+              {pathSociety.politics}
+            </p>
+          ) : null}
+        </div>
+        <div className="tl-toolbar-actions">
+          <button
+            type="button"
+            className={timeline.debugMode ? "active" : ""}
+            onClick={() =>
+              dispatch({ type: "setDebugMode", enabled: !timeline.debugMode })
+            }
+          >
+            {timeline.debugMode ? "Debug on" : "Debug off"}
+          </button>
+          <button type="button" onClick={() => dispatch({ type: "stepBack" })}>
+            Step back
+          </button>
+          <button
+            type="button"
+            onClick={() => dispatch({ type: "stepForward" })}
+          >
+            Step forward
+          </button>
+          <button type="button" onClick={() => dispatch({ type: "endTurn" })}>
+            End turn
+          </button>
+          {targeting.kind !== "idle" ? (
+            <button type="button" onClick={() => setTargeting({ kind: "idle" })}>
+              Cancel
+            </button>
+          ) : null}
+          <button type="button" className="reset" onClick={onReset}>
+            Reset
+          </button>
+        </div>
+      </section>
+
+      {timeline.status === "won" ? (
+        <p className="tl-banner win">Three objectives complete. You win.</p>
+      ) : null}
+      {timeline.status === "endOfTime" ? (
+        <div className="tl-banner">
+          End of time.
+          <button
+            type="button"
+            onClick={() => dispatch({ type: "endOfTimeStay" })}
+          >
+            Stay (+1 crystal)
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setTargeting({ kind: "reverser" });
+            }}
+          >
+            Use Reverser
+          </button>
+          <button
+            type="button"
+            onClick={() => dispatch({ type: "endOfTimeRoll" })}
+          >
+            Roll a branch mat
+          </button>
+        </div>
+      ) : null}
+
+      <TimelineCanvas
+        state={timeline}
+        config={config}
+        highlightedNodes={highlighted.nodes}
+        highlightedBranches={highlighted.branches}
+        selectedCardInstanceId={
+          targeting.kind === "play" ? targeting.instanceId : null
+        }
+        onNodeClick={onNodeClick}
+        onMatClick={onMatClick}
+      />
+
+      <div className="tl-panels">
+        <section className="tl-panel" aria-label="Player mat">
+          <h2>Player mat</h2>
+          <div className="tl-resources">
+            {(["parts", "minerals", "crystals"] as const).map((resource) => (
+              <div key={resource} className="tl-resource">
+                <span>{resource}</span>
+                <strong>{timeline.player[resource]}</strong>
+                {timeline.debugMode ? (
+                  <span className="tl-stepper">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        dispatch({
+                          type: "debugSetResource",
+                          resource,
+                          delta: -1,
+                        })
+                      }
+                    >
+                      −
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        dispatch({
+                          type: "debugSetResource",
+                          resource,
+                          delta: 1,
+                        })
+                      }
+                    >
+                      +
+                    </button>
+                  </span>
+                ) : null}
+              </div>
+            ))}
+          </div>
+          <h3>Device slots</h3>
+          <div className="tl-slots">
+            {[0, 1, 2].map((i) => {
+              const built = timeline.player.devices[i];
+              return (
+                <div key={i} className="tl-slot">
+                  {built
+                    ? `${deviceById(config, built.deviceId)?.label} (${built.usesLeft})`
+                    : "Empty"}
+                </div>
+              );
+            })}
+          </div>
+          <p className="tl-muted">
+            Blueprints:{" "}
+            {timeline.player.blueprints.length
+              ? timeline.player.blueprints
+                  .map((id) => deviceById(config, id)?.label ?? id)
+                  .join(", ")
+              : "none"}
+          </p>
+          <h3>Objectives</h3>
+          <ul className="tl-objectives">
+            {timeline.player.objectives.map((obj) => {
+              const person = cardById(config, obj.personId)?.label ?? obj.personId;
+              const place = cardById(config, obj.placeId)?.label ?? obj.placeId;
+              const thing = cardById(config, obj.thingId)?.label ?? obj.thingId;
+              const pending = timeline.player.pendingClaimIds.includes(obj.id);
+              return (
+                <li key={obj.id}>
+                  <span>
+                    {person} · {place} · {thing}
+                    {obj.complete
+                      ? " ✓"
+                      : pending
+                        ? " (claimed)"
+                        : ""}
+                  </span>
+                  {!obj.complete && !pending ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        dispatch({ type: "claimObjective", objectiveId: obj.id })
+                      }
+                    >
+                      Claim
+                    </button>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+
+        <section className="tl-panel" aria-label="Devices">
+          <h2>Devices</h2>
+          <div className="tl-dock">
+            {DEVICE_ORDER.map((id) => {
+              const def = deviceById(config, id);
+              if (!def) return null;
+              const req = def.requirements;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className="tl-device"
+                  onClick={() => armDevice(id)}
+                >
+                  <span className="tl-letter">{def.letter}</span>
+                  <span>
+                    <strong>{def.label}</strong>
+                    <em>{def.summary}</em>
+                    <small>
+                      {req.parts}p {req.minerals}m {req.crystals}◆ · C
+                      {req.culture} S{req.science} P{req.politics}
+                    </small>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {timeline.debugMode ? (
+            <div className="tl-build">
+              {DEVICE_ORDER.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() =>
+                    dispatch({ type: "debugBuildDevice", deviceId: id })
+                  }
+                >
+                  Slot {deviceById(config, id)?.letter}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </section>
+
+        <section className="tl-panel" aria-label="Hand">
+          <h2>Hand ({timeline.hand.length})</h2>
+          <div className="tl-hand">
+            {timeline.hand.length === 0 ? (
+              <p className="tl-muted">Empty.</p>
+            ) : (
+              timeline.hand.map((card) => {
+                const def = cardById(config, card.cardId);
+                return (
+                  <button
+                    key={card.instanceId}
+                    type="button"
+                    className={`tl-card${
+                      targeting.kind === "play" &&
+                      targeting.instanceId === card.instanceId
+                        ? " armed"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      setTargeting({
+                        kind: "play",
+                        instanceId: card.instanceId,
+                      })
+                    }
+                  >
+                    <span>{def?.family}</span>
+                    <strong>{def?.label ?? card.cardId}</strong>
+                  </button>
+                );
+              })
+            )}
+          </div>
+          <div className="tl-draws">
+            <button
+              type="button"
+              onClick={() => dispatch({ type: "draw", deck: "action" })}
+            >
+              Draw action
+            </button>
+            <button
+              type="button"
+              onClick={() => dispatch({ type: "draw", deck: "random" })}
+            >
+              Draw random
+            </button>
+          </div>
+        </section>
+      </div>
+
+      {timeline.debugMode ? (
+        <section className="tl-panel tl-debug" aria-label="Debug catalog">
+          <h2>Debug catalog</h2>
+          <p className="tl-muted">
+            Add any card to hand
+            {targeting.kind === "rewriter-card"
+              ? " — or click one to rewrite the selected node."
+              : "."}
+          </p>
+          {Object.entries(cardsByFamily).map(([family, cards]) => (
+            <div key={family} className="tl-catalog-row">
+              <span>{family}</span>
+              <div>
+                {cards.map((card) => (
+                  <button
+                    key={card.id}
+                    type="button"
+                    onClick={() => {
+                      if (targeting.kind === "rewriter-card") {
+                        dispatch({
+                          type: "deviceRewriter",
+                          nodeId: targeting.nodeId,
+                          replacementCardId: card.id,
+                        });
+                        setTargeting({ kind: "idle" });
+                        return;
+                      }
+                      dispatch({ type: "debugAddCard", cardId: card.id });
+                    }}
+                  >
+                    {card.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </section>
+      ) : null}
+
+      <ol className="tl-log" aria-label="Event log">
+        {[...timeline.log].reverse().map((line, i) => (
+          <li key={`${i}-${line}`}>{line}</li>
+        ))}
+      </ol>
+    </div>
+  );
+}

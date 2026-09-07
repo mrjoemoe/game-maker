@@ -53,4 +53,5 @@ export {
   goblinWoodsVariant,
   meadowV1Variant,
   quietGladeVariant,
+  timelineGameVariant,
 } from "./variants/builtins.js";

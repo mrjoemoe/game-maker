@@ -41,6 +41,13 @@ import {
   tileEffect,
   type TileState,
 } from "../tiles/index.js";
+import {
+  applyTimelineAction,
+  createInitialTimeline,
+  type TimelineAction,
+  type TimelineConfig,
+  type TimelineState,
+} from "../timeline/index.js";
 
 export type InitialPiece = {
   id: string;
@@ -62,6 +69,8 @@ export type GameFeatures = {
   tileFlip?: boolean;
   /** When true, step/softReset run loop is active. Defaults to false. */
   runMode?: boolean;
+  /** When true, the timeline graph runtime is active. Defaults to false. */
+  timelineMode?: boolean;
 };
 
 export type GameDefinition = {
@@ -77,6 +86,8 @@ export type GameDefinition = {
   items?: ItemDefinition[];
   /** Required when features.runMode is true. */
   run?: RunConfig;
+  /** Required when features.timelineMode is true. */
+  timeline?: TimelineConfig;
 };
 
 export function isTileFlipEnabled(definition: GameDefinition): boolean {
@@ -85,6 +96,10 @@ export function isTileFlipEnabled(definition: GameDefinition): boolean {
 
 export function isRunModeEnabled(definition: GameDefinition): boolean {
   return definition.features?.runMode === true;
+}
+
+export function isTimelineModeEnabled(definition: GameDefinition): boolean {
+  return definition.features?.timelineMode === true;
 }
 
 export function runProgramLength(definition: GameDefinition): number {
@@ -104,6 +119,8 @@ export type GameState = {
   coins: number;
   /** Cells already credited to the wallet this attempt (soft reset clears). */
   claimedCoinKeys: string[];
+  /** Present when timeline mode is enabled. */
+  timeline: TimelineState | null;
 };
 
 export type GameAction =
@@ -114,7 +131,8 @@ export type GameAction =
   | { type: "runProgram"; pieceId: string; steps: ProgramStep[] }
   | { type: "commitLoadout"; itemIds: string[] }
   | { type: "softReset" }
-  | { type: "reset" };
+  | { type: "reset" }
+  | { type: "timeline"; op: TimelineAction };
 
 function requireRunConfig(definition: GameDefinition): RunConfig {
   if (!definition.run) {
@@ -993,6 +1011,12 @@ export function createInitialState(definition: GameDefinition): GameState {
     getCell(board, runConfig.startPosition);
   }
 
+  if (isTimelineModeEnabled(definition) && !definition.timeline) {
+    throw new Error(
+      `Game definition "${definition.id}" has timelineMode enabled but no timeline config`,
+    );
+  }
+
   // In run mode, start with the map hidden except the start cell and extractions.
   let cells = board.cells;
   if (isRunModeEnabled(definition)) {
@@ -1024,6 +1048,9 @@ export function createInitialState(definition: GameDefinition): GameState {
     stashItemIds: [],
     coins: 0,
     claimedCoinKeys: [],
+    timeline: isTimelineModeEnabled(definition)
+      ? createInitialTimeline(definition.timeline!)
+      : null,
   };
 }
 
@@ -1104,6 +1131,19 @@ export function applyAction(state: GameState, action: GameAction): GameState {
           ? withRerolledEdgeWallSeed(state.definition)
           : state.definition;
       return createInitialState(definition);
+    }
+    case "timeline": {
+      if (!state.timeline || !state.definition.timeline) {
+        return state;
+      }
+      return {
+        ...state,
+        timeline: applyTimelineAction(
+          state.timeline,
+          state.definition.timeline,
+          action.op,
+        ),
+      };
     }
     default: {
       const _exhaustive: never = action;

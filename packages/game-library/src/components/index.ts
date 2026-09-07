@@ -3,6 +3,7 @@ import { boardsMeadowV1, piecesMeadowV1 } from "./boards/meadow-v1.js";
 import { boardsQuietGlade, piecesQuietGlade } from "./boards/quiet-glade.js";
 import { boardsGoblinWoods } from "./boards/goblin-woods.js";
 import { coreTileBoard } from "./core/tile-board.js";
+import { coreTimeline } from "./core/timeline.js";
 import {
   itemsCharm,
   itemsKnife,
@@ -19,6 +20,7 @@ import { rulesProgrammedRun } from "./rules/programmed-run.js";
 
 export const ALL_COMPONENTS = [
   coreTileBoard,
+  coreTimeline,
   boardsMeadowV1,
   piecesMeadowV1,
   boardsQuietGlade,

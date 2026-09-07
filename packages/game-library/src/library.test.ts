@@ -9,6 +9,7 @@ import {
   meadowV1Variant,
   quietGladeVariant,
   resolveVariant,
+  timelineGameVariant,
   use,
   validateManifest,
 } from "./index.js";
@@ -330,6 +331,26 @@ describe("resolution and propagation", () => {
         createCatalog([major2]),
       ),
     ).toThrow(/No version/);
+  });
+
+  it("resolves timeline-game from core/timeline", () => {
+    const catalog = createDefaultCatalog();
+    const result = resolveVariant(timelineGameVariant, catalog);
+    expect(result.definition.id).toBe("timeline-game");
+    expect(result.definition.name).toBe("Timeline Game");
+    expect(result.definition.templateId).toBe("timeline");
+    expect(result.definition.features?.timelineMode).toBe(true);
+    expect(result.definition.timeline?.debugMode).toBe(true);
+    expect(result.definition.timeline?.devices.map((d) => d.id)).toEqual([
+      "brancher",
+      "reverser",
+      "relocator",
+      "pruner",
+      "merger",
+      "rewriter",
+      "preserver",
+      "jumper",
+    ]);
   });
 
   it("lists consumers of core/tile-board", () => {

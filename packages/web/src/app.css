@@ -4,6 +4,10 @@
   padding: 2rem 1.25rem 3rem;
 }
 
+.app-timeline {
+  max-width: 1480px;
+}
+
 .hero {
   margin-bottom: 1.5rem;
 }

@@ -10,6 +10,7 @@ COPY packages/web/package.json ./packages/web/
 COPY prototypes/meadow-v1/package.json ./prototypes/meadow-v1/
 COPY prototypes/quiet-glade/package.json ./prototypes/quiet-glade/
 COPY prototypes/goblin-woods/package.json ./prototypes/goblin-woods/
+COPY prototypes/timeline-game/package.json ./prototypes/timeline-game/
 
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 

@@ -7,10 +7,16 @@ import {
   goblinWoodsVariant,
   meadowV1Variant,
   quietGladeVariant,
+  timelineGameVariant,
 } from "./variants/builtins.js";
 
 const catalog = createDefaultCatalog();
-const variants = [meadowV1Variant, quietGladeVariant, goblinWoodsVariant];
+const variants = [
+  meadowV1Variant,
+  quietGladeVariant,
+  goblinWoodsVariant,
+  timelineGameVariant,
+];
 
 function printHelp(): void {
   console.log(`game — game-component library tooling

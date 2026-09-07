@@ -6,6 +6,7 @@ import type {
   ItemDefinition,
   PieceTypeDefinition,
   TileTypeDefinition,
+  TimelineConfig,
 } from "@game-maker/engine";
 import type {
   Catalog,
@@ -80,6 +81,7 @@ function applyContribution(
     initialPieces?: InitialPiece[];
     items?: ItemDefinition[];
     run?: GameDefinition["run"];
+    timeline?: TimelineConfig;
   },
   contribution: ComponentContribution,
   component: ComponentDefinition,
@@ -205,6 +207,35 @@ function applyContribution(
     }
     draft.run = contrib.run;
     setProv(provenance, "run", id, ver);
+  }
+
+  if (contrib.timeline) {
+    const prev = draft.timeline;
+    draft.timeline = {
+      ...prev,
+      ...contrib.timeline,
+      cards: mergeById(
+        prev?.cards ?? [],
+        contrib.timeline.cards ?? [],
+        "timeline card",
+        id,
+      ),
+      devices: mergeById(
+        prev?.devices ?? [],
+        contrib.timeline.devices ?? [],
+        "timeline device",
+        id,
+      ),
+      objectives: [
+        ...(prev?.objectives ?? []),
+        ...(contrib.timeline.objectives ?? []),
+      ],
+      seedCardIds: contrib.timeline.seedCardIds ?? prev?.seedCardIds,
+      startingHand: contrib.timeline.startingHand ?? prev?.startingHand,
+      startingResources:
+        contrib.timeline.startingResources ?? prev?.startingResources,
+    };
+    setProv(provenance, "timeline", id, ver);
   }
 }
 
@@ -422,6 +453,7 @@ export function resolveVariant(
     initialPieces?: InitialPiece[];
     items?: ItemDefinition[];
     run?: GameDefinition["run"];
+    timeline?: TimelineConfig;
   } = {
     id: manifest.id,
     name: manifest.name,
@@ -483,6 +515,7 @@ export function resolveVariant(
     initialPieces: draft.initialPieces,
     items: draft.items,
     run: draft.run,
+    timeline: draft.timeline,
   };
 
   const resolvedVersions: ResolvedVersion[] = applyOrder.map((c) => ({

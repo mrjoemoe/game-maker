@@ -2,6 +2,7 @@ import {
   applyAction,
   isRunModeEnabled,
   isTileFlipEnabled,
+  isTimelineModeEnabled,
   pieceAt,
   runProgramLength,
   type Coord,
@@ -15,6 +16,7 @@ import { DebugPanel } from "./components/DebugPanel";
 import { InventoryPanel } from "./components/InventoryPanel";
 import { RulebookPanel } from "./components/RulebookPanel";
 import { RunHud } from "./components/RunHud";
+import { TimelinePlaytest } from "./components/timeline/TimelinePlaytest";
 import { TileTally } from "./components/TileTally";
 import { resolvePrototype } from "./prototypes/registry";
 import {
@@ -34,6 +36,7 @@ export function App() {
   const [state, dispatch] = useGameSession(active.definition);
   const flipEnabled = isTileFlipEnabled(state.game.definition);
   const runMode = isRunModeEnabled(state.game.definition);
+  const timelineMode = isTimelineModeEnabled(state.game.definition);
   const heroId = state.game.definition.run?.heroPieceId;
   const programLength = runProgramLength(state.game.definition);
   const rulebook = active.extensions.rulebook;
@@ -162,7 +165,7 @@ export function App() {
   const showRulebookTab = Boolean(rulebook);
 
   return (
-    <div className="app">
+    <div className={timelineMode ? "app app-timeline" : "app"}>
       <header className="hero">
         <p className="brand">Game Maker</p>
         <h1>{state.game.definition.name}</h1>
@@ -193,6 +196,12 @@ export function App() {
 
       {tab === "rulebook" && rulebook ? (
         <RulebookPanel markdown={rulebook} />
+      ) : timelineMode ? (
+        <TimelinePlaytest
+          game={state.game}
+          onGame={(next) => dispatch({ type: "replaceGame", game: next })}
+          onReset={hardReset}
+        />
       ) : (
         <>
           <section className="toolbar" aria-label="Playtest controls">

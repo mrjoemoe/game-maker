@@ -15,6 +15,7 @@
     "@game-maker/prototype-goblin-woods": "*",
     "@game-maker/prototype-meadow-v1": "*",
     "@game-maker/prototype-quiet-glade": "*",
+    "@game-maker/prototype-timeline-game": "*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

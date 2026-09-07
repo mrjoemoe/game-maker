@@ -9,6 +9,7 @@ import type {
   RandomTilePlacement,
   RunConfig,
   TileTypeDefinition,
+  TimelineConfig,
 } from "@game-maker/engine";
 
 /** Globally unique component id: `namespace/name`. */
@@ -86,6 +87,7 @@ export type ComponentContribution = {
   initialPieces?: InitialPiece[];
   items?: ItemDefinition[];
   run?: RunConfig;
+  timeline?: TimelineConfig;
   /** Extension-like metadata merged into PrototypeExtensions. */
   extensions?: {
     banner?: string;

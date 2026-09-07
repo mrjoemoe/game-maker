@@ -22,6 +22,11 @@ import {
   goblinWoodsManifest,
 } from "../../../../prototypes/goblin-woods/config/game.config";
 import goblinWoodsExtensions from "../../../../prototypes/goblin-woods/extensions";
+import {
+  timelineGame,
+  timelineGameManifest,
+} from "../../../../prototypes/timeline-game/config/game.config";
+import timelineGameExtensions from "../../../../prototypes/timeline-game/extensions";
 
 export type RegisteredPrototype = {
   definition: GameDefinition;
@@ -58,6 +63,7 @@ export const prototypeRegistry: Record<string, RegisteredPrototype> = {
   "meadow-v1": fromManifest(meadowV1Manifest, meadowExtensions),
   "quiet-glade": fromManifest(quietGladeManifest, quietGladeExtensions),
   "goblin-woods": fromManifest(goblinWoodsManifest, goblinWoodsExtensions),
+  "timeline-game": fromManifest(timelineGameManifest, timelineGameExtensions),
 };
 
 export const DEFAULT_PROTOTYPE_ID = "meadow-v1";
@@ -89,3 +95,4 @@ export function registerLegacyPrototype(
 void meadowV1;
 void quietGlade;
 void goblinWoods;
+void timelineGame;

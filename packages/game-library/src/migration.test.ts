@@ -5,6 +5,7 @@ import {
   meadowV1Variant,
   quietGladeVariant,
   resolveVariant,
+  timelineGameVariant,
 } from "@game-maker/game-library";
 
 /**
@@ -18,6 +19,7 @@ describe("composed registry contract", () => {
       meadowV1Variant,
       quietGladeVariant,
       goblinWoodsVariant,
+      timelineGameVariant,
     ]) {
       const resolved = resolveVariant(manifest, catalog);
       expect(resolved.definition.id).toBe(manifest.id);
@@ -31,6 +33,7 @@ describe("composed registry contract", () => {
       meadowV1Variant,
       quietGladeVariant,
       goblinWoodsVariant,
+      timelineGameVariant,
     ]) {
       for (const ref of manifest.components) {
         expect(ref.range.startsWith("^")).toBe(true);
