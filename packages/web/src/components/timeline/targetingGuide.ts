@@ -90,7 +90,7 @@ export function targetingGuide(targeting: Targeting): TargetingGuide | null {
         letter: "E",
         title: "Merger",
         step: "Step 1 of 2",
-        how: "Click a card on the first branch you want to join.",
+        how: "Click a card on the branch that ends (it merges away).",
       };
     case "merger-second":
       return {
@@ -98,7 +98,7 @@ export function targetingGuide(targeting: Targeting): TargetingGuide | null {
         letter: "E",
         title: "Merger",
         step: "Step 2 of 2",
-        how: "Click a card on a different branch to join them into a confluence.",
+        how: "Click a card on the timeline it should continue into. No new branch is created.",
       };
     case "rewriter-node":
       return {

@@ -71,7 +71,7 @@ Build with parts, minerals, **1 crystal**, and the path’s culture / science / 
 | B | **Reverser** | Jump to an ancestor. High society, med parts. |
 | C | **Relocator** | Move a fork to a new parent. Science > culture > politics. |
 | D | **Pruner** | Delete a non-prime branch (and its descendant forks); return event cards to decks. Medium everything. |
-| E | **Merger** | Join two heads into a confluence. High parts and politics. |
+| E | **Merger** | End one timeline into another: branch 1 stops at the join and play continues on branch 2. No third branch. High parts and politics. |
 | F | **Rewriter** | Replace one played action card; the old card returns to its deck. |
 | G | **Preserver** | Lock a timeline so others cannot manipulate it. Low everything. |
 | H | **Jumper** | Skip ahead up to 3 spaces. Low everything. |

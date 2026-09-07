@@ -317,23 +317,29 @@ describe("timeline", () => {
     );
   });
 
-  it("Merger joins two heads", () => {
+  it("Merger ends one branch into another without a third timeline", () => {
     const start = createInitialTimeline(config);
     const paris = nodeByCard("paris", start);
-    const ada = nodeByCard("ada", start);
     let state = brancherFrom(start, paris.id);
     const fork = Object.values(state.branches).find((b) => b.index === 2)!;
+    const into = nodeByCard("chrono", state);
+    const incomingHead = fork.headNodeId;
     state = apply(state, {
       type: "deviceMerger",
-      branchIdA: state.primaryBranchId,
-      branchIdB: fork.id,
+      fromBranchId: fork.id,
+      intoNodeId: into.id,
     });
-    const merge = Object.values(state.branches).find((b) =>
-      b.label.startsWith("Confluence"),
-    )!;
-    expect(state.nodes[merge.rootNodeId].parentIds).toHaveLength(2);
-    expect(state.travelerNodeId).toBe(merge.rootNodeId);
-    void ada;
+    expect(Object.keys(state.branches).length).toBe(2);
+    expect(state.branches[fork.id].mergedIntoNodeId).toBe(into.id);
+    expect(state.nodes[into.id].parentIds).toContain(incomingHead);
+    expect(state.nodes[incomingHead].childIds).toContain(into.id);
+    expect(state.travelerNodeId).toBe(into.id);
+    expect(isHead(state, incomingHead)).toBe(false);
+    expect(
+      Object.values(state.branches).some((b) =>
+        b.label.startsWith("Confluence"),
+      ),
+    ).toBe(false);
   });
 
   it("Rewriter swaps a played card back into the deck", () => {

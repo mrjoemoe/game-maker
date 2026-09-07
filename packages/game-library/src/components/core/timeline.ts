@@ -70,7 +70,7 @@ const DEVICES: TimelineDeviceDefinition[] = [
     id: "merger",
     letter: "E",
     label: "Merger",
-    summary: "Join two branch heads",
+    summary: "End one timeline into another",
     uses: 3,
     requirements: {
       parts: 5,

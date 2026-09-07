@@ -164,8 +164,8 @@ export function TimelinePlaytest({
       case "merger-second":
         dispatch({
           type: "deviceMerger",
-          branchIdA: targeting.branchId,
-          branchIdB: node.branchId,
+          fromBranchId: targeting.branchId,
+          intoNodeId: nodeId,
         });
         setTargeting({ kind: "idle" });
         return;

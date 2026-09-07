@@ -129,7 +129,9 @@ export function getBranch(state: TimelineState, id: string): TimelineBranch {
 
 export function isHead(state: TimelineState, nodeId: string): boolean {
   const node = getNode(state, nodeId);
-  return getBranch(state, node.branchId).headNodeId === nodeId;
+  const branch = getBranch(state, node.branchId);
+  if (branch.mergedIntoNodeId) return false;
+  return branch.headNodeId === nodeId;
 }
 
 export function isPrimary(state: TimelineState, branchId: string): boolean {
@@ -138,10 +140,8 @@ export function isPrimary(state: TimelineState, branchId: string): boolean {
 
 export function isBranchEntry(state: TimelineState, nodeId: string): boolean {
   const node = getNode(state, nodeId);
-  if (node.parentIds.length === 0) return true;
-  return node.parentIds.some(
-    (parentId) => getNode(state, parentId).branchId !== node.branchId,
-  );
+  if (nodeId === state.epochNodeId) return false;
+  return getBranch(state, node.branchId).rootNodeId === nodeId;
 }
 
 export function ancestorIds(state: TimelineState, nodeId: string): string[] {
@@ -948,72 +948,53 @@ function applyPruner(
 
 function applyMerger(
   state: TimelineState,
-  config: TimelineConfig,
-  branchIdA: string,
-  branchIdB: string,
+  fromBranchId: string,
+  intoNodeId: string,
 ): TimelineState {
-  if (branchIdA === branchIdB) {
-    return log(state, "Merger needs two different branches.");
+  const incoming = getBranch(state, fromBranchId);
+  const dest = getNode(state, intoNodeId);
+  if (dest.branchId === fromBranchId) {
+    return log(state, "Merger needs a different branch to continue into.");
   }
-  const a = getBranch(state, branchIdA);
-  const b = getBranch(state, branchIdB);
+  if (incoming.mergedIntoNodeId) {
+    return log(state, `${incoming.label} already merged into another timeline.`);
+  }
+  const destBranch = getBranch(state, dest.branchId);
   const locked =
-    manipulationBlocked(state, branchIdA) ??
-    manipulationBlocked(state, branchIdB);
+    manipulationBlocked(state, fromBranchId) ??
+    manipulationBlocked(state, dest.branchId);
   if (locked) return log(state, locked);
-  if (
-    !state.debugMode &&
-    Object.keys(state.branches).length >= (config.maxBranches ?? 12)
-  ) {
-    return log(state, "No more than 12 branches.");
+  const head = getNode(state, incoming.headNodeId);
+  if (dest.id === head.id) {
+    return log(state, "Merger cannot join a branch to itself.");
   }
-  const headA = getNode(state, a.headNodeId);
-  const headB = getNode(state, b.headNodeId);
-  const branchAlloc = alloc(state, "b");
-  const nodeAlloc = {
-    id: `n${branchAlloc.nextId}`,
-    nextId: branchAlloc.nextId + 1,
-  };
-  const index =
-    Math.max(...Object.values(state.branches).map((br) => br.index)) + 1;
-  const mergeNode: TimelineNode = {
-    id: nodeAlloc.id,
-    branchId: branchAlloc.id,
-    depth: Math.max(headA.depth, headB.depth) + 1,
-    parentIds: [headA.id, headB.id],
-    childIds: [],
-    card: null,
-    revealed: true,
-  };
-  const mergeBranch: TimelineBranch = {
-    id: branchAlloc.id,
-    index,
-    label: `Confluence ${index}`,
-    headNodeId: mergeNode.id,
-    rootNodeId: mergeNode.id,
-    parentBranchId: a.id,
-    forkNodeId: headA.id,
-    crystals: 1,
-    preserved: false,
-  };
+  if (isAncestor(state, dest.id, head.id)) {
+    return log(state, "Merger refused: that would loop time.");
+  }
+  if (descendantIds(state, head.id).has(dest.id)) {
+    return log(state, "Merger refused: that would loop time.");
+  }
+  if (dest.parentIds.includes(head.id) || head.childIds.includes(dest.id)) {
+    return log(state, "Those timelines already meet there.");
+  }
   const nodes = {
     ...state.nodes,
-    [headA.id]: { ...headA, childIds: [...headA.childIds, mergeNode.id] },
-    [headB.id]: { ...headB, childIds: [...headB.childIds, mergeNode.id] },
-    [mergeNode.id]: mergeNode,
+    [head.id]: { ...head, childIds: [...head.childIds, dest.id] },
+    [dest.id]: { ...dest, parentIds: [...dest.parentIds, head.id] },
   };
   let next: TimelineState = {
     ...state,
-    nextId: nodeAlloc.nextId,
     nodes,
-    branches: { ...state.branches, [mergeBranch.id]: mergeBranch },
-    player: { ...state.player, crystals: state.player.crystals + 1 },
-    travelerNodeId: mergeNode.id,
+    branches: {
+      ...state.branches,
+      [fromBranchId]: { ...incoming, mergedIntoNodeId: dest.id },
+    },
+    travelerNodeId: dest.id,
   };
   next = recomputeDepths(next);
   return log(
     next,
-    `Merger: ${a.label} and ${b.label} join at ${mergeBranch.label}.`,
+    `Merger: ${incoming.label} ends and continues into ${destBranch.label}.`,
   );
 }
 
@@ -1312,7 +1293,7 @@ export function applyTimelineAction(
     case "devicePruner":
       return applyPruner(state, config, action.branchId);
     case "deviceMerger":
-      return applyMerger(state, config, action.branchIdA, action.branchIdB);
+      return applyMerger(state, action.fromBranchId, action.intoNodeId);
     case "deviceRewriter":
       return applyRewriter(
         state,

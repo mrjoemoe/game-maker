@@ -155,6 +155,9 @@ export function TimelineCanvas({
           const here = node.id === state.travelerNodeId;
           const head = isHead(state, node.id);
           const entry = isBranchEntry(state, node.id);
+          const ended =
+            Boolean(state.branches[node.branchId]?.mergedIntoNodeId) &&
+            node.id === state.branches[node.branchId]?.headNodeId;
           const kind = cardFaceClass(def, epoch);
           const rowLabel = epoch ? "E" : String(node.depth);
           return (
@@ -163,9 +166,9 @@ export function TimelineCanvas({
               type="button"
               className={`tl-node tl-face ${kind}${here ? " here" : ""}${
                 head ? " head" : ""
-              }${entry && !epoch ? " entry" : ""}${
-                highlightedNodes.has(node.id) ? " lit" : ""
-              }`}
+              }${ended ? " merged" : ""}${
+                entry && !epoch ? " entry" : ""
+              }${highlightedNodes.has(node.id) ? " lit" : ""}`}
               style={{ left: pos.x, top: pos.y }}
               onClick={() => onNodeClick(node.id)}
               onMouseEnter={() => setHoveredId(node.id)}
@@ -179,7 +182,7 @@ export function TimelineCanvas({
               <span className="tl-row-chip">{rowLabel}</span>
               <span className="tl-kicker">
                 {epoch ? "Epoch" : cardTypeLabel(def)}
-                {head && !epoch ? " · head" : ""}
+                {ended ? " · merged" : head && !epoch ? " · head" : ""}
               </span>
               <span className="tl-title">
                 {epoch ? "Origin" : def?.label ?? "Confluence"}

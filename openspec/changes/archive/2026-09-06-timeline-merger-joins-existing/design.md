@@ -1,0 +1,1 @@
+First click picks the branch that ends; second click picks the node it continues into. Connect incoming **head** → destination **node**. Refuse same-branch, already-merged, and cycle joins. Do not spawn a confluence node or grant a new-branch crystal.

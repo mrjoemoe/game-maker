@@ -282,7 +282,7 @@ Timeline Game SHALL offer Play and Rulebook tabs. Rulebook SHALL show the varian
 - **THEN** the Timeline Game rules markdown is shown instead of the timeline canvas
 
 ### Requirement: Player mat and debug device dock
-The Play tab SHALL show a player mat (parts, minerals, crystals, up to 3 device slots, blueprints, objectives). In debug mode it SHALL provide always-available Device A–H controls with targeting instructions, plus debug draws and the ability to add any catalog card to hand. Hand cards SHALL use the same type coloring as timeline cards (not an unmarked white face). While a device is armed, the Play tab SHALL show a **top banner** naming that device and the next click required to use it; the matching dock control SHALL appear armed until the player completes the action or cancels. Timeline nodes SHALL NOT be labeled or drawn as Open rift tiles.
+The Play tab SHALL show a player mat (parts, minerals, crystals, up to 3 device slots, blueprints, objectives). In debug mode it SHALL provide always-available Device A–H controls with targeting instructions, plus debug draws and the ability to add any catalog card to hand. Hand cards SHALL use the same type coloring as timeline cards (not an unmarked white face). While a device is armed, the Play tab SHALL show a **top banner** naming that device and the next click required to use it; the matching dock control SHALL appear armed until the player completes the action or cancels. Timeline nodes SHALL NOT be labeled or drawn as Open rift tiles. Merger targeting copy SHALL tell the player which branch ends and which branch it continues into.
 
 #### Scenario: Branch from the dock
 - **WHEN** the player activates Brancher, a timeline node, and an action card in hand
@@ -300,6 +300,10 @@ The Play tab SHALL show a player mat (parts, minerals, crystals, up to 3 device 
 #### Scenario: Debug draw into hand
 - **WHEN** the player uses debug draw-action
 - **THEN** a card appears in the hand panel with a visible type color and label
+
+#### Scenario: Merger names the ending branch
+- **WHEN** Merger is armed
+- **THEN** the banner says to click the branch that ends, then the card on the timeline it continues into
 
 ### Requirement: Click-to-move in debug
 In timeline debug mode, activating a node SHALL move the traveler there so the designer can walk through time without turn-rule checks.

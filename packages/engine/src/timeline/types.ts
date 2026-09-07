@@ -116,6 +116,8 @@ export type TimelineBranch = {
   forkNodeId: string | null;
   crystals: number;
   preserved: boolean;
+  /** Set when this timeline merged into another node and no longer grows. */
+  mergedIntoNodeId?: string;
 };
 
 export type BuiltDevice = {
@@ -176,7 +178,7 @@ export type TimelineAction =
   | { type: "deviceReverser"; toNodeId: string }
   | { type: "deviceRelocator"; branchId: string; newParentNodeId: string }
   | { type: "devicePruner"; branchId: string }
-  | { type: "deviceMerger"; branchIdA: string; branchIdB: string }
+  | { type: "deviceMerger"; fromBranchId: string; intoNodeId: string }
   | { type: "deviceRewriter"; nodeId: string; replacementCardId: string }
   | { type: "devicePreserver"; branchId: string }
   | { type: "deviceJumper"; toNodeId: string }
