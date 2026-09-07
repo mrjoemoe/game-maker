@@ -30,6 +30,8 @@ const layout: TimelineLayout = {
   nodes: { n0: from, n1: to },
   mats: {},
   lanes: { b1: 0, b2: 1 },
+  laneCount: 2,
+  originX: 48,
   rows: [],
   epochY: 400,
 };

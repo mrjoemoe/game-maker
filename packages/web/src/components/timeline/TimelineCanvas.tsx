@@ -7,7 +7,7 @@ import {
   type TimelineConfig,
   type TimelineState,
 } from "@game-maker/engine";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cardFaceClass, cardTypeLabel } from "./cardFace";
 import { layoutTimeline, MAX_TRACK_ROWS, NODE_H, NODE_W, PAD } from "./layout";
 import { planWires } from "./wires";
@@ -31,15 +31,33 @@ export function TimelineCanvas({
   onNodeClick,
   onMatClick,
 }: TimelineCanvasProps) {
-  const layout = layoutTimeline(state);
   const streamRef = useRef<HTMLDivElement>(null);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const layout = layoutTimeline(state, viewportWidth);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  useLayoutEffect(() => {
+    const el = streamRef.current;
+    if (!el) return;
+    const sync = () => setViewportWidth(el.clientWidth);
+    sync();
+    const observer = new ResizeObserver(sync);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const el = streamRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
   }, [layout.height]);
+
+  useLayoutEffect(() => {
+    const el = streamRef.current;
+    const epoch = layout.nodes[state.epochNodeId];
+    if (!el || !epoch) return;
+    el.scrollLeft = Math.max(0, epoch.x + NODE_W / 2 - el.clientWidth / 2);
+  }, [layout.width, state.epochNodeId, viewportWidth]);
   const hovered = hoveredId ? state.nodes[hoveredId] : null;
   const hoverSociety = hovered
     ? societyOnPath(state, config, hovered.id)

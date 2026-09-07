@@ -197,22 +197,14 @@ function searchBox(
 }
 
 function verticalChannels(layout: TimelineLayout): number[] {
-  const laneCount = Math.max(
-    1,
-    new Set(Object.values(layout.nodes).map((node) => node.lane)).size,
-  );
-  const origin = firstLaneX(layout);
+  const laneCount = Math.max(1, layout.laneCount);
+  const origin = layout.originX;
   const gutter = (LANE_W - NODE_W) / 2;
   const xs: number[] = [Math.max(8, origin - gutter)];
   for (let i = 0; i < laneCount; i += 1) {
     xs.push(origin + i * LANE_W + NODE_W + gutter);
   }
   return uniqueSorted(xs);
-}
-
-function firstLaneX(layout: TimelineLayout): number {
-  const xs = Object.values(layout.nodes).map((n) => n.x);
-  return xs.length ? Math.min(...xs) : 48;
 }
 
 function horizontalChannels(layout: TimelineLayout): number[] {

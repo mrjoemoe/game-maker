@@ -1,0 +1,1 @@
+Primary is slot 0. Each parent’s children alternate left then right into the nearest free slot. Empty side columns keep the tree centered (at least one open lane on each side). The world is at least as wide as the timestream viewport so a single branch actually sits in the middle of the play surface.
