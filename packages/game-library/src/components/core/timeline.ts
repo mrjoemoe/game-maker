@@ -85,7 +85,7 @@ const DEVICES: TimelineDeviceDefinition[] = [
     id: "rewriter",
     letter: "F",
     label: "Rewriter",
-    summary: "Replace a played action card",
+    summary: "Swap a hand card with a timeline card",
     uses: 3,
     requirements: {
       parts: 1,

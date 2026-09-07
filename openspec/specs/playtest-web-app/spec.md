@@ -305,6 +305,13 @@ The Play tab SHALL show a player mat (parts, minerals, crystals, up to 3 device 
 - **WHEN** Merger is armed
 - **THEN** the banner says to click the branch that ends, then the card on the timeline it continues into
 
+### Requirement: Rewriter targeting uses the hand
+While Rewriter is armed, the Play tab SHALL instruct the player to click a timeline card, then a card in hand. Completing those two clicks SHALL swap those cards. The debug catalog SHALL NOT apply Rewriter.
+
+#### Scenario: Banner asks for a hand card
+- **WHEN** Rewriter has a timeline card selected
+- **THEN** the banner tells the player to click a card in hand to swap onto that moment
+
 ### Requirement: Click-to-move in debug
 In timeline debug mode, activating a node SHALL move the traveler there so the designer can walk through time without turn-rule checks.
 

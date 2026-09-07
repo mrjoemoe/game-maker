@@ -1,0 +1,1 @@
+Two clicks: timeline card to swap out, then hand card to swap in. Same `PlacedCard` instances move; no new instance, no deck. Epoch and empty nodes refuse. Preserved branches still block unless debug is on.

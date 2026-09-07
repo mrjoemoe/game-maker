@@ -503,11 +503,11 @@ Merger SHALL attach the **head of the incoming branch** to a chosen node on a **
 - **THEN** A’s head lists B’s node as a child, B’s node lists A’s head as an extra parent, A is marked merged, no new branch exists, and the traveler occupies B’s node
 
 ### Requirement: Rewriter replaces a played card
-Rewriter SHALL replace one already-played action card on a chosen node, returning the replaced card to the matching draw pile.
+Rewriter SHALL swap one already-played card on a chosen timeline node with one card from the player’s hand. The timeline card SHALL move into the hand and the hand card SHALL occupy that node. Rewriter SHALL NOT return cards to a draw pile or pick a replacement from the catalog.
 
 #### Scenario: Rewrite swaps a card
-- **WHEN** Rewriter replaces the card on a node with another catalog card
-- **THEN** the node shows the new card and the old card id is in a draw pile
+- **WHEN** Rewriter is applied with a timeline node that has a card and a card instance from hand
+- **THEN** the node shows the former hand card and that former timeline card is in the hand
 
 ### Requirement: Preserver locks a timeline
 Preserver SHALL mark a branch as preserved. Relocator, Pruner, Merger, and Rewriter SHALL refuse that branch while it is preserved unless debug mode is on.

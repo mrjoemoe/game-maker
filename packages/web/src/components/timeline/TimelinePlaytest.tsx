@@ -173,6 +173,10 @@ export function TimelinePlaytest({
         if (!node.card) return;
         setTargeting({ kind: "rewriter-card", nodeId });
         return;
+      case "rewriter-card":
+        if (!node.card) return;
+        setTargeting({ kind: "rewriter-card", nodeId });
+        return;
       case "preserver":
         dispatch({ type: "devicePreserver", branchId: node.branchId });
         setTargeting({ kind: "idle" });
@@ -491,7 +495,8 @@ export function TimelinePlaytest({
                 const armed =
                   (targeting.kind === "play" &&
                     targeting.instanceId === card.instanceId) ||
-                  (targeting.kind === "brancher-card" && isActionCard(def));
+                  (targeting.kind === "brancher-card" && isActionCard(def)) ||
+                  targeting.kind === "rewriter-card";
                 return (
                   <button
                     key={card.instanceId}
@@ -505,6 +510,15 @@ export function TimelinePlaytest({
                         dispatch({
                           type: "deviceBrancher",
                           fromNodeId: targeting.fromNodeId,
+                          instanceId: card.instanceId,
+                        });
+                        setTargeting({ kind: "idle" });
+                        return;
+                      }
+                      if (targeting.kind === "rewriter-card") {
+                        dispatch({
+                          type: "deviceRewriter",
+                          nodeId: targeting.nodeId,
                           instanceId: card.instanceId,
                         });
                         setTargeting({ kind: "idle" });
@@ -543,12 +557,7 @@ export function TimelinePlaytest({
       {timeline.debugMode ? (
         <section className="tl-panel tl-debug" aria-label="Debug catalog">
           <h2>Debug catalog</h2>
-          <p className="tl-muted">
-            Add any card to hand
-            {targeting.kind === "rewriter-card"
-              ? " — or click one to rewrite the selected node."
-              : "."}
-          </p>
+          <p className="tl-muted">Add any card to hand.</p>
           {Object.entries(cardsByFamily).map(([family, cards]) => (
             <div key={family} className="tl-catalog-row">
               <span>{family}</span>
@@ -557,18 +566,9 @@ export function TimelinePlaytest({
                   <button
                     key={card.id}
                     type="button"
-                    onClick={() => {
-                      if (targeting.kind === "rewriter-card") {
-                        dispatch({
-                          type: "deviceRewriter",
-                          nodeId: targeting.nodeId,
-                          replacementCardId: card.id,
-                        });
-                        setTargeting({ kind: "idle" });
-                        return;
-                      }
-                      dispatch({ type: "debugAddCard", cardId: card.id });
-                    }}
+                    onClick={() =>
+                      dispatch({ type: "debugAddCard", cardId: card.id })
+                    }
                   >
                     {card.label}
                   </button>

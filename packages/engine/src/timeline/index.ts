@@ -1002,28 +1002,30 @@ function applyRewriter(
   state: TimelineState,
   config: TimelineConfig,
   nodeId: string,
-  replacementCardId: string,
+  instanceId: string,
 ): TimelineState {
   const node = getNode(state, nodeId);
-  if (!node.card) return log(state, "Nothing here to rewrite.");
+  const placed = node.card;
+  if (!placed) return log(state, "Nothing here to rewrite.");
   const locked = manipulationBlocked(state, node.branchId);
   if (locked) return log(state, locked);
-  const incoming = cardById(config, replacementCardId);
-  if (!incoming) return log(state, `Unknown replacement ${replacementCardId}.`);
-  const outgoing = cardById(config, node.card.cardId);
-  let next = state;
-  if (outgoing) next = returnCard(next, node.card.cardId, outgoing.family);
-  const made = newCardInstance(next, replacementCardId);
-  next = {
-    ...made.state,
+  const held = state.hand.find((c) => c.instanceId === instanceId);
+  if (!held) return log(state, "Rewriter needs a card from your hand.");
+  const incoming = cardById(config, held.cardId);
+  const outgoing = cardById(config, placed.cardId);
+  const next: TimelineState = {
+    ...state,
+    hand: state.hand.map((card) =>
+      card.instanceId === instanceId ? placed : card,
+    ),
     nodes: {
-      ...made.state.nodes,
-      [nodeId]: { ...node, card: made.card, revealed: true },
+      ...state.nodes,
+      [nodeId]: { ...node, card: held, revealed: true },
     },
   };
   return log(
     next,
-    `Rewriter: ${outgoing?.label ?? "card"} → ${incoming.label}.`,
+    `Rewriter: swapped ${outgoing?.label ?? "timeline card"} with ${incoming?.label ?? "hand card"}.`,
   );
 }
 
@@ -1295,12 +1297,7 @@ export function applyTimelineAction(
     case "deviceMerger":
       return applyMerger(state, action.fromBranchId, action.intoNodeId);
     case "deviceRewriter":
-      return applyRewriter(
-        state,
-        config,
-        action.nodeId,
-        action.replacementCardId,
-      );
+      return applyRewriter(state, config, action.nodeId, action.instanceId);
     case "devicePreserver":
       return applyPreserver(state, action.branchId);
     case "deviceJumper":

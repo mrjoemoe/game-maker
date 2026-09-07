@@ -106,7 +106,7 @@ export function targetingGuide(targeting: Targeting): TargetingGuide | null {
         letter: "F",
         title: "Rewriter",
         step: "Step 1 of 2",
-        how: "Click the played timeline card you want to replace.",
+        how: "Click the timeline card to swap out.",
       };
     case "rewriter-card":
       return {
@@ -114,7 +114,7 @@ export function targetingGuide(targeting: Targeting): TargetingGuide | null {
         letter: "F",
         title: "Rewriter",
         step: "Step 2 of 2",
-        how: "Pick a replacement from the catalog in the debug panel below.",
+        how: "Click a card in your hand to swap onto that moment.",
       };
     case "preserver":
       return {

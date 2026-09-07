@@ -342,17 +342,24 @@ describe("timeline", () => {
     ).toBe(false);
   });
 
-  it("Rewriter swaps a played card back into the deck", () => {
+  it("Rewriter swaps a hand card with a timeline card", () => {
     const start = createInitialTimeline(config);
     const ada = nodeByCard("ada", start);
-    const before = start.actionDeck.filter((id) => id === "ada").length;
+    const tesla = start.hand.find((c) => c.cardId === "tesla")!;
+    const deckTesla = start.actionDeck.filter((id) => id === "tesla").length;
     const next = apply(start, {
       type: "deviceRewriter",
       nodeId: ada.id,
-      replacementCardId: "tesla",
+      instanceId: tesla.instanceId,
     });
     expect(next.nodes[ada.id].card?.cardId).toBe("tesla");
-    expect(next.actionDeck.filter((id) => id === "ada").length).toBe(before + 1);
+    expect(next.hand.some((c) => c.cardId === "ada")).toBe(true);
+    expect(next.hand.some((c) => c.instanceId === tesla.instanceId)).toBe(
+      false,
+    );
+    expect(next.actionDeck.filter((id) => id === "tesla").length).toBe(
+      deckTesla,
+    );
   });
 
   it("Preserver locks a branch", () => {

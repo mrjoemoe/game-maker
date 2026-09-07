@@ -179,7 +179,7 @@ export type TimelineAction =
   | { type: "deviceRelocator"; branchId: string; newParentNodeId: string }
   | { type: "devicePruner"; branchId: string }
   | { type: "deviceMerger"; fromBranchId: string; intoNodeId: string }
-  | { type: "deviceRewriter"; nodeId: string; replacementCardId: string }
+  | { type: "deviceRewriter"; nodeId: string; instanceId: string }
   | { type: "devicePreserver"; branchId: string }
   | { type: "deviceJumper"; toNodeId: string }
   | { type: "debugBuildDevice"; deviceId: DeviceId }
