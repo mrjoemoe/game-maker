@@ -54,6 +54,8 @@ export type TimelineDeviceDefinition = {
   label: string;
   summary: string;
   uses: number;
+  /** Copies of this device’s blueprint in the blueprint pile. Defaults to 1. */
+  blueprintCopies?: number;
   requirements: DeviceRequirements;
 };
 

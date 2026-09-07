@@ -11,11 +11,12 @@ const DEVICES: TimelineDeviceDefinition[] = [
     letter: "A",
     label: "Brancher",
     summary: "Fork a timeline and play a card onto it",
-    uses: 3,
+    uses: 2,
+    blueprintCopies: 12,
     requirements: {
       parts: 2,
       minerals: 5,
-      crystals: 1,
+      crystals: 2,
       culture: 4,
       science: 2,
       politics: 0,
@@ -27,6 +28,7 @@ const DEVICES: TimelineDeviceDefinition[] = [
     label: "Reverser",
     summary: "Jump back along your past",
     uses: 3,
+    blueprintCopies: 12,
     requirements: {
       parts: 3,
       minerals: 1,
@@ -41,11 +43,12 @@ const DEVICES: TimelineDeviceDefinition[] = [
     letter: "C",
     label: "Relocator",
     summary: "Attach a branch to a new parent",
-    uses: 3,
+    uses: 1,
+    blueprintCopies: 6,
     requirements: {
       parts: 3,
       minerals: 3,
-      crystals: 1,
+      crystals: 3,
       culture: 2,
       science: 4,
       politics: 1,
@@ -56,11 +59,12 @@ const DEVICES: TimelineDeviceDefinition[] = [
     letter: "D",
     label: "Pruner",
     summary: "Cut a branch and return its events",
-    uses: 3,
+    uses: 1,
+    blueprintCopies: 3,
     requirements: {
       parts: 3,
       minerals: 3,
-      crystals: 1,
+      crystals: 4,
       culture: 3,
       science: 3,
       politics: 3,
@@ -71,11 +75,12 @@ const DEVICES: TimelineDeviceDefinition[] = [
     letter: "E",
     label: "Merger",
     summary: "Join two branch heads; incoming timeline ends",
-    uses: 3,
+    uses: 1,
+    blueprintCopies: 3,
     requirements: {
       parts: 5,
       minerals: 1,
-      crystals: 1,
+      crystals: 4,
       culture: 1,
       science: 1,
       politics: 5,
@@ -87,6 +92,7 @@ const DEVICES: TimelineDeviceDefinition[] = [
     label: "Rewriter",
     summary: "Swap a hand card with a timeline card",
     uses: 3,
+    blueprintCopies: 24,
     requirements: {
       parts: 1,
       minerals: 3,
@@ -101,11 +107,12 @@ const DEVICES: TimelineDeviceDefinition[] = [
     letter: "G",
     label: "Preserver",
     summary: "Lock cards already laid up to a chosen moment",
-    uses: 3,
+    uses: 1,
+    blueprintCopies: 3,
     requirements: {
       parts: 1,
       minerals: 1,
-      crystals: 1,
+      crystals: 5,
       culture: 1,
       science: 1,
       politics: 1,
@@ -117,6 +124,7 @@ const DEVICES: TimelineDeviceDefinition[] = [
     label: "Jumper",
     summary: "Skip ahead up to 3 spaces",
     uses: 3,
+    blueprintCopies: 12,
     requirements: {
       parts: 1,
       minerals: 1,
@@ -274,6 +282,7 @@ const CARDS: TimelineCardDefinition[] = [
     label: `${d.label} Blueprint`,
     family: "blueprint" as const,
     deviceId: d.id as DeviceId,
+    copies: d.blueprintCopies ?? 1,
   })),
 ];
 
@@ -282,13 +291,13 @@ export const coreTimeline = defineComponent({
     id: "core/timeline",
     kind: "feature-bundle",
     schemaVersion: 1,
-    contractVersion: "1.4.0",
+    contractVersion: "1.5.0",
     owner: "platform",
     docs: {
       summary:
         "Time-travel timeline template: branching graph, branch mats, player mat, and devices A–H.",
       playerFacing:
-        "You are a time traveler repairing the past. Walk timelines, place Omega events, and complete person–place–thing objectives. Action cards (green backs) go in your hand. Device build costs are listed in the Timeline Game rulebook.",
+        "You are a time traveler repairing the past. Walk timelines, place Omega events, and complete person–place–thing objectives. Action cards (green backs) go in your hand. Each blueprint shows how many uses the built device has; crystal cost is paid to run it. Device costs and deck counts are listed in the Timeline Game rulebook.",
       developerNotes:
         "Contributes templateId timeline, a dummy 1×1 board for resolver compatibility, and three card piles (Omega events, action cards, blueprints). Debug mode defaults on. playerCount defaults to 1 (solo playtest).",
     },

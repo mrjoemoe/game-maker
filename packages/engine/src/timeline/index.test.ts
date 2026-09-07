@@ -266,6 +266,34 @@ describe("timeline", () => {
     expect(next.log.at(-1)).toMatch(/action card/i);
   });
 
+  it("spends a use when a slotted Brancher fires in debug", () => {
+    let state = createInitialTimeline(config);
+    state = apply(state, { type: "debugBuildDevice", deviceId: "brancher" });
+    expect(state.player.devices[0]?.usesLeft).toBe(3);
+    const crystalsBefore = state.player.crystals;
+    const parts = state.hand.find((c) => c.cardId === "get-parts")!;
+    const next = apply(state, {
+      type: "deviceBrancher",
+      fromNodeId: state.epochNodeId,
+      instanceId: parts.instanceId,
+    });
+    expect(Object.keys(next.branches).length).toBe(2);
+    expect(next.player.devices[0]?.usesLeft).toBe(2);
+    expect(next.player.crystals).toBe(crystalsBefore + 1);
+  });
+
+  it("does not spend a use when Brancher fails", () => {
+    let state = createInitialTimeline(config);
+    state = apply(state, { type: "debugBuildDevice", deviceId: "brancher" });
+    const next = apply(state, {
+      type: "deviceBrancher",
+      fromNodeId: state.epochNodeId,
+      instanceId: "missing",
+    });
+    expect(Object.keys(next.branches).length).toBe(1);
+    expect(next.player.devices[0]?.usesLeft).toBe(3);
+  });
+
   it("works with zero resources in debug", () => {
     const start = createInitialTimeline(config);
     expect(start.player.parts).toBe(0);
@@ -473,15 +501,19 @@ describe("timeline", () => {
   });
 
   it("Rewriter refuses a preserved card when debug is off", () => {
-    const quiet = { ...config, debugMode: false };
-    let state = createInitialTimeline(quiet);
+    let state = createInitialTimeline(config);
     const ada = nodeByCard("ada", state);
-    state = applyTimelineAction(state, quiet, {
-      type: "devicePreserver",
-      nodeId: ada.id,
+    state = apply(state, { type: "debugBuildDevice", deviceId: "preserver" });
+    state = apply(state, { type: "debugBuildDevice", deviceId: "rewriter" });
+    state = apply(state, { type: "devicePreserver", nodeId: ada.id });
+    state = apply(state, { type: "setDebugMode", enabled: false });
+    state = apply(state, {
+      type: "debugSetResource",
+      resource: "crystals",
+      delta: 1,
     });
     const parts = state.hand.find((c) => c.cardId === "get-parts")!;
-    const next = applyTimelineAction(state, quiet, {
+    const next = apply(state, {
       type: "deviceRewriter",
       nodeId: ada.id,
       instanceId: parts.instanceId,

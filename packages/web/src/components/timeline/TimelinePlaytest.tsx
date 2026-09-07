@@ -87,6 +87,29 @@ function FacedownPile({
   );
 }
 
+function UseTokens({
+  total,
+  remaining,
+}: {
+  total: number;
+  remaining: number;
+}) {
+  if (total <= 0) return null;
+  return (
+    <span
+      className="tl-tokens"
+      aria-label={`${remaining} of ${total} uses remaining`}
+    >
+      {Array.from({ length: total }, (_, i) => (
+        <span
+          key={i}
+          className={i < remaining ? "tl-token" : "tl-token spent"}
+        />
+      ))}
+    </span>
+  );
+}
+
 const DEVICE_ORDER: DeviceId[] = [
   "brancher",
   "reverser",
@@ -401,7 +424,7 @@ export function TimelinePlaytest({
       />
 
       <div className="tl-panels">
-        <section className="tl-panel" aria-label="Player mat">
+        <section className="tl-panel tl-mat" aria-label="Player mat">
           <h2>Player mat</h2>
           <div className="tl-resources">
             {(["parts", "minerals", "crystals"] as const).map((resource) => (
@@ -443,23 +466,57 @@ export function TimelinePlaytest({
           <div className="tl-slots">
             {[0, 1, 2].map((i) => {
               const built = timeline.player.devices[i];
+              const def = built
+                ? deviceById(config, built.deviceId)
+                : undefined;
+              if (!built || !def) {
+                return (
+                  <div key={i} className="tl-slot empty">
+                    Empty
+                  </div>
+                );
+              }
+              const armed = guide?.deviceId === built.deviceId;
               return (
-                <div key={i} className="tl-slot">
-                  {built
-                    ? `${deviceById(config, built.deviceId)?.label} (${built.usesLeft})`
-                    : "Empty"}
-                </div>
+                <button
+                  key={i}
+                  type="button"
+                  className={`tl-slot filled tl-face blueprint${
+                    armed ? " armed" : ""
+                  }`}
+                  aria-pressed={armed}
+                  aria-label={`${def.label}, ${built.usesLeft} of ${def.uses} uses remaining`}
+                  onClick={() =>
+                    armed ? cancelTargeting() : armDevice(built.deviceId)
+                  }
+                >
+                  <span>{def.letter}</span>
+                  <strong>{def.label}</strong>
+                  <UseTokens total={def.uses} remaining={built.usesLeft} />
+                </button>
               );
             })}
           </div>
-          <p className="tl-muted">
-            Blueprints:{" "}
-            {timeline.player.blueprints.length
-              ? timeline.player.blueprints
-                  .map((id) => deviceById(config, id)?.label ?? id)
-                  .join(", ")
-              : "none"}
-          </p>
+          <h3>Blueprints</h3>
+          {timeline.player.blueprints.length === 0 ? (
+            <p className="tl-muted">None filed.</p>
+          ) : (
+            <div className="tl-filed">
+              {timeline.player.blueprints.map((id) => {
+                const def = deviceById(config, id);
+                return (
+                  <div key={id} className="tl-filed-card tl-face blueprint">
+                    <span>blueprint</span>
+                    <strong>{def?.label ?? id}</strong>
+                    <UseTokens
+                      total={def?.uses ?? 0}
+                      remaining={def?.uses ?? 0}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
           <h3>Objectives</h3>
           <ul className="tl-objectives">
             {timeline.player.objectives.map((obj) => {
@@ -493,128 +550,137 @@ export function TimelinePlaytest({
           </ul>
         </section>
 
-        <section className="tl-panel" aria-label="Devices">
-          <h2>Devices</h2>
-          <div className="tl-dock">
-            {DEVICE_ORDER.map((id) => {
-              const def = deviceById(config, id);
-              if (!def) return null;
-              const req = def.requirements;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className={`tl-device${
-                    guide?.deviceId === id ? " armed" : ""
-                  }`}
-                  aria-pressed={guide?.deviceId === id}
-                  onClick={() =>
-                    guide?.deviceId === id ? cancelTargeting() : armDevice(id)
-                  }
-                >
-                  <span className="tl-letter">{def.letter}</span>
-                  <span>
-                    <strong>{def.label}</strong>
-                    <em>{def.summary}</em>
-                    <small>
-                      {req.parts}p {req.minerals}m {req.crystals}◆ · C
-                      {req.culture} S{req.science} P{req.politics}
-                    </small>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          {timeline.debugMode ? (
-            <div className="tl-build">
-              {DEVICE_ORDER.map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() =>
-                    dispatch({ type: "debugBuildDevice", deviceId: id })
-                  }
-                >
-                  Slot {deviceById(config, id)?.letter}
-                </button>
-              ))}
+        <div className="tl-hand-col">
+          <section className="tl-panel" aria-label="Hand">
+            <h2>Hand ({timeline.hand.length})</h2>
+            <div className="tl-hand">
+              {timeline.hand.length === 0 ? (
+                <p className="tl-muted">Empty.</p>
+              ) : (
+                timeline.hand.map((card) => {
+                  const def = cardById(config, card.cardId);
+                  const device = def?.deviceId
+                    ? deviceById(config, def.deviceId)
+                    : undefined;
+                  const armed =
+                    (targeting.kind === "play" &&
+                      targeting.instanceId === card.instanceId) ||
+                    (targeting.kind === "brancher-card" && isActionCard(def)) ||
+                    targeting.kind === "rewriter-card";
+                  return (
+                    <button
+                      key={card.instanceId}
+                      type="button"
+                      className={`tl-card tl-face ${cardFaceClass(def)}${
+                        armed ? " armed" : ""
+                      }`}
+                      onClick={() => {
+                        if (targeting.kind === "brancher-card") {
+                          if (!isActionCard(def)) return;
+                          dispatch({
+                            type: "deviceBrancher",
+                            fromNodeId: targeting.fromNodeId,
+                            instanceId: card.instanceId,
+                          });
+                          setTargeting({ kind: "idle" });
+                          return;
+                        }
+                        if (targeting.kind === "rewriter-card") {
+                          if (cardPile(def) === "omega") return;
+                          dispatch({
+                            type: "deviceRewriter",
+                            nodeId: targeting.nodeId,
+                            instanceId: card.instanceId,
+                          });
+                          setTargeting({ kind: "idle" });
+                          return;
+                        }
+                        setTargeting({
+                          kind: "play",
+                          instanceId: card.instanceId,
+                        });
+                      }}
+                    >
+                      <span>{cardTypeLabel(def)}</span>
+                      <strong>{def?.label ?? card.cardId}</strong>
+                      {device ? (
+                        <UseTokens total={device.uses} remaining={device.uses} />
+                      ) : null}
+                    </button>
+                  );
+                })
+              )}
             </div>
-          ) : null}
-        </section>
+            <div className="tl-piles" aria-label="Card piles">
+              <FacedownPile
+                label="Omega events"
+                count={timeline.omegaDeck.length}
+                variant="omega"
+              />
+              <FacedownPile
+                label="Actions"
+                count={timeline.actionDeck.length}
+                variant="action"
+                onDraw={() => dispatch({ type: "draw" })}
+              />
+              <FacedownPile
+                label="Blueprints"
+                count={timeline.blueprintDeck.length}
+                variant="blueprint"
+              />
+            </div>
+          </section>
 
-        <section className="tl-panel" aria-label="Hand">
-          <h2>Hand ({timeline.hand.length})</h2>
-          <div className="tl-hand">
-            {timeline.hand.length === 0 ? (
-              <p className="tl-muted">Empty.</p>
-            ) : (
-              timeline.hand.map((card) => {
-                const def = cardById(config, card.cardId);
-                const armed =
-                  (targeting.kind === "play" &&
-                    targeting.instanceId === card.instanceId) ||
-                  (targeting.kind === "brancher-card" && isActionCard(def)) ||
-                  targeting.kind === "rewriter-card";
+          <section className="tl-panel" aria-label="Devices">
+            <h2>Devices</h2>
+            <div className="tl-dock">
+              {DEVICE_ORDER.map((id) => {
+                const def = deviceById(config, id);
+                if (!def) return null;
+                const req = def.requirements;
                 return (
                   <button
-                    key={card.instanceId}
+                    key={id}
                     type="button"
-                    className={`tl-card tl-face ${cardFaceClass(def)}${
-                      armed ? " armed" : ""
+                    className={`tl-device${
+                      guide?.deviceId === id ? " armed" : ""
                     }`}
-                    onClick={() => {
-                      if (targeting.kind === "brancher-card") {
-                        if (!isActionCard(def)) return;
-                        dispatch({
-                          type: "deviceBrancher",
-                          fromNodeId: targeting.fromNodeId,
-                          instanceId: card.instanceId,
-                        });
-                        setTargeting({ kind: "idle" });
-                        return;
-                      }
-                      if (targeting.kind === "rewriter-card") {
-                        if (cardPile(def) === "omega") return;
-                        dispatch({
-                          type: "deviceRewriter",
-                          nodeId: targeting.nodeId,
-                          instanceId: card.instanceId,
-                        });
-                        setTargeting({ kind: "idle" });
-                        return;
-                      }
-                      setTargeting({
-                        kind: "play",
-                        instanceId: card.instanceId,
-                      });
-                    }}
+                    aria-pressed={guide?.deviceId === id}
+                    onClick={() =>
+                      guide?.deviceId === id ? cancelTargeting() : armDevice(id)
+                    }
                   >
-                    <span>{cardTypeLabel(def)}</span>
-                    <strong>{def?.label ?? card.cardId}</strong>
+                    <span className="tl-letter">{def.letter}</span>
+                    <span>
+                      <strong>{def.label}</strong>
+                      <em>{def.summary}</em>
+                      <small>
+                        {req.parts}p {req.minerals}m {req.crystals}◆ to run · C
+                        {req.culture} S{req.science} P{req.politics}
+                      </small>
+                      <UseTokens total={def.uses} remaining={def.uses} />
+                    </span>
                   </button>
                 );
-              })
-            )}
-          </div>
-          <div className="tl-piles" aria-label="Card piles">
-            <FacedownPile
-              label="Omega events"
-              count={timeline.omegaDeck.length}
-              variant="omega"
-            />
-            <FacedownPile
-              label="Actions"
-              count={timeline.actionDeck.length}
-              variant="action"
-              onDraw={() => dispatch({ type: "draw" })}
-            />
-            <FacedownPile
-              label="Blueprints"
-              count={timeline.blueprintDeck.length}
-              variant="blueprint"
-            />
-          </div>
-        </section>
+              })}
+            </div>
+            {timeline.debugMode ? (
+              <div className="tl-build">
+                {DEVICE_ORDER.map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() =>
+                      dispatch({ type: "debugBuildDevice", deviceId: id })
+                    }
+                  >
+                    Slot {deviceById(config, id)?.letter}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </section>
+        </div>
       </div>
 
       {timeline.debugMode ? (

@@ -1,0 +1,1 @@
+Crystal numbers replace `requirements.crystals` (cost to run). Blueprint `copies` come from `blueprintCopies` on each device. Use tokens are pips: filled = remaining, empty = spent. Firing a slotted device decrements uses even in debug so the tokens move; debug still skips crystal payment. Jumper omitted deck/crystal counts; treat like Reverser (12 blueprints, 1 crystal).

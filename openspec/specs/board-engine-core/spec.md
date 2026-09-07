@@ -439,7 +439,7 @@ A game definition MAY enable timeline mode and supply a timeline config (cards, 
 - **THEN** the traveler occupies the epoch node, branch 1 exists, and the player mat tracks parts, minerals, and crystals
 
 ### Requirement: Debug skips timeline constraints
-When timeline debug mode is enabled, the engine SHALL allow drawing from the action pile, playing any held card, taking crystals, and using any device without checking resource, society, blueprint, device-slot, hand-size, or branch-length requirements. The engine SHALL maintain separate **Omega**, **action**, and **blueprint** piles.
+When timeline debug mode is enabled, the engine SHALL allow drawing from the action pile, playing any held card, taking crystals, and using any device without checking resource, society, blueprint, device-slot, hand-size, or branch-length requirements. The engine SHALL maintain separate **Omega**, **action**, and **blueprint** piles. Using a slotted device SHALL still spend a use token so remaining uses stay visible.
 
 #### Scenario: Device used without resources in debug
 - **WHEN** debug mode is on and Brancher is used from a node
@@ -448,6 +448,10 @@ When timeline debug mode is enabled, the engine SHALL allow drawing from the act
 #### Scenario: Draw uses the action pile
 - **WHEN** a draw action is applied
 - **THEN** the top action-pile card moves into the hand
+
+#### Scenario: Slotted device spends a use
+- **WHEN** debug mode is on, a Brancher is in a device slot, and Brancher is used successfully
+- **THEN** that slot’s remaining uses decrease by one
 
 ### Requirement: Place cards to extend or fork time
 Playing a card onto a branch head SHALL append a new revealed node on that branch. Playing a card onto a non-head node SHALL fork a new branch from that node, place a branch mat with 1 crystal, and grant the player 1 crystal. Playing a **Random Event** action SHALL instead place the top **Omega** event from that pile onto the chosen moment.

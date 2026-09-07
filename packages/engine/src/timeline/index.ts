@@ -1258,6 +1258,73 @@ function endOfTimeRoll(
   );
 }
 
+function playStateUnchanged(before: TimelineState, after: TimelineState): boolean {
+  return (
+    before.travelerNodeId === after.travelerNodeId &&
+    before.hand === after.hand &&
+    before.nodes === after.nodes &&
+    before.branches === after.branches &&
+    before.player === after.player &&
+    before.actionDeck === after.actionDeck &&
+    before.omegaDeck === after.omegaDeck &&
+    before.blueprintDeck === after.blueprintDeck &&
+    before.status === after.status &&
+    before.nextId === after.nextId
+  );
+}
+
+function gateDeviceRun(
+  state: TimelineState,
+  config: TimelineConfig,
+  deviceId: DeviceId,
+): string | undefined {
+  if (state.debugMode) return undefined;
+  const def = deviceById(config, deviceId);
+  const built = state.player.devices.find((d) => d.deviceId === deviceId);
+  if (!built) return "That device is not in a slot.";
+  if (built.usesLeft <= 0) return "That device has no uses left.";
+  const cost = def?.requirements.crystals ?? 0;
+  if (state.player.crystals < cost) {
+    return "Not enough crystals to run that device.";
+  }
+  return undefined;
+}
+
+function spendSlottedUse(
+  state: TimelineState,
+  config: TimelineConfig,
+  deviceId: DeviceId,
+): TimelineState {
+  const def = deviceById(config, deviceId);
+  const idx = state.player.devices.findIndex(
+    (d) => d.deviceId === deviceId && d.usesLeft > 0,
+  );
+  if (idx < 0) return state;
+  const devices = state.player.devices.map((device, i) =>
+    i === idx ? { ...device, usesLeft: device.usesLeft - 1 } : device,
+  );
+  const crystals = state.debugMode
+    ? state.player.crystals
+    : Math.max(0, state.player.crystals - (def?.requirements.crystals ?? 0));
+  return {
+    ...state,
+    player: { ...state.player, devices, crystals },
+  };
+}
+
+function withSlottedDevice(
+  state: TimelineState,
+  config: TimelineConfig,
+  deviceId: DeviceId,
+  apply: () => TimelineState,
+): TimelineState {
+  const blocked = gateDeviceRun(state, config, deviceId);
+  if (blocked) return log(state, blocked);
+  const next = apply();
+  if (playStateUnchanged(state, next)) return next;
+  return spendSlottedUse(next, config, deviceId);
+}
+
 function debugBuildDevice(
   state: TimelineState,
   config: TimelineConfig,
@@ -1345,26 +1412,37 @@ export function applyTimelineAction(
     case "playCard":
       return playCard(state, config, action.instanceId, action.atNodeId);
     case "deviceBrancher":
-      return applyBrancher(
-        state,
-        config,
-        action.fromNodeId,
-        action.instanceId,
+      return withSlottedDevice(state, config, "brancher", () =>
+        applyBrancher(state, config, action.fromNodeId, action.instanceId),
       );
     case "deviceReverser":
-      return applyReverser(state, config, action.toNodeId);
+      return withSlottedDevice(state, config, "reverser", () =>
+        applyReverser(state, config, action.toNodeId),
+      );
     case "deviceRelocator":
-      return applyRelocator(state, action.branchId, action.newParentNodeId);
+      return withSlottedDevice(state, config, "relocator", () =>
+        applyRelocator(state, action.branchId, action.newParentNodeId),
+      );
     case "devicePruner":
-      return applyPruner(state, config, action.branchId);
+      return withSlottedDevice(state, config, "pruner", () =>
+        applyPruner(state, config, action.branchId),
+      );
     case "deviceMerger":
-      return applyMerger(state, action.fromBranchId, action.intoNodeId);
+      return withSlottedDevice(state, config, "merger", () =>
+        applyMerger(state, action.fromBranchId, action.intoNodeId),
+      );
     case "deviceRewriter":
-      return applyRewriter(state, config, action.nodeId, action.instanceId);
+      return withSlottedDevice(state, config, "rewriter", () =>
+        applyRewriter(state, config, action.nodeId, action.instanceId),
+      );
     case "devicePreserver":
-      return applyPreserver(state, config, action.nodeId);
+      return withSlottedDevice(state, config, "preserver", () =>
+        applyPreserver(state, config, action.nodeId),
+      );
     case "deviceJumper":
-      return applyJumper(state, config, action.toNodeId);
+      return withSlottedDevice(state, config, "jumper", () =>
+        applyJumper(state, config, action.toNodeId),
+      );
     case "debugBuildDevice":
       return debugBuildDevice(state, config, action.deviceId);
     case "claimObjective":

@@ -406,10 +406,31 @@ describe("resolution and propagation", () => {
       n === 1 ? `1 ${one}` : `${n} ${many}`;
     for (const device of devices) {
       const r = device.requirements;
+      const uses = device.uses === 1 ? "1 use" : `${device.uses} uses`;
+      const copies =
+        (device.blueprintCopies ?? 1) === 1
+          ? "1 blueprint"
+          : `${device.blueprintCopies} blueprints`;
       expect(rulebook).toContain(
-        `${qty(r.parts, "part", "parts")}, ${qty(r.minerals, "mineral", "minerals")}, ${qty(r.crystals, "crystal", "crystals")} · C ${r.culture} / S ${r.science} / P ${r.politics}`,
+        `${qty(r.parts, "part", "parts")}, ${qty(r.minerals, "mineral", "minerals")}, ${qty(r.crystals, "crystal", "crystals")} · C ${r.culture} / S ${r.science} / P ${r.politics} · ${uses} · ${copies}`,
       );
     }
+  });
+
+  it("puts the listed blueprint copies in Timeline Game", () => {
+    const cards =
+      resolveVariant(timelineGameVariant, createDefaultCatalog()).definition
+        .timeline?.cards ?? [];
+    const copiesOf = (id: string) =>
+      cards.find((card) => card.id === id)?.copies ?? 0;
+    expect(copiesOf("blueprint-brancher")).toBe(12);
+    expect(copiesOf("blueprint-reverser")).toBe(12);
+    expect(copiesOf("blueprint-relocator")).toBe(6);
+    expect(copiesOf("blueprint-pruner")).toBe(3);
+    expect(copiesOf("blueprint-merger")).toBe(3);
+    expect(copiesOf("blueprint-rewriter")).toBe(24);
+    expect(copiesOf("blueprint-preserver")).toBe(3);
+    expect(copiesOf("blueprint-jumper")).toBe(12);
   });
 
   it("lists consumers of core/tile-board", () => {
