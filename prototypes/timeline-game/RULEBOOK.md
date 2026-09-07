@@ -19,19 +19,18 @@ Each player has 3 objectives. Complete all 3 to win. An objective is a **person*
 
 1. Draw 2 action cards (max 7 in hand).
 2. If you are **not** at a branch head, you may move up to **3** spaces toward the head. Cards you pass **resolve** (gain resources, society, and so on). If you stop on a head after 1–2 spaces, you may play only **1** action card.
-3. If you are at a head (or creating a new branch), play up to **2** action cards. If you play at least 1, also play a **random event**.
+3. If you are at a head (or creating a new branch), play up to **2** action cards.
 4. You may play action cards only at the head of a branch, or by creating a new branch from an earlier moment.
 
 Debug mode ignores these limits so you can walk anywhere and play onto any node.
 
 ## Cards
 
-Action cards include events (person / place / thing), resource gathers, inventions, society, blueprints, and “draw a random event.”
+Action cards include events (person / place / thing), resource gathers, inventions, society, and blueprints.
 
 - **Resources:** Playing or passing Get Parts / Get Minerals adds 1–3 of that resource to your mat, multiplied by earlier matching inventions on the path (Education → parts, Infrastructure → minerals).
 - **Society:** Culture, science, and politics stack on the branch. Device costs use the **path total** from epoch to your piece. Mats show the branch’s own dice. Society is not spent.
 - **Inventions:** Place earlier in a timeline to multiply later matching resources.
-- **Random events:** Negative, chaos, blank, positive, transport, and slip effects.
 
 ## Player mat
 
@@ -80,4 +79,4 @@ Devices have limited uses. Debug mode does not spend costs or uses.
 
 ## Debug playtest
 
-Debug is **on** by default in this prototype. You may play any card, draw from any deck, take crystals, and fire any device without paying. Use it to prove movement and the eight devices before tightening rules.
+Debug is **on** by default in this prototype. You may play any card, draw from the action deck, take crystals, and fire any device without paying. Use it to prove movement and the eight devices before tightening rules.

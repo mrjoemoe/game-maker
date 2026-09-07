@@ -8,18 +8,7 @@ export type CardFamily =
   | "resource"
   | "invention"
   | "society"
-  | "blueprint"
-  | "random-draw"
-  | "random-event";
-
-export type RandomEventKind =
-  | "negative"
-  | "chaos"
-  | "blank"
-  | "positive"
-  | "choose-3"
-  | "transport"
-  | "shift";
+  | "blueprint";
 
 export type DeviceId =
   | "brancher"
@@ -30,8 +19,6 @@ export type DeviceId =
   | "rewriter"
   | "preserver"
   | "jumper";
-
-export type TimelineDeck = "action" | "random";
 
 export type TimelineCardDefinition = {
   id: string;
@@ -44,7 +31,6 @@ export type TimelineCardDefinition = {
   societyKind?: SocietyKind;
   societyValue?: number;
   deviceId?: DeviceId;
-  randomKind?: RandomEventKind;
 };
 
 export type DeviceRequirements = {
@@ -151,7 +137,6 @@ export type TimelineState = {
   travelerNodeId: string;
   hand: PlacedCard[];
   actionDeck: string[];
-  randomDeck: string[];
   player: PlayerMat;
   debugMode: boolean;
   status: TimelineStatus;
@@ -165,7 +150,7 @@ export type TimelineAction =
   | { type: "moveTo"; nodeId: string }
   | { type: "stepForward" }
   | { type: "stepBack" }
-  | { type: "draw"; deck: TimelineDeck }
+  | { type: "draw" }
   | { type: "debugAddCard"; cardId: string }
   | {
       type: "debugSetResource";

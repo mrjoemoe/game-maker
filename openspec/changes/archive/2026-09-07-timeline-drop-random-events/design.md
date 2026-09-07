@@ -1,0 +1,1 @@
+One draw pile: action cards. Engine state no longer has `randomDeck`. Draw is `{ type: "draw" }`. Catalog cards Setback, Windfall, Quiet Beat, Chaos Wave, Rip Current, Slipstream, and Random Event are gone. `core/timeline` stays on major 1 (`1.1.0`) because the contribute shape is unchanged.

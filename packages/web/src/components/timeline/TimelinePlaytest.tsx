@@ -540,15 +540,9 @@ export function TimelinePlaytest({
           <div className="tl-draws">
             <button
               type="button"
-              onClick={() => dispatch({ type: "draw", deck: "action" })}
+              onClick={() => dispatch({ type: "draw" })}
             >
               Draw action
-            </button>
-            <button
-              type="button"
-              onClick={() => dispatch({ type: "draw", deck: "random" })}
-            >
-              Draw random
             </button>
           </div>
         </section>

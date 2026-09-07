@@ -342,6 +342,19 @@ describe("resolution and propagation", () => {
     expect(result.definition.features?.timelineMode).toBe(true);
     expect(result.definition.timeline?.debugMode).toBe(true);
     expect(result.definition.timeline?.playerCount).toBe(1);
+    const cardIds = result.definition.timeline?.cards.map((c) => c.id) ?? [];
+    expect(cardIds).not.toContain("draw-random");
+    expect(cardIds).not.toContain("setback");
+    expect(cardIds).not.toContain("windfall");
+    expect(cardIds).not.toContain("blank-beat");
+    expect(cardIds).not.toContain("chaos-wave");
+    expect(cardIds).not.toContain("rip-current");
+    expect(cardIds).not.toContain("slipstream");
+    expect(
+      new Set(result.definition.timeline?.cards.map((c) => c.family)),
+    ).toEqual(
+      new Set(["event", "resource", "invention", "society", "blueprint"]),
+    );
     expect(result.definition.timeline?.devices.map((d) => d.id)).toEqual([
       "brancher",
       "reverser",

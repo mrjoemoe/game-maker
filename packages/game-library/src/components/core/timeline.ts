@@ -251,47 +251,6 @@ const CARDS: TimelineCardDefinition[] = [
     family: "blueprint" as const,
     deviceId: d.id as DeviceId,
   })),
-  {
-    id: "draw-random",
-    label: "Random Event",
-    family: "random-draw",
-  },
-  {
-    id: "setback",
-    label: "Setback",
-    family: "random-event",
-    randomKind: "negative",
-  },
-  {
-    id: "windfall",
-    label: "Windfall",
-    family: "random-event",
-    randomKind: "positive",
-  },
-  {
-    id: "blank-beat",
-    label: "Quiet Beat",
-    family: "random-event",
-    randomKind: "blank",
-  },
-  {
-    id: "chaos-wave",
-    label: "Chaos Wave",
-    family: "random-event",
-    randomKind: "chaos",
-  },
-  {
-    id: "rip-current",
-    label: "Rip Current",
-    family: "random-event",
-    randomKind: "transport",
-  },
-  {
-    id: "slipstream",
-    label: "Slipstream",
-    family: "random-event",
-    randomKind: "shift",
-  },
 ];
 
 export const coreTimeline = defineComponent({
@@ -299,7 +258,7 @@ export const coreTimeline = defineComponent({
     id: "core/timeline",
     kind: "feature-bundle",
     schemaVersion: 1,
-    contractVersion: "1.0.0",
+    contractVersion: "1.1.0",
     owner: "platform",
     docs: {
       summary:
@@ -307,7 +266,7 @@ export const coreTimeline = defineComponent({
       playerFacing:
         "You are a time traveler repairing the past. Walk timelines, place events, and complete person–place–thing objectives.",
       developerNotes:
-        "Contributes templateId timeline, a dummy 1×1 board for resolver compatibility, and the placeholder card/device catalog. Debug mode defaults on. playerCount defaults to 1 (solo playtest).",
+        "Contributes templateId timeline, a dummy 1×1 board for resolver compatibility, and the action-card/device catalog (no random-event deck). Debug mode defaults on. playerCount defaults to 1 (solo playtest).",
     },
   },
   contribute: ({ params }) => {

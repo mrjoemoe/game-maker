@@ -439,11 +439,15 @@ A game definition MAY enable timeline mode and supply a timeline config (cards, 
 - **THEN** the traveler occupies the epoch node, branch 1 exists, and the player mat tracks parts, minerals, and crystals
 
 ### Requirement: Debug skips timeline constraints
-When timeline debug mode is enabled, the engine SHALL allow drawing any configured deck, playing any held card, taking crystals, and using any device without checking resource, society, blueprint, device-slot, hand-size, or branch-length requirements.
+When timeline debug mode is enabled, the engine SHALL allow drawing from the action deck, playing any held card, taking crystals, and using any device without checking resource, society, blueprint, device-slot, hand-size, or branch-length requirements. The engine SHALL NOT maintain a separate random-event deck.
 
 #### Scenario: Device used without resources in debug
 - **WHEN** debug mode is on and Brancher is used from a node
 - **THEN** a new branch is created even if the traveler has zero minerals, parts, crystals, and society
+
+#### Scenario: Draw uses the action pile
+- **WHEN** a draw action is applied
+- **THEN** the top action-deck card moves into the hand and no random-event pile is consulted
 
 ### Requirement: Place cards to extend or fork time
 Playing a card onto a branch head SHALL append a new revealed node on that branch. Playing a card onto a non-head node SHALL fork a new branch from that node, place a branch mat with 1 crystal, and grant the player 1 crystal.

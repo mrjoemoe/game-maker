@@ -23,8 +23,6 @@ export function cardTypeLabel(
   if (def.societyKind) return def.societyKind;
   if (def.resourceKind) return def.resourceKind;
   if (def.inventionKind) return def.inventionKind;
-  if (def.family === "random-draw") return "random";
-  if (def.family === "random-event") return def.randomKind ?? "random";
   if (def.family === "blueprint") return "blueprint";
   return def.family;
 }

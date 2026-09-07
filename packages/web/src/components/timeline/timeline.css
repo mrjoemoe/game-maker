@@ -361,18 +361,6 @@
   background: #2f5878;
 }
 
-.tl-face.random-event,
-.tl-face.random-draw,
-.tl-face.negative,
-.tl-face.chaos,
-.tl-face.blank,
-.tl-face.positive,
-.tl-face.transport,
-.tl-face.shift,
-.tl-face.choose-3 {
-  background: #4a4454;
-}
-
 .tl-face.confluence {
   background: #1b3a3a;
   border: 1.5px dashed #7dd3c7;

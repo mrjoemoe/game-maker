@@ -391,4 +391,12 @@ describe("timeline", () => {
     expect(state.player.objectives[0].complete).toBe(true);
     expect(state.player.completedCount).toBe(1);
   });
+
+  it("draws from the action deck", () => {
+    const start = createInitialTimeline(config);
+    expect(start.actionDeck.length).toBeGreaterThan(0);
+    const next = apply(start, { type: "draw" });
+    expect(next.hand.length).toBe(start.hand.length + 1);
+    expect(next.actionDeck.length).toBe(start.actionDeck.length - 1);
+  });
 });

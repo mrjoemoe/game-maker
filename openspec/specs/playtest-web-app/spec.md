@@ -294,7 +294,7 @@ Timeline Game SHALL offer Play and Rulebook tabs. Rulebook SHALL show the varian
 - **THEN** the Timeline Game rules markdown is shown instead of the timeline canvas
 
 ### Requirement: Player mat and debug device dock
-The Play tab SHALL show a player mat (parts, minerals, crystals, up to 3 device slots, blueprints, objectives). In debug mode it SHALL provide always-available Device A–H controls with targeting instructions, plus debug draws and the ability to add any catalog card to hand. Hand cards SHALL use the same type coloring as timeline cards (not an unmarked white face). While a device is armed, the Play tab SHALL show a **top banner** naming that device and the next click required to use it; the matching dock control SHALL appear armed until the player completes the action or cancels. Timeline nodes SHALL NOT be labeled or drawn as Open rift tiles. Merger targeting copy SHALL tell the player which branch ends and which branch it continues into.
+The Play tab SHALL show a player mat (parts, minerals, crystals, up to 3 device slots, blueprints, objectives). In debug mode it SHALL provide always-available Device A–H controls with targeting instructions, plus a debug draw from the **action** deck and the ability to add any catalog card to hand. It SHALL NOT offer a Draw random control. Hand cards SHALL use the same type coloring as timeline cards (not an unmarked white face). While a device is armed, the Play tab SHALL show a **top banner** naming that device and the next click required to use it; the matching dock control SHALL appear armed until the player completes the action or cancels. Timeline nodes SHALL NOT be labeled or drawn as Open rift tiles. Merger targeting copy SHALL tell the player which branch ends and which branch it continues into.
 
 #### Scenario: Branch from the dock
 - **WHEN** the player activates Brancher, a timeline node, and an action card in hand
@@ -316,6 +316,10 @@ The Play tab SHALL show a player mat (parts, minerals, crystals, up to 3 device 
 #### Scenario: Merger names the ending branch
 - **WHEN** Merger is armed
 - **THEN** the banner says to click the branch that ends, then the card on the timeline it continues into
+
+#### Scenario: No draw-random control
+- **WHEN** Timeline Game is shown on the Play tab
+- **THEN** the hand panel offers Draw action and does not offer Draw random
 
 ### Requirement: Rewriter targeting uses the hand
 While Rewriter is armed, the Play tab SHALL instruct the player to click a timeline card, then a card in hand. Completing those two clicks SHALL swap those cards. The debug catalog SHALL NOT apply Rewriter.

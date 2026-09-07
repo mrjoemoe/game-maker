@@ -1,5 +1,4 @@
 import type {
-  CardFamily,
   DeviceId,
   ObjectiveSpec,
   PlacedCard,
@@ -24,14 +23,12 @@ export type {
   PlacedCard,
   PlayerMat,
   PlayerObjective,
-  RandomEventKind,
   ResourceKind,
   SocietyKind,
   TimelineAction,
   TimelineBranch,
   TimelineCardDefinition,
   TimelineConfig,
-  TimelineDeck,
   TimelineDeviceDefinition,
   TimelineNode,
   TimelineState,
@@ -50,7 +47,7 @@ export function cardById(
 export function isActionCard(
   def: TimelineCardDefinition | undefined,
 ): boolean {
-  return Boolean(def && def.family !== "random-event");
+  return Boolean(def);
 }
 
 export function deviceById(
@@ -100,18 +97,7 @@ function shuffle(
   return { ids: out, state: current };
 }
 
-function deckForFamily(family: CardFamily): "action" | "random" {
-  return family === "random-event" ? "random" : "action";
-}
-
-function returnCard(
-  state: TimelineState,
-  cardId: string,
-  family: CardFamily,
-): TimelineState {
-  if (family === "random-event") {
-    return { ...state, randomDeck: [...state.randomDeck, cardId] };
-  }
+function returnCard(state: TimelineState, cardId: string): TimelineState {
   return { ...state, actionDeck: [...state.actionDeck, cardId] };
 }
 
@@ -491,60 +477,6 @@ function resolveArrival(
     );
   }
 
-  if (def.family === "random-draw") {
-    if (state.randomDeck.length === 0) {
-      return log(state, "Random event deck is empty.");
-    }
-    const drawn = state.randomDeck[0];
-    const rest = state.randomDeck.slice(1);
-    const event = cardById(config, drawn);
-    return log(
-      { ...state, randomDeck: rest },
-      `Random event: ${event?.label ?? drawn}.`,
-    );
-  }
-
-  if (def.family === "random-event") {
-    if (def.randomKind === "negative") {
-      const next = {
-        ...state,
-        player: {
-          ...state.player,
-          parts: clamp(state.player.parts - 1),
-          minerals: clamp(state.player.minerals - 1),
-        },
-      };
-      return log(next, `${def.label}: lost 1 part and 1 mineral.`);
-    }
-    if (def.randomKind === "positive") {
-      const next = {
-        ...state,
-        player: {
-          ...state.player,
-          parts: state.player.parts + 2,
-          minerals: state.player.minerals + 2,
-        },
-      };
-      return log(next, `${def.label}: gained 2 parts and 2 minerals.`);
-    }
-    if (def.randomKind === "transport") {
-      return log(
-        { ...state, travelerNodeId: state.epochNodeId },
-        `${def.label}: thrown back to epoch.`,
-      );
-    }
-    if (def.randomKind === "shift") {
-      const back = previousAlongPath(state, state.travelerNodeId);
-      if (back) {
-        return log(
-          { ...state, travelerNodeId: back },
-          `${def.label}: slipped backward.`,
-        );
-      }
-    }
-    return log(state, `${def.label} resolves.`);
-  }
-
   if (def.family === "event") {
     return log(state, `Event: ${def.label} (${def.eventKind}).`);
   }
@@ -644,7 +576,6 @@ export function createInitialTimeline(
     travelerNodeId: epochId,
     hand: [],
     actionDeck: [],
-    randomDeck: [],
     player: {
       parts: config.startingResources?.parts ?? 0,
       minerals: config.startingResources?.minerals ?? 0,
@@ -675,17 +606,12 @@ export function createInitialTimeline(
   }
 
   const actionIds = config.cards
-    .filter((c) => deckForFamily(c.family) === "action" && !used.has(c.id))
-    .map((c) => c.id);
-  const randomIds = config.cards
-    .filter((c) => deckForFamily(c.family) === "random" && !used.has(c.id))
+    .filter((c) => !used.has(c.id))
     .map((c) => c.id);
   const shuffledAction = shuffle(actionIds, state);
-  const shuffledRandom = shuffle(randomIds, shuffledAction.state);
   state = {
-    ...shuffledRandom.state,
+    ...shuffledAction.state,
     actionDeck: shuffledAction.ids,
-    randomDeck: shuffledRandom.ids,
   };
 
   for (const cardId of config.startingHand ?? []) {
@@ -702,20 +628,14 @@ export function createInitialTimeline(
 function drawFrom(
   state: TimelineState,
   config: TimelineConfig,
-  deck: "action" | "random",
 ): TimelineState {
-  const pile = deck === "action" ? state.actionDeck : state.randomDeck;
+  const pile = state.actionDeck;
   if (pile.length === 0) {
-    return log(state, `The ${deck} deck is empty.`);
+    return log(state, "The action deck is empty.");
   }
   const cardId = pile[0];
   const rest = pile.slice(1);
-  const made = newCardInstance(
-    deck === "action"
-      ? { ...state, actionDeck: rest }
-      : { ...state, randomDeck: rest },
-    cardId,
-  );
+  const made = newCardInstance({ ...state, actionDeck: rest }, cardId);
   const maxHand = config.maxHand ?? 7;
   if (!made.state.debugMode && made.state.hand.length >= maxHand) {
     return log(state, `Hand is full (${maxHand}).`);
@@ -808,7 +728,7 @@ function applyBrancher(
   }
   const def = cardById(config, held.cardId);
   if (!isActionCard(def)) {
-    return log(state, "Brancher needs an action card, not a random event.");
+    return log(state, "Brancher needs an action card from your hand.");
   }
   const without = {
     ...state,
@@ -918,7 +838,7 @@ function applyPruner(
     const node = state.nodes[id];
     if (node?.card) {
       const def = cardById(config, node.card.cardId);
-      if (def) next = returnCard(next, node.card.cardId, def.family);
+      if (def) next = returnCard(next, node.card.cardId);
     }
   }
   const remainingNodes = { ...next.nodes };
@@ -1148,8 +1068,8 @@ function endTurn(state: TimelineState, config: TimelineConfig): TimelineState {
   if (completedCount >= 3) {
     return log(next, "Three objectives complete. You win.");
   }
-  next = drawFrom(next, config, "action");
-  next = drawFrom(next, config, "action");
+  next = drawFrom(next, config);
+  next = drawFrom(next, config);
   return log(next, "New turn. Drew 2.");
 }
 
@@ -1255,7 +1175,7 @@ export function applyTimelineAction(
       return moveTraveler(state, config, prev, { resolve: false });
     }
     case "draw":
-      return drawFrom(state, config, action.deck);
+      return drawFrom(state, config);
     case "debugAddCard": {
       if (!cardById(config, action.cardId)) {
         return log(state, `Unknown card ${action.cardId}.`);
