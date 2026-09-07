@@ -1,0 +1,1 @@
+The banner sits at the top of the Play tab and stays sticky so it remains visible after clicking a device in the dock below the timestream. Copy is step-aware for Relocator, Merger, and Rewriter. Dock buttons use the same armed highlight as an armed hand card.

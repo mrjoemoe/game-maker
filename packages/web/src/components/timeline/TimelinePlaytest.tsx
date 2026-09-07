@@ -14,6 +14,11 @@ import {
 } from "@game-maker/engine";
 import { useEffect, useMemo, useState } from "react";
 import { cardFaceClass, cardTypeLabel } from "./cardFace";
+import {
+  idleHint,
+  targetingGuide,
+  type Targeting,
+} from "./targetingGuide";
 import { TimelineCanvas } from "./TimelineCanvas";
 import "./timeline.css";
 
@@ -22,21 +27,6 @@ type TimelinePlaytestProps = {
   onGame: (game: GameState) => void;
   onReset: () => void;
 };
-
-type Targeting =
-  | { kind: "idle" }
-  | { kind: "play"; instanceId: string }
-  | { kind: "brancher" }
-  | { kind: "reverser" }
-  | { kind: "relocator-branch" }
-  | { kind: "relocator-parent"; branchId: string }
-  | { kind: "pruner" }
-  | { kind: "merger-first" }
-  | { kind: "merger-second"; branchId: string }
-  | { kind: "rewriter-node" }
-  | { kind: "rewriter-card"; nodeId: string }
-  | { kind: "preserver" }
-  | { kind: "jumper" };
 
 const DEVICE_ORDER: DeviceId[] = [
   "brancher",
@@ -48,39 +38,6 @@ const DEVICE_ORDER: DeviceId[] = [
   "preserver",
   "jumper",
 ];
-
-function instruction(targeting: Targeting): string {
-  switch (targeting.kind) {
-    case "idle":
-      return "Click a node to move. Use the dock to fire a device.";
-    case "play":
-      return "Click a head to append, or an earlier node to fork a new branch.";
-    case "brancher":
-      return "Brancher — click the moment to fork from.";
-    case "reverser":
-      return "Reverser — click an ancestor to jump into the past.";
-    case "relocator-branch":
-      return "Relocator — click a node on the branch to move.";
-    case "relocator-parent":
-      return "Relocator — click the new parent node.";
-    case "pruner":
-      return "Pruner — click a node on the branch to cut.";
-    case "merger-first":
-      return "Merger — click a node on the first branch.";
-    case "merger-second":
-      return "Merger — click a node on the second branch.";
-    case "rewriter-node":
-      return "Rewriter — click the played card to replace.";
-    case "rewriter-card":
-      return "Rewriter — pick a replacement from the catalog below.";
-    case "preserver":
-      return "Preserver — click a node on the timeline to lock or unlock.";
-    case "jumper":
-      return "Jumper — click a node up to 3 spaces ahead.";
-    default:
-      return "";
-  }
-}
 
 export function TimelinePlaytest({
   game,
@@ -254,15 +211,40 @@ export function TimelinePlaytest({
     return acc;
   }, {});
 
+  const guide = targetingGuide(targeting);
+  const cancelTargeting = () => setTargeting({ kind: "idle" });
+
   return (
     <div className="tl-play">
+      {guide ? (
+        <div className="tl-banner targeting" role="status" aria-live="polite">
+          {guide.letter ? (
+            <span className="tl-banner-letter" aria-hidden="true">
+              {guide.letter}
+            </span>
+          ) : null}
+          <div className="tl-banner-copy">
+            <strong>
+              {guide.title}
+              {guide.deviceId ? " in use" : ""}
+            </strong>
+            {guide.step ? (
+              <span className="tl-banner-step">{guide.step}</span>
+            ) : null}
+            <span>{guide.how}</span>
+          </div>
+          <button type="button" onClick={cancelTargeting}>
+            Cancel · Esc
+          </button>
+        </div>
+      ) : null}
       <section className="tl-toolbar" aria-label="Timeline controls">
         <div className="tl-instructions">
           <p>
             <span className="tl-mode">
               {config.playerCount ?? 1} player
             </span>
-            {instruction(targeting)}
+            {guide ? `${guide.title} armed.` : idleHint()}
           </p>
           {branch ? (
             <p className="tl-where">
@@ -299,7 +281,7 @@ export function TimelinePlaytest({
             End turn
           </button>
           {targeting.kind !== "idle" ? (
-            <button type="button" onClick={() => setTargeting({ kind: "idle" })}>
+            <button type="button" onClick={cancelTargeting}>
               Cancel
             </button>
           ) : null}
@@ -454,8 +436,13 @@ export function TimelinePlaytest({
                 <button
                   key={id}
                   type="button"
-                  className="tl-device"
-                  onClick={() => armDevice(id)}
+                  className={`tl-device${
+                    guide?.deviceId === id ? " armed" : ""
+                  }`}
+                  aria-pressed={guide?.deviceId === id}
+                  onClick={() =>
+                    guide?.deviceId === id ? cancelTargeting() : armDevice(id)
+                  }
                 >
                   <span className="tl-letter">{def.letter}</span>
                   <span>
