@@ -433,7 +433,7 @@ export function TimelinePlaytest({
       />
 
       <div className="tl-panels">
-        <section className="tl-panel tl-mat" aria-label="Player mat">
+        <section className="tl-panel tl-player-mat" aria-label="Player mat">
           <h2>Player mat</h2>
           <div className="tl-resources">
             {(["parts", "minerals", "crystals"] as const).map((resource) => (
