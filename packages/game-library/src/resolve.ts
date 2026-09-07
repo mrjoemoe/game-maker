@@ -234,6 +234,7 @@ function applyContribution(
       startingHand: contrib.timeline.startingHand ?? prev?.startingHand,
       startingResources:
         contrib.timeline.startingResources ?? prev?.startingResources,
+      playerCount: contrib.timeline.playerCount ?? prev?.playerCount,
     };
     setProv(provenance, "timeline", id, ver);
   }

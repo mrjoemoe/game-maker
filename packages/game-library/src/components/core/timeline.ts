@@ -307,7 +307,7 @@ export const coreTimeline = defineComponent({
       playerFacing:
         "You are a time traveler repairing the past. Walk timelines, place events, and complete person–place–thing objectives.",
       developerNotes:
-        "Contributes templateId timeline, a dummy 1×1 board for resolver compatibility, and the placeholder card/device catalog. Debug mode defaults on.",
+        "Contributes templateId timeline, a dummy 1×1 board for resolver compatibility, and the placeholder card/device catalog. Debug mode defaults on. playerCount defaults to 1 (solo playtest).",
     },
   },
   contribute: ({ params }) => {
@@ -331,6 +331,8 @@ export const coreTimeline = defineComponent({
       ],
       timeline: {
         debugMode,
+        playerCount:
+          typeof params.playerCount === "number" ? params.playerCount : 1,
         jumpSteps: 3,
         maxPrimaryLength: 20,
         maxBranchLength: 10,

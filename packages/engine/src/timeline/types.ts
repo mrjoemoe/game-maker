@@ -74,6 +74,8 @@ export type ObjectiveSpec = {
 
 export type TimelineConfig = {
   debugMode?: boolean;
+  /** Playtest player count. Timeline Game currently ships as 1-player. */
+  playerCount?: number;
   jumpSteps?: number;
   maxPrimaryLength?: number;
   maxBranchLength?: number;

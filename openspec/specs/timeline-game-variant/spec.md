@@ -19,3 +19,10 @@ Timeline Game SHALL default debug mode on so a designer can move, draw, play car
 #### Scenario: Debug defaults on
 - **WHEN** Timeline Game is initialized from its library composition
 - **THEN** timeline debug mode is enabled
+
+### Requirement: One-player playtest mode
+Timeline Game SHALL run as a **1-player** playtest (`playerCount` 1). The Play tab SHALL label this mode. Further playtest edits apply to this 1-player mode until a multiplayer mode is added.
+
+#### Scenario: Solo mode is labeled
+- **WHEN** Timeline Game is resolved and shown on the Play tab
+- **THEN** the definition’s timeline `playerCount` is 1 and the UI indicates 1-player mode

@@ -341,6 +341,7 @@ describe("resolution and propagation", () => {
     expect(result.definition.templateId).toBe("timeline");
     expect(result.definition.features?.timelineMode).toBe(true);
     expect(result.definition.timeline?.debugMode).toBe(true);
+    expect(result.definition.timeline?.playerCount).toBe(1);
     expect(result.definition.timeline?.devices.map((d) => d.id)).toEqual([
       "brancher",
       "reverser",

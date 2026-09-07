@@ -3,90 +3,18 @@ import {
   isBranchEntry,
   isHead,
   societyOnBranch,
-  type TimelineCardDefinition,
+  societyOnPath,
   type TimelineConfig,
   type TimelineState,
 } from "@game-maker/engine";
-
-const COL = 148;
-const ROW = 136;
-const PAD = 24;
-const MAT_W = 118;
-const NODE_W = 116;
-const NODE_H = 88;
-
-export type NodeLayout = {
-  id: string;
-  x: number;
-  y: number;
-  lane: number;
-};
-
-export type MatLayout = {
-  branchId: string;
-  x: number;
-  y: number;
-};
-
-export type TimelineLayout = {
-  width: number;
-  height: number;
-  nodes: Record<string, NodeLayout>;
-  mats: Record<string, MatLayout>;
-  lanes: Record<string, number>;
-};
-
-export function layoutTimeline(state: TimelineState): TimelineLayout {
-  const branches = Object.values(state.branches).sort(
-    (a, b) => a.index - b.index,
-  );
-  const lanes: Record<string, number> = {};
-  branches.forEach((branch, i) => {
-    lanes[branch.id] = i;
-  });
-
-  const nodes: Record<string, NodeLayout> = {};
-  for (const node of Object.values(state.nodes)) {
-    const lane = lanes[node.branchId] ?? 0;
-    nodes[node.id] = {
-      id: node.id,
-      x: PAD + MAT_W + 20 + node.depth * COL,
-      y: PAD + lane * ROW,
-      lane,
-    };
-  }
-
-  const mats: Record<string, MatLayout> = {};
-  for (const branch of branches) {
-    const root = nodes[branch.rootNodeId];
-    const lane = lanes[branch.id] ?? 0;
-    mats[branch.id] = {
-      branchId: branch.id,
-      x: root ? Math.max(PAD, root.x - MAT_W - 12) : PAD,
-      y: PAD + lane * ROW,
-    };
-  }
-
-  const maxX = Math.max(
-    640,
-    ...Object.values(nodes).map((n) => n.x + NODE_W + PAD),
-    ...Object.values(mats).map((m) => m.x + MAT_W + PAD),
-  );
-  const maxY = Math.max(
-    320,
-    ...Object.values(nodes).map((n) => n.y + NODE_H + PAD),
-  );
-
-  return { width: maxX, height: maxY, nodes, mats, lanes };
-}
-
-function familyClass(def: TimelineCardDefinition | undefined, isEpoch: boolean) {
-  if (isEpoch) return "epoch";
-  if (!def) return "rift";
-  if (def.family === "event") return def.eventKind ?? "event";
-  if (def.family === "society") return def.societyKind ?? "society";
-  return def.family;
-}
+import { useEffect, useRef, useState } from "react";
+import { cardFaceClass, cardTypeLabel } from "./cardFace";
+import {
+  layoutTimeline,
+  MAX_TRACK_ROWS,
+  NODE_H,
+  NODE_W,
+} from "./layout";
 
 type TimelineCanvasProps = {
   state: TimelineState;
@@ -108,9 +36,22 @@ export function TimelineCanvas({
   onMatClick,
 }: TimelineCanvasProps) {
   const layout = layoutTimeline(state);
+  const streamRef = useRef<HTMLDivElement>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const el = streamRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [layout.height]);
+  const hovered = hoveredId ? state.nodes[hoveredId] : null;
+  const hoverSociety = hovered
+    ? societyOnPath(state, config, hovered.id)
+    : null;
+  const hoverPos = hoveredId ? layout.nodes[hoveredId] : null;
 
   return (
-    <div className="tl-stream" aria-label="Timestream">
+    <div className="tl-stream" aria-label="Timestream" ref={streamRef}>
       <div
         className="tl-world"
         style={{ width: layout.width, height: layout.height }}
@@ -121,29 +62,48 @@ export function TimelineCanvas({
           height={layout.height}
           aria-hidden="true"
         >
+          {layout.rows.map((row) => (
+            <g key={row.row}>
+              <line
+                className="tl-grid"
+                x1={32}
+                y1={row.y + NODE_H / 2}
+                x2={layout.width - 8}
+                y2={row.y + NODE_H / 2}
+              />
+            </g>
+          ))}
           {Object.values(state.nodes).flatMap((node) =>
             node.parentIds.map((parentId) => {
               const from = layout.nodes[parentId];
               const to = layout.nodes[node.id];
               if (!from || !to) return null;
-              const x1 = from.x + NODE_W;
-              const y1 = from.y + NODE_H / 2;
-              const x2 = to.x;
-              const y2 = to.y + NODE_H / 2;
-              const mid = (x1 + x2) / 2;
+              const x1 = from.x + NODE_W / 2;
+              const y1 = from.y;
+              const x2 = to.x + NODE_W / 2;
+              const y2 = to.y + NODE_H;
+              const mid = (y1 + y2) / 2;
               const merge = node.parentIds.length > 1;
               return (
                 <path
                   key={`${parentId}-${node.id}`}
-                  d={`M ${x1} ${y1} C ${mid} ${y1}, ${mid} ${y2}, ${x2} ${y2}`}
-                  className={
-                    merge ? "tl-wire tl-wire-merge" : "tl-wire"
-                  }
+                  d={`M ${x1} ${y1} C ${x1} ${mid}, ${x2} ${mid}, ${x2} ${y2}`}
+                  className={merge ? "tl-wire tl-wire-merge" : "tl-wire"}
                 />
               );
             }),
           )}
         </svg>
+
+        {layout.rows.map((row) => (
+          <span
+            key={row.row}
+            className={`tl-row-num${row.row === MAX_TRACK_ROWS ? " cap" : ""}`}
+            style={{ top: row.y + 10 }}
+          >
+            {row.row}
+          </span>
+        ))}
 
         {Object.values(state.branches).map((branch) => {
           const mat = layout.mats[branch.id];
@@ -187,26 +147,31 @@ export function TimelineCanvas({
           const here = node.id === state.travelerNodeId;
           const head = isHead(state, node.id);
           const entry = isBranchEntry(state, node.id);
-          const kind = familyClass(def, epoch);
+          const kind = cardFaceClass(def, epoch);
+          const rowLabel = epoch ? "E" : String(node.depth);
           return (
             <button
               key={node.id}
               type="button"
-              className={`tl-node ${kind}${here ? " here" : ""}${
+              className={`tl-node tl-face ${kind}${here ? " here" : ""}${
                 head ? " head" : ""
               }${entry && !epoch ? " entry" : ""}${
                 highlightedNodes.has(node.id) ? " lit" : ""
               }`}
               style={{ left: pos.x, top: pos.y }}
               onClick={() => onNodeClick(node.id)}
+              onMouseEnter={() => setHoveredId(node.id)}
+              onMouseLeave={() => setHoveredId(null)}
             >
-              {here ? <span className="tl-pawn" aria-hidden="true">◷</span> : null}
+              {here ? (
+                <span className="tl-pawn" aria-hidden="true">
+                  ◷
+                </span>
+              ) : null}
+              <span className="tl-row-chip">{rowLabel}</span>
               <span className="tl-kicker">
-                {epoch
-                  ? "Epoch"
-                  : head
-                    ? "Head"
-                    : def?.eventKind ?? def?.family ?? "Rift"}
+                {epoch ? "Epoch" : cardTypeLabel(def)}
+                {head && !epoch ? " · head" : ""}
               </span>
               <span className="tl-title">
                 {epoch ? "Origin" : def?.label ?? "Open rift"}
@@ -214,6 +179,19 @@ export function TimelineCanvas({
             </button>
           );
         })}
+
+        {hovered && hoverSociety && hoverPos ? (
+          <div
+            className="tl-tip"
+            style={{ left: hoverPos.x + NODE_W + 8, top: hoverPos.y }}
+            role="status"
+          >
+            <strong>{hovered.card ? "At this moment" : "Empty moment"}</strong>
+            <span>Culture {hoverSociety.culture}</span>
+            <span>Science {hoverSociety.science}</span>
+            <span>Politics {hoverSociety.politics}</span>
+          </div>
+        ) : null}
       </div>
       {selectedCardInstanceId ? (
         <p className="tl-stream-hint">Card armed — click a node to play it.</p>

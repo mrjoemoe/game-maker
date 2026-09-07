@@ -38,7 +38,7 @@ export const goblinWoodsVariant = defineVariant({
 export const timelineGameVariant = defineVariant({
   id: "timeline-game",
   name: "Timeline Game",
-  components: [use("core/timeline", "^1", { debugMode: true })],
+  components: [use("core/timeline", "^1", { debugMode: true, playerCount: 1 })],
 });
 
 export { override, use };

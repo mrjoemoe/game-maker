@@ -1,14 +1,15 @@
 # Timeline Game — Rulebook
 
-Living rules for the Timeline Game playtest. You are a time traveler repairing the past. First to complete **3 objectives** wins.
+Living rules for the Timeline Game playtest. You are a time traveler repairing the past. This playtest is **1-player** mode.
 
 ## Goal
 
-Each player has 3 objectives. An objective is a **person**, **place**, and **thing** that must all exist on one continuous timeline. When they do, **claim** that timeline. If the trio still holds at the start of your next turn, the objective is complete.
+Each player has 3 objectives. Complete all 3 to win. An objective is a **person**, **place**, and **thing** that must all exist on one continuous timeline. When they do, **claim** that timeline. If the trio still holds at the start of your next turn, the objective is complete.
 
 ## Setup
 
-- The **Prime** timeline starts at **Epoch**.
+- **1-player** playtest (further edits target this mode).
+- The **Prime** timeline starts at **Epoch** (bottom of the timestream; later cards stack **up**. Rows **1–20** mark depth toward the 20-card cap).
 - Prime has a branch mat for society (culture, science, politics) and **no crystals**.
 - Draw 2 action cards at the start of each turn. Hand limit 7.
 - Parts, minerals, and crystals live on your **player mat**, not in hand.

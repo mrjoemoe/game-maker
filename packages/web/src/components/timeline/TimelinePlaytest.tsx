@@ -13,6 +13,7 @@ import {
   type TimelineCardDefinition,
 } from "@game-maker/engine";
 import { useEffect, useMemo, useState } from "react";
+import { cardFaceClass, cardTypeLabel } from "./cardFace";
 import { TimelineCanvas } from "./TimelineCanvas";
 import "./timeline.css";
 
@@ -257,7 +258,12 @@ export function TimelinePlaytest({
     <div className="tl-play">
       <section className="tl-toolbar" aria-label="Timeline controls">
         <div className="tl-instructions">
-          <p>{instruction(targeting)}</p>
+          <p>
+            <span className="tl-mode">
+              {config.playerCount ?? 1} player
+            </span>
+            {instruction(targeting)}
+          </p>
           {branch ? (
             <p className="tl-where">
               {branch.label}
@@ -489,15 +495,15 @@ export function TimelinePlaytest({
             ) : (
               timeline.hand.map((card) => {
                 const def = cardById(config, card.cardId);
+                const armed =
+                  targeting.kind === "play" &&
+                  targeting.instanceId === card.instanceId;
                 return (
                   <button
                     key={card.instanceId}
                     type="button"
-                    className={`tl-card${
-                      targeting.kind === "play" &&
-                      targeting.instanceId === card.instanceId
-                        ? " armed"
-                        : ""
+                    className={`tl-card tl-face ${cardFaceClass(def)}${
+                      armed ? " armed" : ""
                     }`}
                     onClick={() =>
                       setTargeting({
@@ -506,7 +512,7 @@ export function TimelinePlaytest({
                       })
                     }
                   >
-                    <span>{def?.family}</span>
+                    <span>{cardTypeLabel(def)}</span>
                     <strong>{def?.label ?? card.cardId}</strong>
                   </button>
                 );
