@@ -14,6 +14,8 @@ import {
   MAX_TRACK_ROWS,
   NODE_H,
   NODE_W,
+  wireKind,
+  wirePath,
 } from "./layout";
 
 type TimelineCanvasProps = {
@@ -49,6 +51,18 @@ export function TimelineCanvas({
     ? societyOnPath(state, config, hovered.id)
     : null;
   const hoverPos = hoveredId ? layout.nodes[hoveredId] : null;
+  const wires = Object.values(state.nodes).flatMap((node) =>
+    node.parentIds.flatMap((parentId) => {
+      const parent = state.nodes[parentId];
+      const from = layout.nodes[parentId];
+      const to = layout.nodes[node.id];
+      if (!parent || !from || !to) return [];
+      const kind = wireKind(parent, node);
+      return [
+        { key: `${parentId}-${node.id}`, kind, d: wirePath(from, to, kind) },
+      ];
+    }),
+  );
 
   return (
     <div className="tl-stream" aria-label="Timestream" ref={streamRef}>
@@ -73,26 +87,20 @@ export function TimelineCanvas({
               />
             </g>
           ))}
-          {Object.values(state.nodes).flatMap((node) =>
-            node.parentIds.map((parentId) => {
-              const from = layout.nodes[parentId];
-              const to = layout.nodes[node.id];
-              if (!from || !to) return null;
-              const x1 = from.x + NODE_W / 2;
-              const y1 = from.y;
-              const x2 = to.x + NODE_W / 2;
-              const y2 = to.y + NODE_H;
-              const mid = (y1 + y2) / 2;
-              const merge = node.parentIds.length > 1;
-              return (
-                <path
-                  key={`${parentId}-${node.id}`}
-                  d={`M ${x1} ${y1} C ${x1} ${mid}, ${x2} ${mid}, ${x2} ${y2}`}
-                  className={merge ? "tl-wire tl-wire-merge" : "tl-wire"}
-                />
-              );
-            }),
-          )}
+          {wires.map((wire) => (
+            <path
+              key={`${wire.key}-halo`}
+              d={wire.d}
+              className={`tl-wire-halo ${wire.kind}`}
+            />
+          ))}
+          {wires.map((wire) => (
+            <path
+              key={wire.key}
+              d={wire.d}
+              className={`tl-wire ${wire.kind}`}
+            />
+          ))}
         </svg>
 
         {layout.rows.map((row) => (

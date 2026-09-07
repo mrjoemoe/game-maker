@@ -256,7 +256,7 @@ When run mode is enabled, the playtest app SHALL provide a Debug section with a 
 - **THEN** play-revealed tiles stay face-up and never-revealed tiles are face-down again
 
 ### Requirement: Timeline playtest canvas
-When the active prototype enables timeline mode, the Play tab SHALL render a branching timeline with **epoch at the bottom** and later nodes stacked **upward** on separate branch columns, plus a **1–20 row ruler** for path depth. The traveler token SHALL appear on the current node. Timeline nodes SHALL be compact (about half the previous card height). Hovering a timeline node SHALL show the cumulative culture, science, and politics on the path from epoch to that node.
+When the active prototype enables timeline mode, the Play tab SHALL render a branching timeline with **epoch at the bottom** and later nodes stacked **upward** on separate branch columns, plus a **1–20 row ruler** for path depth. The traveler token SHALL appear on the current node. Timeline nodes SHALL be compact (about half the previous card height). Hovering a timeline node SHALL show the cumulative culture, science, and politics on the path from epoch to that node. Wires SHALL distinguish **same-branch stems** from **fork** and **merge** connectors: forks and merges SHALL route through the gutter between columns with a thicker, high-contrast stroke so a new branch is obvious.
 
 #### Scenario: Seeded timeline is visible
 - **WHEN** Timeline Game loads on the Play tab
@@ -265,6 +265,10 @@ When the active prototype enables timeline mode, the Play tab SHALL render a bra
 #### Scenario: Hover shows society at that moment
 - **WHEN** the player hovers a timeline card
 - **THEN** the UI shows culture, science, and politics totaled along the path to that card
+
+#### Scenario: Fork wire is distinct from a stem
+- **WHEN** a branch is created from a timeline node
+- **THEN** the connector to the new column is a side-routed fork wire, visually distinct from the vertical stem on the parent timeline
 
 ### Requirement: Play and Rulebook tabs for Timeline Game
 Timeline Game SHALL offer Play and Rulebook tabs. Rulebook SHALL show the variant `RULEBOOK.md`.

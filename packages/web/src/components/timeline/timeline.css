@@ -101,18 +101,43 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 1;
 }
 
+.tl-wire-halo,
 .tl-wire {
   fill: none;
-  stroke: #e8c547;
-  stroke-width: 2.2;
-  opacity: 0.72;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.tl-wire-merge {
-  stroke: #7dd3c7;
-  stroke-dasharray: 5 4;
+.tl-wire-halo {
+  stroke: #0b1018;
+}
+
+.tl-wire-halo.stem {
+  stroke-width: 7;
+}
+
+.tl-wire-halo.fork,
+.tl-wire-halo.merge {
+  stroke-width: 11;
+}
+
+.tl-wire.stem {
+  stroke: #f2d36b;
+  stroke-width: 3;
+}
+
+.tl-wire.fork {
+  stroke: #6ee7ff;
+  stroke-width: 5;
+}
+
+.tl-wire.merge {
+  stroke: #9dffd4;
+  stroke-width: 5;
+  stroke-dasharray: 9 6;
 }
 
 .tl-grid {
@@ -138,6 +163,7 @@
 .tl-mat,
 .tl-node {
   position: absolute;
+  z-index: 2;
   text-align: left;
   border-radius: 0.55rem;
   cursor: pointer;

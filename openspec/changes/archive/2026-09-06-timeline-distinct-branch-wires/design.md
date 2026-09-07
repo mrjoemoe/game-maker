@@ -1,0 +1,1 @@
+Same-branch links stay short vertical stems. Forks and merges leave the parent’s side, travel the gutter between columns, and enter the child — a dark halo plus a cyan/mint stroke so they do not blend into the gold grid or card faces.
