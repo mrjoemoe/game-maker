@@ -1,0 +1,1 @@
+Route stems, then merges, then forks. After each wire, occupy its parallel corridors (not perpendicular crossings) so the next wire offsets by ~14px. Hover uses an invisible fat stroke; the hovered group is painted last. Merge dest cards show “join &lt;ended branch&gt;”; the merge stroke gets an arrowhead and a hover caption “Prime joins Branch 4”.

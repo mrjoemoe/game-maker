@@ -11,7 +11,7 @@ import {
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cardFaceClass, cardTypeLabel } from "./cardFace";
 import { layoutTimeline, MAX_TRACK_ROWS, MAT_H, NODE_H, NODE_W } from "./layout";
-import { planWires } from "./wires";
+import { planWires, type PlannedWire } from "./wires";
 
 type TimelineCanvasProps = {
   state: TimelineState;
@@ -22,6 +22,82 @@ type TimelineCanvasProps = {
   onNodeClick: (nodeId: string) => void;
   onMatClick: (branchId: string) => void;
 };
+
+type WireLayerProps = {
+  wires: PlannedWire[];
+  hotKey: string | null;
+  interactive: boolean;
+  markerId: string;
+  onHover: (key: string | null) => void;
+};
+
+function WireLayer({
+  wires,
+  hotKey,
+  interactive,
+  markerId,
+  onHover,
+}: WireLayerProps) {
+  return (
+    <>
+      {wires.map((wire) => {
+        const hot = hotKey === wire.key;
+        return (
+          <g
+            key={wire.key}
+            className={`tl-wire-g${hot ? " hot" : ""}`}
+            onMouseEnter={
+              interactive ? () => onHover(wire.key) : undefined
+            }
+            onMouseLeave={
+              interactive ? () => onHover(null) : undefined
+            }
+          >
+            {wire.parts.map((d, i) => (
+              <path
+                key={`${wire.key}-halo-${i}`}
+                d={d}
+                className={`tl-wire-halo ${wire.kind}${hot ? " hot" : ""}`}
+              />
+            ))}
+            {wire.parts.map((d, i) => (
+              <path
+                key={`${wire.key}-${i}`}
+                d={d}
+                className={`tl-wire ${wire.kind}${hot ? " hot" : ""}`}
+                markerEnd={
+                  wire.kind === "merge" && i === wire.parts.length - 1
+                    ? `url(#${markerId})`
+                    : undefined
+                }
+              />
+            ))}
+            {interactive
+              ? wire.parts.map((d, i) => (
+                  <path
+                    key={`${wire.key}-hit-${i}`}
+                    d={d}
+                    className="tl-wire-hit"
+                  />
+                ))
+              : null}
+            {wire.labels.map((label, i) => (
+              <g
+                key={`${wire.key}-j${i}`}
+                className={`tl-jump ${wire.kind}`}
+              >
+                <circle cx={label.x} cy={label.y} r={10} />
+                <text x={label.x} y={label.y}>
+                  {label.letter}
+                </text>
+              </g>
+            ))}
+          </g>
+        );
+      })}
+    </>
+  );
+}
 
 export function TimelineCanvas({
   state,
@@ -36,6 +112,7 @@ export function TimelineCanvas({
   const [viewportWidth, setViewportWidth] = useState(0);
   const layout = layoutTimeline(state, viewportWidth);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [hoveredWire, setHoveredWire] = useState<string | null>(null);
 
   useLayoutEffect(() => {
     const el = streamRef.current;
@@ -65,6 +142,19 @@ export function TimelineCanvas({
     : null;
   const hoverPos = hoveredId ? layout.nodes[hoveredId] : null;
   const wires = planWires(state, layout);
+  const hotWire = hoveredWire
+    ? (wires.find((wire) => wire.key === hoveredWire) ?? null)
+    : null;
+  const joiners = new Map<string, string[]>();
+  for (const branch of Object.values(state.branches)) {
+    if (!branch.mergedIntoNodeId) continue;
+    const list = joiners.get(branch.mergedIntoNodeId) ?? [];
+    list.push(branch.label);
+    joiners.set(branch.mergedIntoNodeId, list);
+  }
+  const hotEnds = hotWire
+    ? new Set([hotWire.fromId, hotWire.toId])
+    : new Set<string | undefined>();
 
   return (
     <div className="tl-stream" aria-label="Timestream" ref={streamRef}>
@@ -96,7 +186,7 @@ export function TimelineCanvas({
         })}
 
         <svg
-          className="tl-wires"
+          className={`tl-wires${hotWire ? " dimming" : ""}`}
           width={layout.width}
           height={layout.height}
           aria-hidden="true"
@@ -112,38 +202,56 @@ export function TimelineCanvas({
               />
             </g>
           ))}
-          {wires.flatMap((wire) =>
-            wire.parts.map((d, i) => (
-              <path
-                key={`${wire.key}-halo-${i}`}
-                d={d}
-                className={`tl-wire-halo ${wire.kind}`}
-              />
-            )),
-          )}
-          {wires.flatMap((wire) =>
-            wire.parts.map((d, i) => (
-              <path
-                key={`${wire.key}-${i}`}
-                d={d}
-                className={`tl-wire ${wire.kind}`}
-              />
-            )),
-          )}
-          {wires.flatMap((wire) =>
-            wire.labels.map((label, i) => (
-              <g
-                key={`${wire.key}-j${i}`}
-                className={`tl-jump ${wire.kind}`}
-              >
-                <circle cx={label.x} cy={label.y} r={10} />
-                <text x={label.x} y={label.y}>
-                  {label.letter}
-                </text>
-              </g>
-            )),
-          )}
+          <defs>
+            <marker
+              id="tl-merge-arrow"
+              markerWidth="10"
+              markerHeight="8"
+              refX="9"
+              refY="4"
+              orient="auto"
+              markerUnits="strokeWidth"
+            >
+              <path d="M 0 0 L 10 4 L 0 8 z" fill="#9dffd4" />
+            </marker>
+          </defs>
+          <WireLayer
+            wires={wires}
+            hotKey={hotWire?.key ?? null}
+            interactive
+            markerId="tl-merge-arrow"
+            onHover={setHoveredWire}
+          />
         </svg>
+        {hotWire ? (
+          <svg
+            className="tl-wires tl-wires-front"
+            width={layout.width}
+            height={layout.height}
+            aria-hidden="true"
+          >
+            <defs>
+              <marker
+                id="tl-merge-arrow-front"
+                markerWidth="10"
+                markerHeight="8"
+                refX="9"
+                refY="4"
+                orient="auto"
+                markerUnits="strokeWidth"
+              >
+                <path d="M 0 0 L 10 4 L 0 8 z" fill="#9dffd4" />
+              </marker>
+            </defs>
+            <WireLayer
+              wires={[hotWire]}
+              hotKey={hotWire.key}
+              interactive={false}
+              markerId="tl-merge-arrow-front"
+              onHover={setHoveredWire}
+            />
+          </svg>
+        ) : null}
 
         {layout.rows.map((row) => (
           <span
@@ -201,6 +309,7 @@ export function TimelineCanvas({
             Boolean(state.branches[node.branchId]?.mergedIntoNodeId) &&
             node.id === state.branches[node.branchId]?.headNodeId;
           const locked = isPreservedNode(state, node.id);
+          const joins = joiners.get(node.id);
           const kind = cardFaceClass(def, epoch);
           const rowLabel = epoch ? "E" : String(node.depth);
           return (
@@ -211,6 +320,8 @@ export function TimelineCanvas({
                 head ? " head" : ""
               }${ended ? " merged" : ""}${locked ? " locked" : ""}${
                 entry && !epoch ? " entry" : ""
+              }${joins ? " merge-in" : ""}${
+                hotEnds.has(node.id) ? " wire-end" : ""
               }${highlightedNodes.has(node.id) ? " lit" : ""}`}
               style={{ left: pos.x, top: pos.y }}
               onClick={() => onNodeClick(node.id)}
@@ -225,7 +336,15 @@ export function TimelineCanvas({
               <span className="tl-row-chip">{rowLabel}</span>
               <span className="tl-kicker">
                 {epoch ? "Epoch" : cardTypeLabel(def)}
-                {ended ? " · merged" : locked ? " · locked" : head && !epoch ? " · head" : ""}
+                {joins
+                  ? ` · join ${joins.join(", ")}`
+                  : ended
+                    ? " · merged"
+                    : locked
+                      ? " · locked"
+                      : head && !epoch
+                        ? " · head"
+                        : ""}
               </span>
               <span className="tl-title">
                 {epoch ? "Origin" : def?.label ?? "Confluence"}
@@ -250,6 +369,15 @@ export function TimelineCanvas({
             <span>Culture {hoverSociety.culture}</span>
             <span>Science {hoverSociety.science}</span>
             <span>Politics {hoverSociety.politics}</span>
+          </div>
+        ) : null}
+        {hotWire?.caption && hotWire.tip ? (
+          <div
+            className="tl-wire-tip"
+            style={{ left: hotWire.tip.x + 10, top: hotWire.tip.y - 18 }}
+            role="status"
+          >
+            {hotWire.caption}
           </div>
         ) : null}
       </div>

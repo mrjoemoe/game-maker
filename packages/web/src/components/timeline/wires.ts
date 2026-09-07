@@ -22,10 +22,15 @@ export type PlannedWire = {
   key: string;
   kind: WireKind;
   parts: string[];
+  polylines: Point[][];
   labels: WireLabel[];
+  caption?: string;
+  fromId?: string;
+  toId?: string;
+  tip?: Point;
 };
 
-type Point = { x: number; y: number };
+export type Point = { x: number; y: number };
 
 export type Obstacle = {
   id: string;
@@ -33,12 +38,15 @@ export type Obstacle = {
   y: number;
   w: number;
   h: number;
+  kind?: "tile" | "wire";
 };
 
 const PAD = 3;
 const STUB = 20;
 const CELL = 8;
 const LETTERS = "abcdefghijklmnopqrstuvwxyz";
+export const WIRE_SPACING = 14;
+const PORT_SKIP = 24;
 
 export function wireKind(
   parent: { branchId: string },
@@ -53,9 +61,22 @@ export function planWires(
   state: TimelineState,
   layout: TimelineLayout,
 ): PlannedWire[] {
-  const obstacles = collectObstacles(layout);
+  const occupied = collectObstacles(layout);
   let jumpIndex = 0;
-  const wires: PlannedWire[] = [];
+  const nextLetter = () => {
+    const letter = jumpLetter(jumpIndex);
+    jumpIndex += 1;
+    return letter;
+  };
+  const jobs: {
+    from: NodeLayout;
+    to: NodeLayout;
+    kind: WireKind;
+    key: string;
+    caption?: string;
+    fromId: string;
+    toId: string;
+  }[] = [];
   for (const node of Object.values(state.nodes)) {
     for (const parentId of node.parentIds) {
       const parent = state.nodes[parentId];
@@ -63,44 +84,97 @@ export function planWires(
       const to = layout.nodes[node.id];
       if (!parent || !from || !to) continue;
       const kind = wireKind(parent, node);
-      const planned = routePair(
+      const childBranch = state.branches[node.branchId];
+      const parentBranch = state.branches[parent.branchId];
+      jobs.push({
         from,
         to,
         kind,
-        `${parentId}-${node.id}`,
-        obstacles,
-        layout,
-        () => {
-          const letter = jumpLetter(jumpIndex);
-          jumpIndex += 1;
-          return letter;
-        },
-      );
-      wires.push(planned);
+        key: `${parentId}-${node.id}`,
+        fromId: parentId,
+        toId: node.id,
+        caption:
+          kind === "fork"
+            ? `Fork → ${childBranch?.label ?? "branch"}`
+            : kind === "merge"
+              ? `${parentBranch?.label ?? "Timeline"} joins ${childBranch?.label ?? "branch"}`
+              : undefined,
+      });
     }
   }
   for (const branch of Object.values(state.branches)) {
     if (!branch.mergedIntoNodeId) continue;
     const from = layout.nodes[branch.headNodeId];
+    const destNode = state.nodes[branch.mergedIntoNodeId];
     const to = layout.nodes[branch.mergedIntoNodeId];
-    if (!from || !to) continue;
-    wires.push(
-      routePair(
-        from,
-        to,
-        "merge",
-        `merge:${branch.id}`,
-        obstacles,
-        layout,
-        () => {
-          const letter = jumpLetter(jumpIndex);
-          jumpIndex += 1;
-          return letter;
-        },
-      ),
+    if (!from || !to || !destNode) continue;
+    const destBranch = state.branches[destNode.branchId];
+    jobs.push({
+      from,
+      to,
+      kind: "merge",
+      key: `merge:${branch.id}`,
+      fromId: branch.headNodeId,
+      toId: branch.mergedIntoNodeId,
+      caption: `${branch.label} joins ${destBranch?.label ?? "branch"}`,
+    });
+  }
+  const rank: Record<WireKind, number> = { stem: 0, merge: 1, fork: 2 };
+  jobs.sort((a, b) => rank[a.kind] - rank[b.kind]);
+  const wires: PlannedWire[] = [];
+  for (const job of jobs) {
+    const planned = routePair(
+      job.from,
+      job.to,
+      job.kind,
+      job.key,
+      occupied,
+      layout,
+      nextLetter,
     );
+    planned.caption = job.caption;
+    planned.fromId = job.fromId;
+    planned.toId = job.toId;
+    wires.push(planned);
+    occupied.push(...wireOccupancy(planned.polylines, planned.key));
   }
   return wires;
+}
+
+export function wireOccupancy(polylines: Point[][], id: string): Obstacle[] {
+  const out: Obstacle[] = [];
+  let n = 0;
+  for (const pts of polylines) {
+    for (let i = 1; i < pts.length; i += 1) {
+      const a = pts[i - 1];
+      const b = pts[i];
+      if (!a || !b) continue;
+      const dx = Math.abs(b.x - a.x);
+      const dy = Math.abs(b.y - a.y);
+      if (dx + dy < PORT_SKIP) continue;
+      const horiz = dy <= 1;
+      if (horiz) {
+        out.push({
+          id: `${id}:${n++}`,
+          kind: "wire",
+          x: Math.min(a.x, b.x),
+          y: a.y - WIRE_SPACING / 2,
+          w: dx,
+          h: WIRE_SPACING,
+        });
+      } else if (dx <= 1) {
+        out.push({
+          id: `${id}:${n++}`,
+          kind: "wire",
+          x: a.x - WIRE_SPACING / 2,
+          y: Math.min(a.y, b.y),
+          w: WIRE_SPACING,
+          h: dy,
+        });
+      }
+    }
+  }
+  return out;
 }
 
 export function jumpLetter(index: number): string {
@@ -116,6 +190,7 @@ function collectObstacles(layout: TimelineLayout): Obstacle[] {
     y: node.y,
     w: NODE_W,
     h: NODE_H,
+    kind: "tile" as const,
   }));
   const mats = Object.values(layout.mats).map((mat) => ({
     id: `mat:${mat.branchId}`,
@@ -123,8 +198,27 @@ function collectObstacles(layout: TimelineLayout): Obstacle[] {
     y: mat.y,
     w: MAT_W,
     h: MAT_H,
+    kind: "tile" as const,
   }));
   return [...nodes, ...mats];
+}
+
+function finish(
+  key: string,
+  kind: WireKind,
+  polylines: Point[][],
+  labels: WireLabel[] = [],
+): PlannedWire {
+  const lastLine = polylines[polylines.length - 1];
+  const tip = lastLine?.[lastLine.length - 1];
+  return {
+    key,
+    kind,
+    polylines,
+    parts: polylines.map(toPath),
+    labels,
+    tip,
+  };
 }
 
 export function routePair(
@@ -145,13 +239,13 @@ export function routePair(
     const end = { x: to.x + NODE_W / 2, y: to.y + NODE_H };
     const stem = [start, end];
     if (polylineClear(stem, obstacles, ignore)) {
-      return { key, kind, parts: [toPath(stem)], labels: [] };
+      return finish(key, kind, [stem]);
     }
   }
 
   const points = findClearPath(from, to, obstacles, ignore, layout);
   if (points) {
-    return { key, kind, parts: [toPath(points)], labels: [] };
+    return finish(key, kind, [points]);
   }
   return jumpWire(from, to, kind, key, nextLetter());
 }
@@ -173,15 +267,19 @@ function routeMerge(
   const gap = ROW_H - NODE_H;
   const gutter = (LANE_W - NODE_W) / 2;
   const destStemX = to.x + NODE_W / 2;
-  const gutters = [
+  const gutterBases = [
     goingRight ? from.x + NODE_W + gutter : from.x - gutter,
     goingRight ? to.x - gutter : to.x + NODE_W + gutter,
-  ].filter((x) => Math.abs(x - destStemX) > NODE_W / 3);
-  const heights = [
+  ];
+  const gutters = offsetAround(gutterBases, [-16, -8, 0, 8, 16]).filter(
+    (x) => Math.abs(x - destStemX) > NODE_W / 3,
+  );
+  const gapMid = [
     from.y - gap / 2,
     to.y + NODE_H + gap / 2,
     (from.y + to.y + NODE_H) / 2,
   ];
+  const heights = offsetAround(gapMid, [-10, 0, 10]);
   for (const vx of gutters) {
     for (const hy of heights) {
       const pts = simplify([
@@ -192,13 +290,13 @@ function routeMerge(
         end,
       ]);
       if (polylineClear(pts, obstacles, ignore)) {
-        return { key, kind: "merge", parts: [toPath(pts)], labels: [] };
+        return finish(key, "merge", [pts]);
       }
     }
   }
   const fallback = findClearPath(from, to, obstacles, ignore, layout);
   if (fallback) {
-    return { key, kind: "merge", parts: [toPath(fallback)], labels: [] };
+    return finish(key, "merge", [fallback]);
   }
   return jumpWire(from, to, "merge", key, nextLetter());
 }
@@ -275,7 +373,7 @@ function verticalChannels(layout: TimelineLayout): number[] {
   for (let i = 0; i < laneCount; i += 1) {
     xs.push(origin + i * LANE_W + NODE_W + gutter);
   }
-  return uniqueSorted(xs);
+  return uniqueSorted(offsetAround(xs, [-16, -8, 0, 8, 16]));
 }
 
 function horizontalChannels(layout: TimelineLayout): number[] {
@@ -285,7 +383,15 @@ function horizontalChannels(layout: TimelineLayout): number[] {
     ys.add(node.y - gap / 2);
     ys.add(node.y + NODE_H + gap / 2);
   }
-  return uniqueSorted([...ys]);
+  return uniqueSorted(offsetAround([...ys], [-10, 0, 10]));
+}
+
+function offsetAround(values: number[], deltas: number[]): number[] {
+  const out: number[] = [];
+  for (const value of values) {
+    for (const delta of deltas) out.push(value + delta);
+  }
+  return out;
 }
 
 function uniqueSorted(values: number[]): number[] {
@@ -365,6 +471,11 @@ function segmentHits(
     if (ignore.has(obstacle.id)) continue;
     if (maxX < obstacle.x || minX > obstacle.x + obstacle.w) continue;
     if (maxY < obstacle.y || minY > obstacle.y + obstacle.h) continue;
+    if (obstacle.kind === "wire") {
+      const segHoriz = Math.abs(a.y - b.y) <= 1;
+      const obsHoriz = obstacle.w >= obstacle.h;
+      if (segHoriz !== obsHoriz) continue;
+    }
     return true;
   }
   return false;
@@ -397,15 +508,18 @@ function jumpWire(
   const dx = goingRight ? STUB : -STUB;
   const a = { x: start.x + dx, y: start.y };
   const b = { x: end.x - dx, y: end.y };
-  return {
+  return finish(
     key,
     kind,
-    parts: [toPath([start, a]), toPath([b, end])],
-    labels: [
+    [
+      [start, a],
+      [b, end],
+    ],
+    [
       { letter, x: a.x, y: a.y },
       { letter, x: b.x, y: b.y },
     ],
-  };
+  );
 }
 
 function astarPath(

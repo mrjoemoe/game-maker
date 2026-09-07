@@ -7,7 +7,7 @@ import {
   type NodeLayout,
   type TimelineLayout,
 } from "./layout.ts";
-import { jumpLetter, polylineClear, routePair } from "./wires.ts";
+import { jumpLetter, polylineClear, routePair, WIRE_SPACING, wireOccupancy } from "./wires.ts";
 
 const from: NodeLayout = {
   id: "n0",
@@ -129,5 +129,65 @@ assert.equal(
   false,
   "merge wire must not ride the destination stem",
 );
+assert.ok((merge.polylines[0]?.length ?? 0) >= 2);
+
+const far: NodeLayout = {
+  id: "n2",
+  x: 48 + LANE_W * 2,
+  y: 400 - ROW_H * 3,
+  lane: 2,
+  row: 3,
+};
+const crowdedLayout: TimelineLayout = {
+  ...layout,
+  nodes: { n0: from, n1: to, n2: far },
+  laneCount: 3,
+};
+const crowdedCards = [
+  ...cards,
+  { id: "n2", x: far.x, y: far.y, w: NODE_W, h: NODE_H },
+];
+const firstFork = routePair(
+  from,
+  to,
+  "fork",
+  "n0-n1",
+  crowdedCards,
+  crowdedLayout,
+  () => "a",
+);
+const secondFork = routePair(
+  from,
+  far,
+  "fork",
+  "n0-n2",
+  [...crowdedCards, ...wireOccupancy(firstFork.polylines, "n0-n1")],
+  crowdedLayout,
+  () => "b",
+);
+if (secondFork.labels.length === 0) {
+  for (const ptsA of firstFork.polylines) {
+    for (let i = 1; i < ptsA.length; i += 1) {
+      const a0 = ptsA[i - 1];
+      const a1 = ptsA[i];
+      if (!a0 || !a1 || Math.abs(a0.x - a1.x) > 1) continue;
+      for (const ptsB of secondFork.polylines) {
+        for (let j = 1; j < ptsB.length; j += 1) {
+          const b0 = ptsB[j - 1];
+          const b1 = ptsB[j];
+          if (!b0 || !b1 || Math.abs(b0.x - b1.x) > 1) continue;
+          const yOverlap =
+            Math.min(a0.y, a1.y) <= Math.max(b0.y, b1.y) - 8 &&
+            Math.min(b0.y, b1.y) <= Math.max(a0.y, a1.y) - 8;
+          if (!yOverlap) continue;
+          assert.ok(
+            Math.abs(a0.x - b0.x) >= WIRE_SPACING - 1,
+            "parallel fork corridors must not stack",
+          );
+        }
+      }
+    }
+  }
+}
 
 console.log("wires ok");

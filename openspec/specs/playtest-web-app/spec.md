@@ -256,7 +256,7 @@ When run mode is enabled, the playtest app SHALL provide a Debug section with a 
 - **THEN** play-revealed tiles stay face-up and never-revealed tiles are face-down again
 
 ### Requirement: Timeline playtest canvas
-When the active prototype enables timeline mode, the Play tab SHALL render a branching timeline with **epoch at the bottom** and later nodes stacked **upward** on separate branch columns, plus a **1–20 row ruler** for path depth. The traveler token SHALL appear on the current node. Timeline nodes SHALL be compact (about half the previous card height). Hovering a timeline node SHALL show the cumulative culture, science, and politics on the path from epoch to that node. Wires SHALL distinguish **same-branch stems** from **fork** and **merge** connectors: forks and merges SHALL route through gutters and row gaps so they do not overlap cards or branch mats. When no local path can miss those tiles, the connector SHALL split: each end SHALL show the **same letter** so the join is still readable. A **preserved prefix** SHALL have a yellow wash behind the locked cards and the branch mat, not behind cards laid after the lock. The **primary** branch SHALL sit in the horizontal center of the timestream so later branches can open to its left and its right.
+When the active prototype enables timeline mode, the Play tab SHALL render a branching timeline with **epoch at the bottom** and later nodes stacked **upward** on separate branch columns, plus a **1–20 row ruler** for path depth. The traveler token SHALL appear on the current node. Timeline nodes SHALL be compact (about half the previous card height). Hovering a timeline node SHALL show the cumulative culture, science, and politics on the path from epoch to that node. Wires SHALL distinguish **same-branch stems** from **fork** and **merge** connectors: forks and merges SHALL route through gutters and row gaps so they do not overlap cards or branch mats. Parallel wires SHALL use distinct corridors so two connectors are not drawn on top of each other. Hovering a wire SHALL paint that connector in front of the others. When no local path can miss those tiles, the connector SHALL split: each end SHALL show the **same letter** so the join is still readable. A **preserved prefix** SHALL have a yellow wash behind the locked cards and the branch mat, not behind cards laid after the lock. The **primary** branch SHALL sit in the horizontal center of the timestream so later branches can open to its left and its right.
 
 #### Scenario: Seeded timeline is visible
 - **WHEN** Timeline Game loads on the Play tab
@@ -286,6 +286,14 @@ When the active prototype enables timeline mode, the Play tab SHALL render a bra
 - **WHEN** two branches are created from the primary timeline
 - **THEN** one new column is to the left of the primary branch and the other is to the right
 
+#### Scenario: Hovered wire comes forward
+- **WHEN** the player hovers a fork or merge connector
+- **THEN** that connector is drawn in front of the other wires
+
+#### Scenario: Parallel wires stay apart
+- **WHEN** two fork or merge connectors would share the same gutter
+- **THEN** they are drawn in neighboring corridors instead of stacked on the same path
+
 ### Requirement: Preserver prefix wash
 The Play tab SHALL paint a yellow wash behind the preserved prefix of a branch (locked cards and the branch mat), not behind cards laid after the lock.
 
@@ -299,6 +307,13 @@ The Play tab SHALL draw a merge connector from the ended branch’s last card to
 #### Scenario: Merge line is end to end
 - **WHEN** one branch has merged into another
 - **THEN** a merge wire runs from the ended head to the continuing head and the destination stem stays a single parent-child line
+
+### Requirement: Merge join is labeled
+The Play tab SHALL mark the continuing head that a merge enters, with an arrow on the merge wire and a label naming the ended timeline.
+
+#### Scenario: Dest card names the joining branch
+- **WHEN** Prime has merged into Branch 4
+- **THEN** Branch 4’s continuing head shows that Prime joins there and the merge wire ends with an arrow on that card
 
 ### Requirement: Play and Rulebook tabs for Timeline Game
 Timeline Game SHALL offer Play and Rulebook tabs at `/play` and `/rulebook`. Rulebook SHALL show the variant `RULEBOOK.md`.
