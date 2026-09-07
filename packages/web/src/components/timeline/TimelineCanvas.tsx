@@ -9,7 +9,7 @@ import {
 } from "@game-maker/engine";
 import { useEffect, useRef, useState } from "react";
 import { cardFaceClass, cardTypeLabel } from "./cardFace";
-import { layoutTimeline, MAX_TRACK_ROWS, NODE_H, NODE_W } from "./layout";
+import { layoutTimeline, MAX_TRACK_ROWS, NODE_H, NODE_W, PAD } from "./layout";
 import { planWires } from "./wires";
 
 type TimelineCanvasProps = {
@@ -53,6 +53,25 @@ export function TimelineCanvas({
         className="tl-world"
         style={{ width: layout.width, height: layout.height }}
       >
+        {Object.values(state.branches).map((branch) => {
+          if (!branch.preserved) return null;
+          const mat = layout.mats[branch.id];
+          if (!mat) return null;
+          return (
+            <div
+              key={`lock-${branch.id}`}
+              className="tl-lock"
+              style={{
+                left: mat.x - 8,
+                width: NODE_W + 16,
+                top: PAD / 2,
+                height: layout.height - PAD,
+              }}
+              aria-hidden="true"
+            />
+          );
+        })}
+
         <svg
           className="tl-wires"
           width={layout.width}

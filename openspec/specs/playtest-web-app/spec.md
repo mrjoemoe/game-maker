@@ -256,7 +256,7 @@ When run mode is enabled, the playtest app SHALL provide a Debug section with a 
 - **THEN** play-revealed tiles stay face-up and never-revealed tiles are face-down again
 
 ### Requirement: Timeline playtest canvas
-When the active prototype enables timeline mode, the Play tab SHALL render a branching timeline with **epoch at the bottom** and later nodes stacked **upward** on separate branch columns, plus a **1–20 row ruler** for path depth. The traveler token SHALL appear on the current node. Timeline nodes SHALL be compact (about half the previous card height). Hovering a timeline node SHALL show the cumulative culture, science, and politics on the path from epoch to that node. Wires SHALL distinguish **same-branch stems** from **fork** and **merge** connectors: forks and merges SHALL route through gutters and row gaps so they do not overlap cards or branch mats. When no local path can miss those tiles, the connector SHALL split: each end SHALL show the **same letter** so the join is still readable.
+When the active prototype enables timeline mode, the Play tab SHALL render a branching timeline with **epoch at the bottom** and later nodes stacked **upward** on separate branch columns, plus a **1–20 row ruler** for path depth. The traveler token SHALL appear on the current node. Timeline nodes SHALL be compact (about half the previous card height). Hovering a timeline node SHALL show the cumulative culture, science, and politics on the path from epoch to that node. Wires SHALL distinguish **same-branch stems** from **fork** and **merge** connectors: forks and merges SHALL route through gutters and row gaps so they do not overlap cards or branch mats. When no local path can miss those tiles, the connector SHALL split: each end SHALL show the **same letter** so the join is still readable. A **preserved** branch SHALL have a yellow column wash behind its lane so the lock is obvious.
 
 #### Scenario: Seeded timeline is visible
 - **WHEN** Timeline Game loads on the Play tab
@@ -273,6 +273,10 @@ When the active prototype enables timeline mode, the Play tab SHALL render a bra
 #### Scenario: Blocked fork uses letter jump
 - **WHEN** a fork cannot be routed through nearby gutters without overlapping a card or mat
 - **THEN** each end of the connector is labeled with the same letter and the stroke does not cross the blocking tile
+
+#### Scenario: Preserved branch is yellow
+- **WHEN** a branch is preserved
+- **THEN** that branch’s column has a yellow background behind its cards and mat
 
 ### Requirement: Play and Rulebook tabs for Timeline Game
 Timeline Game SHALL offer Play and Rulebook tabs. Rulebook SHALL show the variant `RULEBOOK.md`.
