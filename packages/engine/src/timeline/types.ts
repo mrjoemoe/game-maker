@@ -108,7 +108,7 @@ export type TimelineBranch = {
   forkNodeId: string | null;
   crystals: number;
   preserved: boolean;
-  /** Set when this timeline merged into another node and no longer grows. */
+  /** Set when this timeline merged into another branch’s head and no longer grows. */
   mergedIntoNodeId?: string;
 };
 

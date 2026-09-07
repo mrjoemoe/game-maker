@@ -504,11 +504,19 @@ Pruner SHALL delete a non-primary branch and descendant forks, return placed eve
 - **THEN** that event card id is in a draw pile and the branch’s nodes no longer exist
 
 ### Requirement: Merger joins two branches
-Merger SHALL attach the **head of the incoming branch** to a chosen node on a **different destination branch**. The incoming branch SHALL end there and play SHALL continue on the destination branch. Merger SHALL NOT create a third branch or a new confluence node.
+Merger SHALL join the **head of the incoming branch** to the **head of a different destination branch**. Clicking any node on a branch SHALL use that branch’s head. The incoming branch SHALL end there. The destination head SHALL remain a head so that branch MAY still grow. Merger SHALL NOT create a third branch, a confluence node, or an extra parent on the destination card. Playing or forking from a merged branch SHALL be refused.
 
 #### Scenario: Merge two heads
 - **WHEN** Merger is applied from branch A onto a node of branch B
-- **THEN** A’s head lists B’s node as a child, B’s node lists A’s head as an extra parent, A is marked merged, no new branch exists, and the traveler occupies B’s node
+- **THEN** A is marked merged into B’s head, B’s head is still a head, A’s head is not a head, no new branch exists, and the traveler occupies B’s head
+
+#### Scenario: Merge snaps to destination head
+- **WHEN** Merger is applied onto a non-head card of branch B
+- **THEN** the join target is B’s current head
+
+#### Scenario: Ended branch cannot grow
+- **WHEN** a card is played onto a node of a merged branch
+- **THEN** the play is refused and no new node is created
 
 ### Requirement: Rewriter replaces a played card
 Rewriter SHALL swap one already-played card on a chosen timeline node with one card from the player’s hand. The timeline card SHALL move into the hand and the hand card SHALL occupy that node. Rewriter SHALL NOT return cards to a draw pile or pick a replacement from the catalog. Rewriter SHALL refuse the swap when either card is an Omega event.

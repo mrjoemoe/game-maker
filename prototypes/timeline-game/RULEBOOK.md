@@ -78,7 +78,7 @@ Build with parts, minerals, **1 crystal**, and culture / science / politics on t
 | B | **Reverser** | 3 parts, 1 mineral, 1 crystal · C 5 / S 5 / P 5 | Jump to an ancestor. |
 | C | **Relocator** | 3 parts, 3 minerals, 1 crystal · C 2 / S 4 / P 1 | Move a fork to a new parent. |
 | D | **Pruner** | 3 parts, 3 minerals, 1 crystal · C 3 / S 3 / P 3 | Delete a non-prime branch (and its descendant forks); return cards to their matching piles. |
-| E | **Merger** | 5 parts, 1 mineral, 1 crystal · C 1 / S 1 / P 5 | End one timeline into another: branch 1 stops at the join and play continues on branch 2. No third branch. |
+| E | **Merger** | 5 parts, 1 mineral, 1 crystal · C 1 / S 1 / P 5 | Join the **heads** of two timelines. The first timeline ends there; the second can still grow. No third branch. |
 | F | **Rewriter** | 1 part, 3 minerals, 1 crystal · C 1 / S 3 / P 1 | Swap a card in your hand with a card already on the timeline. Cannot swap Omega events into the hand. |
 | G | **Preserver** | 1 part, 1 mineral, 1 crystal · C 1 / S 1 / P 1 | Lock a timeline so others cannot manipulate it. |
 | H | **Jumper** | 1 part, 1 mineral, 1 crystal · C 1 / S 1 / P 1 | Skip ahead up to 3 spaces. |

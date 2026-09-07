@@ -752,6 +752,9 @@ function playCard(
   const held = state.hand.find((c) => c.instanceId === instanceId);
   if (!held) return log(state, "That card is not in hand.");
   getNode(state, atNodeId);
+  if (getBranch(state, getNode(state, atNodeId).branchId).mergedIntoNodeId) {
+    return log(state, "That timeline has already merged.");
+  }
   const def = cardById(config, held.cardId);
   const prepared = resolvePlayedFromHand(state, config, held);
   if ("error" in prepared) return log(state, prepared.error);
@@ -816,6 +819,9 @@ function applyBrancher(
   instanceId: string,
 ): TimelineState {
   getNode(state, fromNodeId);
+  if (getBranch(state, getNode(state, fromNodeId).branchId).mergedIntoNodeId) {
+    return log(state, "That timeline has already merged.");
+  }
   const locked = manipulationBlocked(
     state,
     getNode(state, fromNodeId).branchId,
@@ -976,49 +982,43 @@ function applyMerger(
   intoNodeId: string,
 ): TimelineState {
   const incoming = getBranch(state, fromBranchId);
-  const dest = getNode(state, intoNodeId);
-  if (dest.branchId === fromBranchId) {
+  const clicked = getNode(state, intoNodeId);
+  if (clicked.branchId === fromBranchId) {
     return log(state, "Merger needs a different branch to continue into.");
   }
   if (incoming.mergedIntoNodeId) {
     return log(state, `${incoming.label} already merged into another timeline.`);
   }
-  const destBranch = getBranch(state, dest.branchId);
+  const destBranch = getBranch(state, clicked.branchId);
+  if (destBranch.mergedIntoNodeId) {
+    return log(state, `${destBranch.label} has already merged.`);
+  }
   const locked =
     manipulationBlocked(state, fromBranchId) ??
-    manipulationBlocked(state, dest.branchId);
+    manipulationBlocked(state, destBranch.id);
   if (locked) return log(state, locked);
   const head = getNode(state, incoming.headNodeId);
-  if (dest.id === head.id) {
+  const destHead = getNode(state, destBranch.headNodeId);
+  if (destHead.id === head.id) {
     return log(state, "Merger cannot join a branch to itself.");
   }
-  if (isAncestor(state, dest.id, head.id)) {
+  if (isAncestor(state, destHead.id, head.id)) {
     return log(state, "Merger refused: that would loop time.");
   }
-  if (descendantIds(state, head.id).has(dest.id)) {
+  if (descendantIds(state, head.id).has(destHead.id)) {
     return log(state, "Merger refused: that would loop time.");
   }
-  if (dest.parentIds.includes(head.id) || head.childIds.includes(dest.id)) {
-    return log(state, "Those timelines already meet there.");
-  }
-  const nodes = {
-    ...state.nodes,
-    [head.id]: { ...head, childIds: [...head.childIds, dest.id] },
-    [dest.id]: { ...dest, parentIds: [...dest.parentIds, head.id] },
-  };
-  let next: TimelineState = {
+  const next: TimelineState = {
     ...state,
-    nodes,
     branches: {
       ...state.branches,
-      [fromBranchId]: { ...incoming, mergedIntoNodeId: dest.id },
+      [fromBranchId]: { ...incoming, mergedIntoNodeId: destHead.id },
     },
-    travelerNodeId: dest.id,
+    travelerNodeId: destHead.id,
   };
-  next = recomputeDepths(next);
   return log(
     next,
-    `Merger: ${incoming.label} ends and continues into ${destBranch.label}.`,
+    `Merger: ${incoming.label} ends at ${destBranch.label}'s head. ${destBranch.label} can still grow.`,
   );
 }
 

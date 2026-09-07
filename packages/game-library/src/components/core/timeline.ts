@@ -70,7 +70,7 @@ const DEVICES: TimelineDeviceDefinition[] = [
     id: "merger",
     letter: "E",
     label: "Merger",
-    summary: "End one timeline into another",
+    summary: "Join two branch heads; incoming timeline ends",
     uses: 3,
     requirements: {
       parts: 5,
@@ -282,7 +282,7 @@ export const coreTimeline = defineComponent({
     id: "core/timeline",
     kind: "feature-bundle",
     schemaVersion: 1,
-    contractVersion: "1.2.0",
+    contractVersion: "1.3.0",
     owner: "platform",
     docs: {
       summary:

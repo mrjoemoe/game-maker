@@ -35,11 +35,11 @@ Timeline Game Brancher SHALL fork from a chosen moment and require an action car
 - **THEN** Brancher is described as forking a timeline and laying an action card onto the new branch
 
 ### Requirement: Merger continues on the destination timeline
-Timeline Game Merger SHALL end one existing branch into another existing branch. It SHALL NOT start a third confluence timeline.
+Timeline Game Merger SHALL join the heads of two existing branches. The incoming timeline SHALL end; the destination timeline SHALL still be able to grow from its head. It SHALL NOT start a third confluence timeline.
 
 #### Scenario: Rulebook describes the join
 - **WHEN** a player reads the Devices section of Timeline Game’s rulebook
-- **THEN** Merger is described as merging one timeline into another so the first ends and play continues on the second
+- **THEN** Merger is described as joining two timeline heads so the first ends and the second can still grow
 
 ### Requirement: Rewriter swaps with a hand card
 Timeline Game Rewriter SHALL swap a played timeline card with a card in hand. The Play banner SHALL ask for the timeline card, then the hand card.

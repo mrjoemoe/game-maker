@@ -77,4 +77,57 @@ assert.equal(boxed.parts.length, 2);
 assert.equal(jumpLetter(0), "a");
 assert.equal(jumpLetter(25), "z");
 
+const ended: NodeLayout = {
+  id: "ended",
+  x: 48,
+  y: 400,
+  lane: 0,
+  row: 2,
+};
+const destHead: NodeLayout = {
+  id: "dest-head",
+  x: 48 + LANE_W,
+  y: 400 - ROW_H * 2,
+  lane: 1,
+  row: 4,
+};
+const mergeLayout: TimelineLayout = {
+  ...layout,
+  nodes: { ended, "dest-head": destHead },
+};
+const mergeCards = [
+  { id: "ended", x: ended.x, y: ended.y, w: NODE_W, h: NODE_H },
+  {
+    id: "dest-head",
+    x: destHead.x,
+    y: destHead.y,
+    w: NODE_W,
+    h: NODE_H,
+  },
+  {
+    id: "stem-card",
+    x: destHead.x,
+    y: destHead.y + ROW_H,
+    w: NODE_W,
+    h: NODE_H,
+  },
+];
+const merge = routePair(
+  ended,
+  destHead,
+  "merge",
+  "merge:b1",
+  mergeCards,
+  mergeLayout,
+  () => "m",
+);
+assert.equal(merge.kind, "merge");
+assert.equal(merge.parts.length, 1);
+const destStemX = destHead.x + NODE_W / 2;
+assert.equal(
+  merge.parts[0]?.includes(String(destStemX)),
+  false,
+  "merge wire must not ride the destination stem",
+);
+
 console.log("wires ok");

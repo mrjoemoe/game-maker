@@ -286,6 +286,13 @@ When the active prototype enables timeline mode, the Play tab SHALL render a bra
 - **WHEN** two branches are created from the primary timeline
 - **THEN** one new column is to the left of the primary branch and the other is to the right
 
+### Requirement: Head-to-head merge wire
+The Play tab SHALL draw a merge connector from the ended branch’s last card to the destination branch’s head. That connector SHALL NOT splice into the destination stem as if the destination card had an extra parent.
+
+#### Scenario: Merge line is end to end
+- **WHEN** one branch has merged into another
+- **THEN** a merge wire runs from the ended head to the continuing head and the destination stem stays a single parent-child line
+
 ### Requirement: Play and Rulebook tabs for Timeline Game
 Timeline Game SHALL offer Play and Rulebook tabs at `/play` and `/rulebook`. Rulebook SHALL show the variant `RULEBOOK.md`.
 
@@ -330,7 +337,7 @@ The Play tab SHALL show a player mat (parts, minerals, crystals, up to 3 device 
 
 #### Scenario: Merger names the ending branch
 - **WHEN** Merger is armed
-- **THEN** the banner says to click the branch that ends, then the card on the timeline it continues into
+- **THEN** the banner says to click the timeline that ends, then the timeline that continues (the join is head to head)
 
 #### Scenario: No draw-random control
 - **WHEN** Timeline Game is shown on the Play tab

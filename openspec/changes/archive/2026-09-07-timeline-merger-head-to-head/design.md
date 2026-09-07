@@ -1,0 +1,1 @@
+Store the join on `mergedIntoNodeId` (incoming head → destination head). Do not add a second parent on the destination node — that is what made Kyoto look like a confluence and routed the dashed merge along Branch B’s stem. Draw a dedicated merge wire from the top of the ended head to the facing side of the continuing head, using the gutter between lanes.

@@ -90,7 +90,7 @@ export function targetingGuide(targeting: Targeting): TargetingGuide | null {
         letter: "E",
         title: "Merger",
         step: "Step 1 of 2",
-        how: "Click a card on the branch that ends (it merges away).",
+        how: "Click a card on the timeline that ends. Its head is what joins away.",
       };
     case "merger-second":
       return {
@@ -98,7 +98,7 @@ export function targetingGuide(targeting: Targeting): TargetingGuide | null {
         letter: "E",
         title: "Merger",
         step: "Step 2 of 2",
-        how: "Click a card on the timeline it should continue into. No new branch is created.",
+        how: "Click a card on the timeline that continues. The join is head to head; that timeline can still grow.",
       };
     case "rewriter-node":
       return {

@@ -79,6 +79,27 @@ export function planWires(
       wires.push(planned);
     }
   }
+  for (const branch of Object.values(state.branches)) {
+    if (!branch.mergedIntoNodeId) continue;
+    const from = layout.nodes[branch.headNodeId];
+    const to = layout.nodes[branch.mergedIntoNodeId];
+    if (!from || !to) continue;
+    wires.push(
+      routePair(
+        from,
+        to,
+        "merge",
+        `merge:${branch.id}`,
+        obstacles,
+        layout,
+        () => {
+          const letter = jumpLetter(jumpIndex);
+          jumpIndex += 1;
+          return letter;
+        },
+      ),
+    );
+  }
   return wires;
 }
 
@@ -116,6 +137,9 @@ export function routePair(
   nextLetter: () => string,
 ): PlannedWire {
   const ignore = new Set([from.id, to.id]);
+  if (kind === "merge") {
+    return routeMerge(from, to, key, obstacles, layout, nextLetter);
+  }
   if (kind === "stem") {
     const start = { x: from.x + NODE_W / 2, y: from.y };
     const end = { x: to.x + NODE_W / 2, y: to.y + NODE_H };
@@ -130,6 +154,53 @@ export function routePair(
     return { key, kind, parts: [toPath(points)], labels: [] };
   }
   return jumpWire(from, to, kind, key, nextLetter());
+}
+
+function routeMerge(
+  from: NodeLayout,
+  to: NodeLayout,
+  key: string,
+  obstacles: Obstacle[],
+  layout: TimelineLayout,
+  nextLetter: () => string,
+): PlannedWire {
+  const ignore = new Set([from.id, to.id]);
+  const goingRight = to.x >= from.x;
+  const start = { x: from.x + NODE_W / 2, y: from.y };
+  const end = goingRight
+    ? { x: to.x, y: to.y + NODE_H / 2 }
+    : { x: to.x + NODE_W, y: to.y + NODE_H / 2 };
+  const gap = ROW_H - NODE_H;
+  const gutter = (LANE_W - NODE_W) / 2;
+  const destStemX = to.x + NODE_W / 2;
+  const gutters = [
+    goingRight ? from.x + NODE_W + gutter : from.x - gutter,
+    goingRight ? to.x - gutter : to.x + NODE_W + gutter,
+  ].filter((x) => Math.abs(x - destStemX) > NODE_W / 3);
+  const heights = [
+    from.y - gap / 2,
+    to.y + NODE_H + gap / 2,
+    (from.y + to.y + NODE_H) / 2,
+  ];
+  for (const vx of gutters) {
+    for (const hy of heights) {
+      const pts = simplify([
+        start,
+        { x: start.x, y: hy },
+        { x: vx, y: hy },
+        { x: vx, y: end.y },
+        end,
+      ]);
+      if (polylineClear(pts, obstacles, ignore)) {
+        return { key, kind: "merge", parts: [toPath(pts)], labels: [] };
+      }
+    }
+  }
+  const fallback = findClearPath(from, to, obstacles, ignore, layout);
+  if (fallback) {
+    return { key, kind: "merge", parts: [toPath(fallback)], labels: [] };
+  }
+  return jumpWire(from, to, "merge", key, nextLetter());
 }
 
 function findClearPath(

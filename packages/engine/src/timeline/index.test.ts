@@ -330,12 +330,13 @@ describe("timeline", () => {
     );
   });
 
-  it("Merger ends one branch into another without a third timeline", () => {
+  it("Merger ends one branch at the other branch’s head", () => {
     const start = createInitialTimeline(config);
     const paris = nodeByCard("paris", start);
     let state = brancherFrom(start, paris.id);
     const fork = Object.values(state.branches).find((b) => b.index === 2)!;
     const into = nodeByCard("chrono", state);
+    const destHead = state.branches[into.branchId].headNodeId;
     const incomingHead = fork.headNodeId;
     state = apply(state, {
       type: "deviceMerger",
@@ -343,16 +344,43 @@ describe("timeline", () => {
       intoNodeId: into.id,
     });
     expect(Object.keys(state.branches).length).toBe(2);
-    expect(state.branches[fork.id].mergedIntoNodeId).toBe(into.id);
-    expect(state.nodes[into.id].parentIds).toContain(incomingHead);
-    expect(state.nodes[incomingHead].childIds).toContain(into.id);
-    expect(state.travelerNodeId).toBe(into.id);
+    expect(state.branches[fork.id].mergedIntoNodeId).toBe(destHead);
+    expect(state.nodes[destHead].parentIds).not.toContain(incomingHead);
+    expect(state.nodes[incomingHead].childIds).not.toContain(destHead);
+    expect(state.travelerNodeId).toBe(destHead);
     expect(isHead(state, incomingHead)).toBe(false);
+    expect(isHead(state, destHead)).toBe(true);
     expect(
       Object.values(state.branches).some((b) =>
         b.label.startsWith("Confluence"),
       ),
     ).toBe(false);
+  });
+
+  it("refuses to play onto a merged timeline", () => {
+    const start = createInitialTimeline({
+      ...config,
+      startingHand: ["get-parts", "draw-random"],
+    });
+    const paris = nodeByCard("paris", start);
+    let state = brancherFrom(start, paris.id, "get-parts");
+    const fork = Object.values(state.branches).find((b) => b.index === 2)!;
+    const culture = nodeByCard("culture", start);
+    state = apply(state, {
+      type: "deviceMerger",
+      fromBranchId: fork.id,
+      intoNodeId: culture.id,
+    });
+    const leftover = state.hand.find((c) => c.cardId === "draw-random")!;
+    const next = apply(state, {
+      type: "playCard",
+      instanceId: leftover.instanceId,
+      atNodeId: fork.headNodeId,
+    });
+    expect(next.nodes[fork.headNodeId].childIds).toEqual(
+      state.nodes[fork.headNodeId].childIds,
+    );
+    expect(next.log.at(-1)).toMatch(/already merged/i);
   });
 
   it("Rewriter swaps a hand card with a timeline card", () => {
