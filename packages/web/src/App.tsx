@@ -238,7 +238,7 @@ export function App() {
   const allItems = Object.values(state.game.items);
 
   return (
-    <div className={timelineMode ? "app app-timeline" : "app"}>
+    <div className={timelineMode ? "app app-timeline" : runMode ? "app app-run" : "app"}>
       <header className="hero">
         <p className="brand">Game Maker</p>
         <h1>{state.game.definition.name}</h1>
@@ -315,14 +315,13 @@ export function App() {
                 ) : null}
               </div>
             )}
+            {runMode ? (
+              <RunHud game={state.game} onSoftReset={softReset} />
+            ) : null}
             <button type="button" className="reset" onClick={hardReset}>
               {runMode ? "New map" : "Reset"}
             </button>
           </section>
-
-          {runMode ? (
-            <RunHud game={state.game} onSoftReset={softReset} />
-          ) : null}
 
           <main className={`stage${runMode ? " stage-run" : ""}`}>
             {runMode ? (
@@ -354,49 +353,53 @@ export function App() {
                   heroFacing={heroFacing}
                   showCoords={debugEnabled && debugCoords}
                 />
-                <InventoryPanel
-                  game={state.game}
-                  selectedLoadout={selectedLoadout}
-                  onToggleLoadout={toggleLoadout}
-                  onCommitLoadout={commitLoadout}
-                />
-                <TileTally game={state.game} />
-                <DebugPanel
-                  enabled={debugEnabled}
-                  revealAll={debugRevealAll}
-                  showCoords={debugCoords}
-                  walkNow={debugWalkNow}
-                  teleport={debugTeleport}
-                  inspectorText={describeInspectedCell(state.game, inspected)}
-                  onToggleEnabled={() =>
-                    setDebugEnabled((prev) => {
-                      if (prev) {
-                        setDebugWalkNow(false);
-                        setDebugTeleport(false);
-                        setDebugCoords(false);
+                <div className="run-under-board">
+                  <InventoryPanel
+                    game={state.game}
+                    selectedLoadout={selectedLoadout}
+                    onToggleLoadout={toggleLoadout}
+                    onCommitLoadout={commitLoadout}
+                  />
+                  <div className="run-under-board-side">
+                    <TileTally game={state.game} />
+                    <DebugPanel
+                      enabled={debugEnabled}
+                      revealAll={debugRevealAll}
+                      showCoords={debugCoords}
+                      walkNow={debugWalkNow}
+                      teleport={debugTeleport}
+                      inspectorText={describeInspectedCell(state.game, inspected)}
+                      onToggleEnabled={() =>
+                        setDebugEnabled((prev) => {
+                          if (prev) {
+                            setDebugWalkNow(false);
+                            setDebugTeleport(false);
+                            setDebugCoords(false);
+                          }
+                          return !prev;
+                        })
                       }
-                      return !prev;
-                    })
-                  }
-                  onToggleRevealAll={() =>
-                    setDebugRevealAll((prev) => !prev)
-                  }
-                  onToggleCoords={() => setDebugCoords((prev) => !prev)}
-                  onToggleWalkNow={() =>
-                    setDebugWalkNow((prev) => {
-                      const next = !prev;
-                      if (next) setDebugTeleport(false);
-                      return next;
-                    })
-                  }
-                  onToggleTeleport={() =>
-                    setDebugTeleport((prev) => {
-                      const next = !prev;
-                      if (next) setDebugWalkNow(false);
-                      return next;
-                    })
-                  }
-                />
+                      onToggleRevealAll={() =>
+                        setDebugRevealAll((prev) => !prev)
+                      }
+                      onToggleCoords={() => setDebugCoords((prev) => !prev)}
+                      onToggleWalkNow={() =>
+                        setDebugWalkNow((prev) => {
+                          const next = !prev;
+                          if (next) setDebugTeleport(false);
+                          return next;
+                        })
+                      }
+                      onToggleTeleport={() =>
+                        setDebugTeleport((prev) => {
+                          const next = !prev;
+                          if (next) setDebugWalkNow(false);
+                          return next;
+                        })
+                      }
+                    />
+                  </div>
+                </div>
               </div>
             ) : (
               <>
