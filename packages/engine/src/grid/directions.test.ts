@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   destinationFrom,
+  directionBetween,
   directionDelta,
   directionLabel,
   type Direction,
@@ -18,5 +19,7 @@ describe("directions", () => {
     expect(destinationFrom({ x: 3, y: 6 }, "up")).toEqual({ x: 3, y: 5 });
     const dirs: Direction[] = ["up", "down", "left", "right"];
     expect(dirs.map(directionLabel)).toEqual(["↑", "↓", "←", "→"]);
+    expect(directionBetween({ x: 0, y: 0 }, { x: 1, y: 0 })).toBe("right");
+    expect(directionBetween({ x: 0, y: 0 }, { x: 2, y: 0 })).toBeNull();
   });
 });

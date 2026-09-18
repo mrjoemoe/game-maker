@@ -39,7 +39,7 @@ Reach the **Castle** by programming actions through a hidden forest. Extract gea
 ## How a turn works
 
 1. Optionally **commit a loadout** from stash (or go empty-handed).
-2. Chart a path of **1 to 10 actions** (you may run early).
+2. Chart a path of **1 to 10 actions** (you may run early). Click a destination tile to queue the shortest orthogonal walk around visible walls, or tap actions in the top panel. Clicking charts only — you still press **Run**.
 3. Each chart slot is **one action**: move one space, take/buy/use an item, travel, or extract. Collecting coins is **not** an action.
 4. Press **Run** to execute left-to-right. Chart again from your new position if still playing.
 
@@ -47,7 +47,7 @@ Reach the **Castle** by programming actions through a hidden forest. Extract gea
 
 | Action | When it is legal |
 |--------|------------------|
-| **↑ / ← / ↓ / →** | Move one orthogonal space (costs one action). |
+| **↑ / ← / ↓ / →** | Move one orthogonal space (costs one action). Clicking a tile queues these for you. |
 | **Take [item] from Mage** | Standing on an **unresolved Mage**. One take per attempt (Mage refreshes on Try again). |
 | **Buy [item]** (3🪙) | Standing on a **Shop** with at least 3 coins. Repeatable. |
 | **Travel to Portal N** | Standing on a **Portal**; destination Portal N must already be discovered and not your current portal. |

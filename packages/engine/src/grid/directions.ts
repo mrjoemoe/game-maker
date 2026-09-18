@@ -26,6 +26,16 @@ export function destinationFrom(origin: Coord, direction: Direction): Coord {
   return { x: origin.x + delta.x, y: origin.y + delta.y };
 }
 
+export function directionBetween(from: Coord, to: Coord): Direction | null {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  if (dx === 1 && dy === 0) return "right";
+  if (dx === -1 && dy === 0) return "left";
+  if (dx === 0 && dy === 1) return "down";
+  if (dx === 0 && dy === -1) return "up";
+  return null;
+}
+
 export function directionLabel(direction: Direction): string {
   switch (direction) {
     case "up":

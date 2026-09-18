@@ -12,10 +12,17 @@ export {
 export {
   DIRECTIONS,
   destinationFrom,
+  directionBetween,
   directionDelta,
   directionLabel,
   type Direction,
 } from "./grid/directions.js";
+
+export {
+  projectWalk,
+  shortestWalkDirections,
+  type WalkBlockers,
+} from "./grid/path.js";
 
 export {
   canPassWithItem,

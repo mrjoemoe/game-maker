@@ -10,7 +10,7 @@ export const rulesProgrammedRun = defineComponent({
     docs: {
       summary: "Programmed path run-mode configuration.",
       playerFacing:
-        "Chart up to ten actions (moves included), then run. Soft reset keeps the map.",
+        "Chart up to ten actions (moves included), then run. Click a tile to queue a walk around walls. Soft reset keeps the map.",
     },
   },
   contribute: ({ params }) => {

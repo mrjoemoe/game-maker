@@ -6,6 +6,7 @@ import {
   pieceAt,
   runProgramLength,
   type Coord,
+  type Direction,
   type ProgramStep,
 } from "@game-maker/engine";
 import { useCallback, useRef, useState } from "react";
@@ -24,6 +25,7 @@ import {
   type InteractionMode,
 } from "./store/gameSession";
 import { pathForTab } from "./store/playtestRoute";
+import { canQueueWalk, walkMovesToQueue } from "./store/queueWalk";
 import { sameDocumentNav, usePlaytestTab } from "./store/usePlaytestTab";
 import "./app.css";
 
@@ -46,6 +48,7 @@ export function App() {
   const [executingIndex, setExecutingIndex] = useState<number | null>(null);
   const [selectedLoadout, setSelectedLoadout] = useState<string[]>([]);
   const [debugRevealAll, setDebugRevealAll] = useState(false);
+  const [heroFacing, setHeroFacing] = useState<Direction>("down");
   const executingRef = useRef(false);
   const cancelRef = useRef(false);
   const gameRef = useRef(state.game);
@@ -58,6 +61,26 @@ export function App() {
 
   const onCellClick = (coord: Coord) => {
     if (runMode) {
+      const remaining = programLength - path.length;
+      if (
+        !canQueueWalk(
+          path,
+          remaining,
+          executingIndex !== null,
+          state.game.run.status === "playing",
+        )
+      ) {
+        return;
+      }
+      const extra = walkMovesToQueue(state.game, path, coord, remaining);
+      if (extra.length === 0) {
+        return;
+      }
+      const last = extra[extra.length - 1];
+      if (last?.kind === "move") {
+        setHeroFacing(last.direction);
+      }
+      setPath((prev) => [...prev, ...extra]);
       return;
     }
     const piece = pieceAt(state.game.pieces, coord);
@@ -87,6 +110,7 @@ export function App() {
     clearPath();
     setSelectedLoadout([]);
     setDebugRevealAll(false);
+    setHeroFacing("down");
     dispatch({ type: "game", action: { type: "reset" } });
   };
 
@@ -217,7 +241,8 @@ export function App() {
             {runMode ? (
               <div className="modes">
                 <span className="mode-label">
-                  Program up to {programLength} actions above, then run
+                  Click a tile to queue a walk, or pick actions above — up to{" "}
+                  {programLength}, then run
                 </span>
               </div>
             ) : (
@@ -276,6 +301,7 @@ export function App() {
                   selectedPieceId={state.selectedPieceId}
                   onCellClick={onCellClick}
                   forceRevealAll={debugRevealAll}
+                  heroFacing={heroFacing}
                 />
                 <InventoryPanel
                   game={state.game}

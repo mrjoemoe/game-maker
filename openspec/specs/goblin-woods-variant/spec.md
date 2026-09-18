@@ -3,9 +3,7 @@
 ## Purpose
 
 Owns Goblin Woods–specific gameplay requirements composed from the game component library.
-
 ## Requirements
-
 ### Requirement: Goblin Woods rough tiles declare pass items
 The Goblin Woods variant SHALL assign a pass item to each rough terrain tile type (pit, river, thicket, snare, goblin, brute, villain, castle). The variant SHALL NOT include sword-cache or shield-cache tile types. Its item composition SHALL include those pass items, reusing canonical library components where applicable. The castle's pass item SHALL be the sledgehammer.
 
@@ -106,3 +104,11 @@ The Goblin Woods rulebook SHALL state that walls sit between tiles, that fifteen
 #### Scenario: Rulebook covers shared edges
 - **WHEN** a player reads the edge-walls or pass-items section
 - **THEN** walls are described as between-tile edges and pass/sledgehammer clearing is clear
+
+### Requirement: Click to chart a walk
+Goblin Woods SHALL let the player chart orthogonal moves by activating a destination tile. That is a shortcut for filling move slots; executing the chart still follows programmed-run rules.
+
+#### Scenario: Rulebook mentions click-to-chart
+- **WHEN** a player reads how a turn works
+- **THEN** the rulebook says they may click a tile to queue a walk around walls
+
