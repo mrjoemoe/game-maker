@@ -51,13 +51,6 @@ function effectIcon(tileType: TileTypeDefinition, resolved?: boolean): string | 
   }
 }
 
-const SIDE_LABEL: Record<TileSide, string> = {
-  n: "north",
-  e: "east",
-  s: "south",
-  w: "west",
-};
-
 export function TileView({
   coord,
   tile,
@@ -78,7 +71,6 @@ export function TileView({
   const resolvedClass = tile.resolved ? " resolved" : "";
   const isSolidWall =
     shownFaceUp && tileEffect(tileType).kind === "wall";
-  // Always show edge walls; BoardView only passes each edge once (e/s).
   const walls = edgeWallSides;
   const wallLabel =
     walls.length > 0 ? ` walls ${walls.join(",")}` : "";
@@ -95,14 +87,6 @@ export function TileView({
           : `Tile ${coord.x},${coord.y} face down${wallLabel}`
       }
     >
-      {walls.map((side) => (
-        <span
-          key={side}
-          className={`tile-wall tile-wall-${side}`}
-          aria-hidden="true"
-          title={`Wall on ${SIDE_LABEL[side]} side`}
-        />
-      ))}
       {isSolidWall ? (
         <span className="solid-wall-frame" aria-hidden="true" />
       ) : null}

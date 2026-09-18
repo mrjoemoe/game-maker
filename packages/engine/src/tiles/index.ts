@@ -18,6 +18,7 @@ export type TileEffect =
 export type {
   EdgeWallConfig,
   EdgeWallKey,
+  EdgeWallSegment,
   SideWallConfig,
   SideWallWeights,
   TileSide,
@@ -28,6 +29,7 @@ export {
   clearEdgeWall,
   createSeededRandom,
   edgeKeyBetween,
+  edgeWallSegments,
   generateConnectedEdgeWalls,
   hasEdgeWall,
   horizontalEdgeKey,
@@ -35,6 +37,7 @@ export {
   isGridConnected,
   listInternalEdges,
   oppositeSide,
+  parseEdgeWallKey,
   sideToward,
   verticalEdgeKey,
 } from "./sides.js";

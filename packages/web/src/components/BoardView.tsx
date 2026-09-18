@@ -6,6 +6,7 @@ import {
   type Coord,
   type GameState,
 } from "@game-maker/engine";
+import { BoardWalls } from "./BoardWalls";
 import { TileView } from "./TileView";
 
 type BoardViewProps = {
@@ -33,36 +34,37 @@ export function BoardView({
   }
 
   return (
-    <div
-      className="board"
-      style={{
-        gridTemplateColumns: `repeat(${width}, minmax(72px, 1fr))`,
-      }}
-    >
-      {rows.flat().map((coord) => {
-        const tile = game.board.cells[coordKey(coord)];
-        const tileType = resolveTileType(game.board.tileTypes, tile.typeId);
-        const piece = pieceAt(game.pieces, coord);
-        const pieceType = piece ? game.pieceTypes[piece.typeId] : undefined;
-        const walls = cellEdgeWallSides(game.board.edgeWalls, coord).filter(
-          (side) => side === "e" || side === "s",
-        );
-        return (
-          <TileView
-            key={coordKey(coord)}
-            coord={coord}
-            tile={tile}
-            tileType={tileType}
-            walls={walls}
-            forceFaceUp={forceRevealAll}
-            piece={piece}
-            pieceLabel={pieceType?.icon ?? pieceType?.label}
-            pieceColor={pieceType?.color}
-            selected={Boolean(piece && piece.id === selectedPieceId)}
-            onClick={() => onCellClick(coord)}
-          />
-        );
-      })}
+    <div className="board-frame">
+      <div
+        className="board"
+        style={{
+          gridTemplateColumns: `repeat(${width}, minmax(72px, 1fr))`,
+        }}
+      >
+        {rows.flat().map((coord) => {
+          const tile = game.board.cells[coordKey(coord)];
+          const tileType = resolveTileType(game.board.tileTypes, tile.typeId);
+          const piece = pieceAt(game.pieces, coord);
+          const pieceType = piece ? game.pieceTypes[piece.typeId] : undefined;
+          const walls = cellEdgeWallSides(game.board.edgeWalls, coord);
+          return (
+            <TileView
+              key={coordKey(coord)}
+              coord={coord}
+              tile={tile}
+              tileType={tileType}
+              walls={walls}
+              forceFaceUp={forceRevealAll}
+              piece={piece}
+              pieceLabel={pieceType?.icon ?? pieceType?.label}
+              pieceColor={pieceType?.color}
+              selected={Boolean(piece && piece.id === selectedPieceId)}
+              onClick={() => onCellClick(coord)}
+            />
+          );
+        })}
+      </div>
+      <BoardWalls game={game} />
     </div>
   );
 }

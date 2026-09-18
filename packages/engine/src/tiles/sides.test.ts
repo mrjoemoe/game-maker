@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   edgeKeyBetween,
+  edgeWallSegments,
   generateConnectedEdgeWalls,
   hasEdgeWall,
   isCrossingBlocked,
   isGridConnected,
   listInternalEdges,
+  parseEdgeWallKey,
   verticalEdgeKey,
 } from "./sides.js";
 
@@ -41,5 +43,15 @@ describe("edge walls", () => {
     const key = verticalEdgeKey(1, 1);
     expect(hasEdgeWall([key], a, b)).toBe(true);
     expect(hasEdgeWall([key], b, a)).toBe(true);
+  });
+
+  it("parses horizontal and vertical wall keys into segments", () => {
+    expect(parseEdgeWallKey("h:1,2")).toEqual({ axis: "h", x: 1, y: 2 });
+    expect(parseEdgeWallKey("v:0,0")).toEqual({ axis: "v", x: 0, y: 0 });
+    expect(parseEdgeWallKey("nope")).toBeNull();
+    expect(edgeWallSegments(["h:1,2", "nope", "v:0,0"])).toEqual([
+      { axis: "h", x: 1, y: 2 },
+      { axis: "v", x: 0, y: 0 },
+    ]);
   });
 });

@@ -64,6 +64,36 @@ export function createSeededRandom(seed: number): () => number {
   };
 }
 
+export type EdgeWallSegment = {
+  axis: "h" | "v";
+  x: number;
+  y: number;
+};
+
+const EDGE_WALL_KEY_RE = /^(h|v):(-?\d+),(-?\d+)$/;
+
+export function parseEdgeWallKey(key: string): EdgeWallSegment | null {
+  const match = EDGE_WALL_KEY_RE.exec(key);
+  if (!match) return null;
+  return {
+    axis: match[1] as "h" | "v",
+    x: Number(match[2]),
+    y: Number(match[3]),
+  };
+}
+
+export function edgeWallSegments(
+  keys: Iterable<string> | undefined,
+): EdgeWallSegment[] {
+  if (!keys) return [];
+  const segments: EdgeWallSegment[] = [];
+  for (const key of keys) {
+    const parsed = parseEdgeWallKey(key);
+    if (parsed) segments.push(parsed);
+  }
+  return segments;
+}
+
 export function horizontalEdgeKey(x: number, y: number): EdgeWallKey {
   return `h:${x},${y}`;
 }

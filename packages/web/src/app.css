@@ -183,9 +183,8 @@
   }
 }
 
-.board {
-  display: grid;
-  gap: 0.45rem;
+.board-frame {
+  position: relative;
   background: var(--panel);
   border: 1px solid var(--line);
   padding: 0.75rem;
@@ -193,18 +192,53 @@
   overflow: visible;
 }
 
+.board {
+  display: grid;
+  gap: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  overflow: visible;
+}
+
+.board-walls {
+  position: absolute;
+  inset: 0.75rem;
+  width: auto;
+  height: auto;
+  pointer-events: none;
+  z-index: 5;
+  overflow: visible;
+}
+
+.board-wall-stroke {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.board-wall-stroke-outer {
+  stroke: #6b3f12;
+  stroke-width: 8px;
+}
+
+.board-wall-stroke-inner {
+  stroke: #e0b15a;
+  stroke-width: 4.5px;
+}
+
 .tile {
   position: relative;
   min-height: 84px;
-  border: 1px solid rgba(0, 0, 0, 0.18);
-  border-radius: 0.45rem;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 0.2rem;
   display: flex;
   align-items: flex-end;
   justify-content: flex-start;
-  padding: 0.4rem;
+  padding: 0.45rem 0.5rem;
   color: #111;
   text-align: left;
-  overflow: visible;
+  overflow: hidden;
   z-index: 0;
 }
 
@@ -946,75 +980,6 @@
   opacity: 0.75;
 }
 
-.tile-wall {
-  position: absolute;
-  z-index: 4;
-  pointer-events: none;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      #c48a3a 0 10px,
-      #e0b15a 10px 14px,
-      #a86f28 14px 18px
-    );
-  border: 1px solid #6b3f12;
-  box-shadow:
-    0 0 0 1px rgba(255, 236, 190, 0.55) inset,
-    0 1px 2px rgba(40, 24, 8, 0.35);
-}
-
-.tile-wall-n {
-  top: calc(-0.225rem - 5px);
-  left: 12%;
-  right: 12%;
-  height: 12px;
-  border-radius: 2px;
-}
-
-.tile-wall-s {
-  bottom: calc(-0.225rem - 5px);
-  left: 12%;
-  right: 12%;
-  height: 12px;
-  border-radius: 2px;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      #c48a3a 0 10px,
-      #e0b15a 10px 14px,
-      #a86f28 14px 18px
-    );
-}
-
-.tile-wall-w {
-  left: calc(-0.225rem - 5px);
-  top: 12%;
-  bottom: 12%;
-  width: 12px;
-  border-radius: 2px;
-  background:
-    repeating-linear-gradient(
-      180deg,
-      #c48a3a 0 10px,
-      #e0b15a 10px 14px,
-      #a86f28 14px 18px
-    );
-}
-
-.tile-wall-e {
-  right: calc(-0.225rem - 5px);
-  top: 12%;
-  bottom: 12%;
-  width: 12px;
-  border-radius: 2px;
-  background:
-    repeating-linear-gradient(
-      180deg,
-      #c48a3a 0 10px,
-      #e0b15a 10px 14px,
-      #a86f28 14px 18px
-    );
-}
 
 .tile.solid-wall {
   outline: 3px solid #1f1810;
