@@ -23,6 +23,7 @@ type TileViewProps = {
   pieceColor?: string;
   isHero?: boolean;
   facing?: Direction;
+  showCoords?: boolean;
   selected: boolean;
   onClick: () => void;
 };
@@ -66,6 +67,7 @@ export function TileView({
   pieceColor,
   isHero = false,
   facing = "down",
+  showCoords = false,
   selected,
   onClick,
 }: TileViewProps) {
@@ -97,6 +99,11 @@ export function TileView({
           : `Tile ${coord.x},${coord.y} face down${wallLabel}${occupant}`
       }
     >
+      {showCoords ? (
+        <span className="tile-coords" aria-hidden="true">
+          {coord.x},{coord.y}
+        </span>
+      ) : null}
       {isSolidWall ? (
         <span className="solid-wall-frame" aria-hidden="true" />
       ) : null}

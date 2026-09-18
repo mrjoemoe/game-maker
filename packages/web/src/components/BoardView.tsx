@@ -17,6 +17,7 @@ type BoardViewProps = {
   /** Debug: show every tile face-up without mutating game state. */
   forceRevealAll?: boolean;
   heroFacing?: Direction;
+  showCoords?: boolean;
 };
 
 export function BoardView({
@@ -25,6 +26,7 @@ export function BoardView({
   onCellClick,
   forceRevealAll = false,
   heroFacing = "down",
+  showCoords = false,
 }: BoardViewProps) {
   const { width, height } = game.board.grid;
   const rows: Coord[][] = [];
@@ -68,6 +70,7 @@ export function BoardView({
               pieceColor={pieceType?.color}
               isHero={isHero}
               facing={isHero ? heroFacing : undefined}
+              showCoords={showCoords}
               selected={Boolean(piece && piece.id === selectedPieceId)}
               onClick={() => onCellClick(coord)}
             />

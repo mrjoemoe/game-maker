@@ -1,5 +1,6 @@
 import {
   applyAction,
+  destinationFrom,
   isRunModeEnabled,
   isTileFlipEnabled,
   isTimelineModeEnabled,
@@ -24,6 +25,7 @@ import {
   useGameSession,
   type InteractionMode,
 } from "./store/gameSession";
+import { describeInspectedCell } from "./store/inspectCell";
 import { pathForTab } from "./store/playtestRoute";
 import { canQueueWalk, walkMovesToQueue } from "./store/queueWalk";
 import { sameDocumentNav, usePlaytestTab } from "./store/usePlaytestTab";
@@ -48,6 +50,11 @@ export function App() {
   const [executingIndex, setExecutingIndex] = useState<number | null>(null);
   const [selectedLoadout, setSelectedLoadout] = useState<string[]>([]);
   const [debugRevealAll, setDebugRevealAll] = useState(false);
+  const [debugEnabled, setDebugEnabled] = useState(false);
+  const [debugCoords, setDebugCoords] = useState(false);
+  const [debugWalkNow, setDebugWalkNow] = useState(false);
+  const [debugTeleport, setDebugTeleport] = useState(false);
+  const [inspected, setInspected] = useState<Coord | null>(null);
   const [heroFacing, setHeroFacing] = useState<Direction>("down");
   const executingRef = useRef(false);
   const cancelRef = useRef(false);
@@ -59,8 +66,46 @@ export function App() {
     setExecutingIndex(null);
   }, []);
 
+  const applyDebugWalk = (coord: Coord) => {
+    if (!heroId) return;
+    const extra = walkMovesToQueue(gameRef.current, [], coord, 99);
+    if (extra.length === 0) return;
+    let local = gameRef.current;
+    for (const step of extra) {
+      if (step.kind !== "move") break;
+      const piece = local.pieces.find((p) => p.id === heroId);
+      if (!piece) break;
+      const destination = destinationFrom(piece.position, step.direction);
+      try {
+        local = applyAction(local, {
+          type: "step",
+          pieceId: heroId,
+          destination,
+        });
+        setHeroFacing(step.direction);
+      } catch {
+        break;
+      }
+      if (local.run.status !== "playing") break;
+    }
+    dispatch({ type: "replaceGame", game: local });
+    gameRef.current = local;
+  };
+
   const onCellClick = (coord: Coord) => {
     if (runMode) {
+      setInspected(coord);
+      if (debugEnabled && debugTeleport && heroId) {
+        dispatch({
+          type: "game",
+          action: { type: "movePiece", pieceId: heroId, destination: coord },
+        });
+        return;
+      }
+      if (debugEnabled && debugWalkNow) {
+        applyDebugWalk(coord);
+        return;
+      }
       const remaining = programLength - path.length;
       if (
         !canQueueWalk(
@@ -110,6 +155,11 @@ export function App() {
     clearPath();
     setSelectedLoadout([]);
     setDebugRevealAll(false);
+    setDebugEnabled(false);
+    setDebugCoords(false);
+    setDebugWalkNow(false);
+    setDebugTeleport(false);
+    setInspected(null);
     setHeroFacing("down");
     dispatch({ type: "game", action: { type: "reset" } });
   };
@@ -302,6 +352,7 @@ export function App() {
                   onCellClick={onCellClick}
                   forceRevealAll={debugRevealAll}
                   heroFacing={heroFacing}
+                  showCoords={debugEnabled && debugCoords}
                 />
                 <InventoryPanel
                   game={state.game}
@@ -311,9 +362,39 @@ export function App() {
                 />
                 <TileTally game={state.game} />
                 <DebugPanel
+                  enabled={debugEnabled}
                   revealAll={debugRevealAll}
+                  showCoords={debugCoords}
+                  walkNow={debugWalkNow}
+                  teleport={debugTeleport}
+                  inspectorText={describeInspectedCell(state.game, inspected)}
+                  onToggleEnabled={() =>
+                    setDebugEnabled((prev) => {
+                      if (prev) {
+                        setDebugWalkNow(false);
+                        setDebugTeleport(false);
+                        setDebugCoords(false);
+                      }
+                      return !prev;
+                    })
+                  }
                   onToggleRevealAll={() =>
                     setDebugRevealAll((prev) => !prev)
+                  }
+                  onToggleCoords={() => setDebugCoords((prev) => !prev)}
+                  onToggleWalkNow={() =>
+                    setDebugWalkNow((prev) => {
+                      const next = !prev;
+                      if (next) setDebugTeleport(false);
+                      return next;
+                    })
+                  }
+                  onToggleTeleport={() =>
+                    setDebugTeleport((prev) => {
+                      const next = !prev;
+                      if (next) setDebugWalkNow(false);
+                      return next;
+                    })
                   }
                 />
               </div>
