@@ -43,7 +43,7 @@ export function ActionTrack({
   return (
     <section className="action-track" aria-label="Action track">
       <div className="action-track-header">
-        <h2>Action track</h2>
+        <h2>Actions</h2>
         <div className="path-actions">
           <button
             type="button"

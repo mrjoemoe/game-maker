@@ -321,11 +321,45 @@
   grid-template-columns: 1fr;
 }
 
-@media (min-width: 900px) {
-  .stage-run {
-    grid-template-columns: 1fr minmax(220px, 280px);
-    align-items: start;
-  }
+.actions-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 0.8rem 1rem 0.9rem;
+}
+
+.actions-panel .action-track,
+.actions-panel .action-bank {
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.actions-panel .action-bank h2 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.actions-panel .path-action-choices,
+.actions-panel .action-bank .path-action-choices {
+  max-height: none;
+  overflow: visible;
+  margin-bottom: 0.4rem;
+}
+
+.actions-panel .path-draft {
+  margin: 0;
 }
 
 .board-column {
@@ -471,9 +505,9 @@
 .path-planner h2,
 .action-bank h2,
 .action-track h2 {
-  margin: 0 0 0.35rem;
+  margin: 0;
   font-family: "Fraunces", "Palatino Linotype", serif;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 650;
 }
 

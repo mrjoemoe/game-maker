@@ -9,8 +9,7 @@ import {
   type ProgramStep,
 } from "@game-maker/engine";
 import { useCallback, useRef, useState } from "react";
-import { ActionBank } from "./components/ActionBank";
-import { ActionTrack } from "./components/ActionTrack";
+import { ActionsPanel } from "./components/ActionsPanel";
 import { BoardView } from "./components/BoardView";
 import { DebugPanel } from "./components/DebugPanel";
 import { InventoryPanel } from "./components/InventoryPanel";
@@ -218,7 +217,7 @@ export function App() {
             {runMode ? (
               <div className="modes">
                 <span className="mode-label">
-                  Program up to {programLength} actions, then run
+                  Program up to {programLength} actions above, then run
                 </span>
               </div>
             ) : (
@@ -252,57 +251,46 @@ export function App() {
 
           <main className={`stage${runMode ? " stage-run" : ""}`}>
             {runMode ? (
-              <>
-                <div className="board-column">
-                  <BoardView
-                    game={state.game}
-                    selectedPieceId={state.selectedPieceId}
-                    onCellClick={onCellClick}
-                    forceRevealAll={debugRevealAll}
-                  />
-                  <ActionTrack
-                    programLength={programLength}
-                    steps={path}
-                    items={allItems}
-                    executingIndex={executingIndex}
-                    disabled={state.game.run.status !== "playing"}
-                    onUndo={() => setPath((prev) => prev.slice(0, -1))}
-                    onClear={clearPath}
-                    onExecute={() => {
-                      void runProgramAnimated();
-                    }}
-                  />
-                  <InventoryPanel
-                    game={state.game}
-                    selectedLoadout={selectedLoadout}
-                    onToggleLoadout={toggleLoadout}
-                    onCommitLoadout={commitLoadout}
-                  />
-                  <TileTally game={state.game} />
-                  <DebugPanel
-                    revealAll={debugRevealAll}
-                    onToggleRevealAll={() =>
-                      setDebugRevealAll((prev) => !prev)
-                    }
-                  />
-                </div>
-                <div className="run-sidebar">
-                  <ActionBank
-                    programLength={programLength}
-                    steps={path}
-                    items={allItems}
-                    inventory={state.game.run.inventory}
-                    coins={state.game.coins}
-                    disabled={state.game.run.status !== "playing"}
-                    executing={executingIndex !== null}
-                    onAppend={(step) =>
-                      setPath((prev) =>
-                        prev.length >= programLength ? prev : [...prev, step],
-                      )
-                    }
-                  />
-                </div>
-              </>
+              <div className="board-column">
+                <ActionsPanel
+                  programLength={programLength}
+                  steps={path}
+                  items={allItems}
+                  inventory={state.game.run.inventory}
+                  coins={state.game.coins}
+                  executingIndex={executingIndex}
+                  disabled={state.game.run.status !== "playing"}
+                  onAppend={(step) =>
+                    setPath((prev) =>
+                      prev.length >= programLength ? prev : [...prev, step],
+                    )
+                  }
+                  onUndo={() => setPath((prev) => prev.slice(0, -1))}
+                  onClear={clearPath}
+                  onExecute={() => {
+                    void runProgramAnimated();
+                  }}
+                />
+                <BoardView
+                  game={state.game}
+                  selectedPieceId={state.selectedPieceId}
+                  onCellClick={onCellClick}
+                  forceRevealAll={debugRevealAll}
+                />
+                <InventoryPanel
+                  game={state.game}
+                  selectedLoadout={selectedLoadout}
+                  onToggleLoadout={toggleLoadout}
+                  onCommitLoadout={commitLoadout}
+                />
+                <TileTally game={state.game} />
+                <DebugPanel
+                  revealAll={debugRevealAll}
+                  onToggleRevealAll={() =>
+                    setDebugRevealAll((prev) => !prev)
+                  }
+                />
+              </div>
             ) : (
               <>
                 <BoardView
