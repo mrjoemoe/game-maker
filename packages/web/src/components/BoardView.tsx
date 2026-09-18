@@ -18,6 +18,10 @@ type BoardViewProps = {
   forceRevealAll?: boolean;
   heroFacing?: Direction;
   showCoords?: boolean;
+  pathKeys?: ReadonlySet<string>;
+  hoverKeys?: ReadonlySet<string>;
+  stepping?: boolean;
+  onCellHover?: (coord: Coord | null) => void;
 };
 
 export function BoardView({
@@ -27,6 +31,10 @@ export function BoardView({
   forceRevealAll = false,
   heroFacing = "down",
   showCoords = false,
+  pathKeys,
+  hoverKeys,
+  stepping = false,
+  onCellHover,
 }: BoardViewProps) {
   const { width, height } = game.board.grid;
   const rows: Coord[][] = [];
@@ -42,6 +50,7 @@ export function BoardView({
     <div className="board-frame">
       <div
         className="board"
+        onMouseLeave={() => onCellHover?.(null)}
         style={{
           gridTemplateColumns: `repeat(${width}, minmax(72px, 1fr))`,
         }}
@@ -71,8 +80,21 @@ export function BoardView({
               isHero={isHero}
               facing={isHero ? heroFacing : undefined}
               showCoords={showCoords}
+              pathHighlight={
+                piece
+                  ? undefined
+                  : pathKeys?.has(coordKey(coord))
+                    ? hoverKeys?.has(coordKey(coord))
+                      ? "both"
+                      : "queued"
+                    : hoverKeys?.has(coordKey(coord))
+                      ? "hover"
+                      : undefined
+              }
+              stepping={Boolean(stepping && piece && piece.id === selectedPieceId)}
               selected={Boolean(piece && piece.id === selectedPieceId)}
               onClick={() => onCellClick(coord)}
+              onHover={onCellHover ? (inside) => onCellHover(inside ? coord : null) : undefined}
             />
           );
         })}

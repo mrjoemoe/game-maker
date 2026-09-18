@@ -6,6 +6,7 @@ type HeroTokenProps = {
   label: string;
   selected?: boolean;
   facing?: Direction;
+  stepping?: boolean;
 };
 
 export function HeroToken({
@@ -13,10 +14,11 @@ export function HeroToken({
   label,
   selected = false,
   facing = "down",
+  stepping = false,
 }: HeroTokenProps) {
   return (
     <span
-      className={`hero-token facing-${facing}${selected ? " is-selected" : ""}`}
+      className={`hero-token facing-${facing}${selected ? " is-selected" : ""}${stepping ? " is-stepping" : ""}`}
       style={{ "--hero-color": color } as CSSProperties}
       title={label}
       aria-hidden="true"

@@ -1,6 +1,6 @@
 import { createInitialState, type GameDefinition } from "@game-maker/engine";
 import { describe, expect, it } from "vitest";
-import { canQueueWalk, walkMovesToQueue } from "./queueWalk.ts";
+import { canQueueWalk, cellsAlongMoves, walkMovesToQueue } from "./queueWalk.ts";
 
 const runDefinition: GameDefinition = {
   id: "queue-test",
@@ -64,5 +64,18 @@ describe("walkMovesToQueue", () => {
     expect(canQueueWalk([{ kind: "extract" }], 4, false, true)).toBe(false);
     expect(canQueueWalk([], 4, true, true)).toBe(false);
     expect(canQueueWalk([], 0, false, true)).toBe(false);
+  });
+
+  it("lists cells along queued moves", () => {
+    const game = createInitialState(runDefinition);
+    expect(
+      cellsAlongMoves(game.pieces[0]!.position, [
+        { kind: "move", direction: "down" },
+        { kind: "move", direction: "right" },
+      ]),
+    ).toEqual([
+      { x: 0, y: 1 },
+      { x: 1, y: 1 },
+    ]);
   });
 });

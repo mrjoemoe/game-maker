@@ -1,5 +1,6 @@
 import {
   applyAction,
+  coordKey,
   destinationFrom,
   isRunModeEnabled,
   isTileFlipEnabled,
@@ -10,7 +11,7 @@ import {
   type Direction,
   type ProgramStep,
 } from "@game-maker/engine";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { ActionsPanel } from "./components/ActionsPanel";
 import { BoardView } from "./components/BoardView";
 import { DebugPanel } from "./components/DebugPanel";
@@ -27,7 +28,12 @@ import {
 } from "./store/gameSession";
 import { describeInspectedCell } from "./store/inspectCell";
 import { pathForTab } from "./store/playtestRoute";
-import { canQueueWalk, walkMovesToQueue } from "./store/queueWalk";
+import {
+  canQueueWalk,
+  cellsAlongMoves,
+  projectedHeroPosition,
+  walkMovesToQueue,
+} from "./store/queueWalk";
 import { sameDocumentNav, usePlaytestTab } from "./store/usePlaytestTab";
 import "./app.css";
 
@@ -55,6 +61,7 @@ export function App() {
   const [debugWalkNow, setDebugWalkNow] = useState(false);
   const [debugTeleport, setDebugTeleport] = useState(false);
   const [inspected, setInspected] = useState<Coord | null>(null);
+  const [hoverCoord, setHoverCoord] = useState<Coord | null>(null);
   const [heroFacing, setHeroFacing] = useState<Direction>("down");
   const executingRef = useRef(false);
   const cancelRef = useRef(false);
@@ -160,6 +167,7 @@ export function App() {
     setDebugWalkNow(false);
     setDebugTeleport(false);
     setInspected(null);
+    setHoverCoord(null);
     setHeroFacing("down");
     dispatch({ type: "game", action: { type: "reset" } });
   };
@@ -201,11 +209,15 @@ export function App() {
         break;
       }
       setExecutingIndex(i);
+      const step = steps[i];
+      if (step?.kind === "move") {
+        setHeroFacing(step.direction);
+      }
       try {
         local = applyAction(local, {
           type: "programStep",
           pieceId: heroId,
-          step: steps[i],
+          step,
         });
         dispatch({ type: "replaceGame", game: local });
         gameRef.current = local;
@@ -236,6 +248,36 @@ export function App() {
   }, [heroId, path, programLength, dispatch]);
 
   const allItems = Object.values(state.game.items);
+  const pathKeys = useMemo(() => {
+    const hero = state.game.pieces.find((piece) => piece.id === heroId);
+    if (!hero) return new Set<string>();
+    return new Set(cellsAlongMoves(hero.position, path).map(coordKey));
+  }, [heroId, path, state.game.pieces]);
+  const hoverKeys = useMemo(() => {
+    if (!runMode || !hoverCoord) return new Set<string>();
+    const remaining = programLength - path.length;
+    if (
+      !canQueueWalk(
+        path,
+        remaining,
+        executingIndex !== null,
+        state.game.run.status === "playing",
+      )
+    ) {
+      return new Set<string>();
+    }
+    const extra = walkMovesToQueue(state.game, path, hoverCoord, remaining);
+    const origin = projectedHeroPosition(state.game, path);
+    if (!origin) return new Set<string>();
+    return new Set(cellsAlongMoves(origin, extra).map(coordKey));
+  }, [
+    executingIndex,
+    hoverCoord,
+    path,
+    programLength,
+    runMode,
+    state.game,
+  ]);
 
   return (
     <div className={timelineMode ? "app app-timeline" : runMode ? "app app-run" : "app"}>
@@ -334,11 +376,14 @@ export function App() {
                   coins={state.game.coins}
                   executingIndex={executingIndex}
                   disabled={state.game.run.status !== "playing"}
-                  onAppend={(step) =>
+                  onAppend={(step) => {
+                    if (step.kind === "move") {
+                      setHeroFacing(step.direction);
+                    }
                     setPath((prev) =>
                       prev.length >= programLength ? prev : [...prev, step],
-                    )
-                  }
+                    );
+                  }}
                   onUndo={() => setPath((prev) => prev.slice(0, -1))}
                   onClear={clearPath}
                   onExecute={() => {
@@ -352,6 +397,10 @@ export function App() {
                   forceRevealAll={debugRevealAll}
                   heroFacing={heroFacing}
                   showCoords={debugEnabled && debugCoords}
+                  pathKeys={pathKeys}
+                  hoverKeys={hoverKeys}
+                  stepping={executingIndex !== null}
+                  onCellHover={setHoverCoord}
                 />
                 <div className="run-under-board">
                   <InventoryPanel

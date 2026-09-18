@@ -1,5 +1,6 @@
 import {
   coordKey,
+  destinationFrom,
   isCrossingBlocked,
   projectWalk,
   resolveTileType,
@@ -58,6 +59,20 @@ export function walkMovesToQueue(
     kind: "move" as const,
     direction,
   }));
+}
+
+export function cellsAlongMoves(
+  origin: Coord,
+  steps: ProgramStep[],
+): Coord[] {
+  const cells: Coord[] = [];
+  let pos = { ...origin };
+  for (const step of steps) {
+    if (step.kind !== "move") continue;
+    pos = destinationFrom(pos, step.direction);
+    cells.push({ ...pos });
+  }
+  return cells;
 }
 
 export function canQueueWalk(

@@ -24,8 +24,11 @@ type TileViewProps = {
   isHero?: boolean;
   facing?: Direction;
   showCoords?: boolean;
+  pathHighlight?: "queued" | "hover" | "both";
+  stepping?: boolean;
   selected: boolean;
   onClick: () => void;
+  onHover?: (inside: boolean) => void;
 };
 
 function effectIcon(tileType: TileTypeDefinition, resolved?: boolean): string | null {
@@ -68,8 +71,11 @@ export function TileView({
   isHero = false,
   facing = "down",
   showCoords = false,
+  pathHighlight,
+  stepping = false,
   selected,
   onClick,
+  onHover,
 }: TileViewProps) {
   const shownFaceUp = tile.isFaceUp || forceFaceUp;
   const faceStyle: CSSProperties = shownFaceUp
@@ -90,9 +96,11 @@ export function TileView({
   return (
     <button
       type="button"
-      className={`tile${selected ? " selected" : ""}${shownFaceUp ? "" : " face-down"}${resolvedClass}${isSolidWall ? " solid-wall" : ""}${forceFaceUp && !tile.isFaceUp ? " debug-peek" : ""}`}
+      className={`tile${selected ? " selected" : ""}${shownFaceUp ? "" : " face-down"}${resolvedClass}${isSolidWall ? " solid-wall" : ""}${forceFaceUp && !tile.isFaceUp ? " debug-peek" : ""}${pathHighlight ? ` path-${pathHighlight}` : ""}`}
       style={faceStyle}
       onClick={onClick}
+      onMouseEnter={() => onHover?.(true)}
+      onMouseLeave={() => onHover?.(false)}
       aria-label={
         shownFaceUp
           ? `Tile ${coord.x},${coord.y} ${tileType.label}${tile.resolved ? " cleared" : ""}${wallLabel}${isSolidWall ? " blocked" : ""}${occupant}${forceFaceUp && !tile.isFaceUp ? " debug peek" : ""}`
@@ -124,6 +132,7 @@ export function TileView({
             label={pieceLabel ?? piece.typeId}
             selected={selected}
             facing={facing}
+            stepping={stepping}
           />
         ) : (
           <PawnToken
