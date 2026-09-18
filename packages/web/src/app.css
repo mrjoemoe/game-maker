@@ -229,13 +229,19 @@
 
 .tile {
   position: relative;
-  min-height: 84px;
+  min-height: 88px;
   border: 1px solid rgba(0, 0, 0, 0.14);
   border-radius: 0.2rem;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-start;
-  padding: 0.45rem 0.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(1.8rem, 1fr) auto;
+  grid-template-areas:
+    "icon coins"
+    "piece piece"
+    "label label";
+  align-items: stretch;
+  justify-items: start;
+  padding: 0.32rem 0.38rem 0.3rem;
   color: #111;
   text-align: left;
   overflow: hidden;
@@ -252,8 +258,17 @@
 }
 
 .tile-label {
-  font-size: 0.72rem;
+  grid-area: label;
+  justify-self: start;
+  align-self: end;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.68rem;
   font-weight: 600;
+  line-height: 1.15;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
@@ -263,9 +278,10 @@
 }
 
 .piece {
-  position: absolute;
-  top: 0.45rem;
-  right: 0.45rem;
+  grid-area: piece;
+  position: static;
+  justify-self: center;
+  align-self: center;
   min-width: 1.8rem;
   height: 1.8rem;
   padding: 0 0.35rem;
@@ -943,18 +959,20 @@
 }
 
 .tile-icon {
-  position: absolute;
-  top: 0.35rem;
-  left: 0.4rem;
-  font-size: 1rem;
+  grid-area: icon;
+  position: static;
+  justify-self: start;
+  align-self: start;
+  font-size: 0.95rem;
   line-height: 1;
 }
 
 .tile-coins {
-  position: absolute;
-  bottom: 0.35rem;
-  right: 0.35rem;
-  z-index: 3;
+  grid-area: coins;
+  position: static;
+  z-index: 1;
+  justify-self: end;
+  align-self: start;
   display: inline-flex;
   align-items: center;
   gap: 0.15rem;
@@ -988,9 +1006,9 @@
 
 .solid-wall-frame {
   position: absolute;
-  inset: 4px;
+  inset: 3px;
   border: 4px solid #2a2118;
-  border-radius: 0.25rem;
+  border-radius: 0.2rem;
   pointer-events: none;
   z-index: 1;
   box-shadow: inset 0 0 0 2px rgba(90, 74, 56, 0.6);
