@@ -1,12 +1,14 @@
 import {
   tileEffect,
   type Coord,
+  type Direction,
   type PieceInstance,
   type TileSide,
   type TileState,
   type TileTypeDefinition,
 } from "@game-maker/engine";
 import type { CSSProperties } from "react";
+import { HeroToken, PawnToken } from "./HeroToken";
 
 type TileViewProps = {
   coord: Coord;
@@ -19,6 +21,8 @@ type TileViewProps = {
   piece?: PieceInstance;
   pieceLabel?: string;
   pieceColor?: string;
+  isHero?: boolean;
+  facing?: Direction;
   selected: boolean;
   onClick: () => void;
 };
@@ -60,6 +64,8 @@ export function TileView({
   piece,
   pieceLabel,
   pieceColor,
+  isHero = false,
+  facing = "down",
   selected,
   onClick,
 }: TileViewProps) {
@@ -74,6 +80,10 @@ export function TileView({
   const walls = edgeWallSides;
   const wallLabel =
     walls.length > 0 ? ` walls ${walls.join(",")}` : "";
+  const occupant =
+    piece && (pieceLabel ?? piece.typeId)
+      ? ` with ${pieceLabel ?? piece.typeId}`
+      : "";
 
   return (
     <button
@@ -83,8 +93,8 @@ export function TileView({
       onClick={onClick}
       aria-label={
         shownFaceUp
-          ? `Tile ${coord.x},${coord.y} ${tileType.label}${tile.resolved ? " cleared" : ""}${wallLabel}${isSolidWall ? " blocked" : ""}${forceFaceUp && !tile.isFaceUp ? " debug peek" : ""}`
-          : `Tile ${coord.x},${coord.y} face down${wallLabel}`
+          ? `Tile ${coord.x},${coord.y} ${tileType.label}${tile.resolved ? " cleared" : ""}${wallLabel}${isSolidWall ? " blocked" : ""}${occupant}${forceFaceUp && !tile.isFaceUp ? " debug peek" : ""}`
+          : `Tile ${coord.x},${coord.y} face down${wallLabel}${occupant}`
       }
     >
       {isSolidWall ? (
@@ -101,15 +111,20 @@ export function TileView({
         {shownFaceUp ? tileType.label : "Hidden"}
       </span>
       {piece ? (
-        <span
-          className="piece"
-          style={{
-            background: pieceColor ?? "#333",
-            borderColor: selected ? "#fff" : "transparent",
-          }}
-        >
-          {pieceLabel ?? piece.typeId}
-        </span>
+        isHero ? (
+          <HeroToken
+            color={pieceColor ?? "#c47a2c"}
+            label={pieceLabel ?? piece.typeId}
+            selected={selected}
+            facing={facing}
+          />
+        ) : (
+          <PawnToken
+            color={pieceColor ?? "#333"}
+            label={pieceLabel ?? piece.typeId}
+            selected={selected}
+          />
+        )
       ) : null}
     </button>
   );

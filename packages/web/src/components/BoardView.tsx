@@ -4,6 +4,7 @@ import {
   pieceAt,
   resolveTileType,
   type Coord,
+  type Direction,
   type GameState,
 } from "@game-maker/engine";
 import { BoardWalls } from "./BoardWalls";
@@ -15,6 +16,7 @@ type BoardViewProps = {
   onCellClick: (coord: Coord) => void;
   /** Debug: show every tile face-up without mutating game state. */
   forceRevealAll?: boolean;
+  heroFacing?: Direction;
 };
 
 export function BoardView({
@@ -22,6 +24,7 @@ export function BoardView({
   selectedPieceId,
   onCellClick,
   forceRevealAll = false,
+  heroFacing = "down",
 }: BoardViewProps) {
   const { width, height } = game.board.grid;
   const rows: Coord[][] = [];
@@ -47,6 +50,11 @@ export function BoardView({
           const piece = pieceAt(game.pieces, coord);
           const pieceType = piece ? game.pieceTypes[piece.typeId] : undefined;
           const walls = cellEdgeWallSides(game.board.edgeWalls, coord);
+          const heroId = game.definition.run?.heroPieceId;
+          const isHero = Boolean(
+            piece &&
+              (piece.id === heroId || piece.typeId === "hero"),
+          );
           return (
             <TileView
               key={coordKey(coord)}
@@ -56,8 +64,10 @@ export function BoardView({
               walls={walls}
               forceFaceUp={forceRevealAll}
               piece={piece}
-              pieceLabel={pieceType?.icon ?? pieceType?.label}
+              pieceLabel={pieceType?.label ?? pieceType?.icon}
               pieceColor={pieceType?.color}
+              isHero={isHero}
+              facing={isHero ? heroFacing : undefined}
               selected={Boolean(piece && piece.id === selectedPieceId)}
               onClick={() => onCellClick(coord)}
             />
