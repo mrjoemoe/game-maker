@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { it } from "vitest";
 import {
   LANE_W,
   NODE_H,
@@ -191,3 +192,7 @@ if (secondFork.labels.length === 0) {
 }
 
 console.log("wires ok");
+
+it("wire assertions passed", () => {
+  /* assertions above throw if they fail */
+});

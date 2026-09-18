@@ -7,7 +7,8 @@
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0 --port 5173",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config ../../vitest.web.config.mjs"
   },
   "dependencies": {
     "@game-maker/engine": "*",
@@ -24,6 +25,6 @@
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.8.2",
-    "vite": "^6.2.0"
+    "vitest": "^3.0.9"
   }
 }

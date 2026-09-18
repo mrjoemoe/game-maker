@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { it } from "vitest";
 import type { TimelineBranch, TimelineNode, TimelineState } from "@game-maker/engine";
 import {
   NODE_W,
@@ -120,3 +121,7 @@ assert.equal(
 );
 
 console.log("layout ok");
+
+it("layout assertions passed", () => {
+  /* assertions above throw if they fail */
+});
