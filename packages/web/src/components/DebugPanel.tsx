@@ -5,6 +5,7 @@ type DebugPanelProps = {
   walkNow: boolean;
   teleport: boolean;
   inspectorText: string;
+  mapSeed?: number;
   onToggleEnabled: () => void;
   onToggleRevealAll: () => void;
   onToggleCoords: () => void;
@@ -19,6 +20,7 @@ export function DebugPanel({
   walkNow,
   teleport,
   inspectorText,
+  mapSeed,
   onToggleEnabled,
   onToggleRevealAll,
   onToggleCoords,
@@ -82,9 +84,33 @@ export function DebugPanel({
         </button>
       </div>
       {enabled ? (
-        <p className="debug-inspector" role="status">
-          {inspectorText}
-        </p>
+        <>
+          <p className="debug-inspector" role="status">
+            {inspectorText}
+          </p>
+          <div className="debug-tools">
+            <button
+              type="button"
+              className="debug-toggle"
+              disabled={mapSeed === undefined}
+              onClick={() => {
+                if (mapSeed === undefined) return;
+                void navigator.clipboard.writeText(String(mapSeed));
+              }}
+            >
+              Copy seed{mapSeed !== undefined ? ` ${mapSeed}` : ""}
+            </button>
+            <button
+              type="button"
+              className="debug-toggle"
+              onClick={() => {
+                void navigator.clipboard.writeText(inspectorText);
+              }}
+            >
+              Copy inspect
+            </button>
+          </div>
+        </>
       ) : (
         <p className="debug-note">
           Turn debug on to inspect tiles, overlay coordinates, walk the hero

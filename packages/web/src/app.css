@@ -441,10 +441,17 @@
 }
 
 .mode-label {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--muted);
-  max-width: 22rem;
+  max-width: 28rem;
   line-height: 1.35;
+}
+
+.map-seed {
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
 }
 
 .stage-run {

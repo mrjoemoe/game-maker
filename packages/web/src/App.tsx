@@ -11,7 +11,7 @@ import {
   type Direction,
   type ProgramStep,
 } from "@game-maker/engine";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActionsPanel } from "./components/ActionsPanel";
 import { BoardView } from "./components/BoardView";
 import { DebugPanel } from "./components/DebugPanel";
@@ -34,6 +34,7 @@ import {
   projectedHeroPosition,
   walkMovesToQueue,
 } from "./store/queueWalk";
+import { isTypingTarget, runKeyCommand } from "./store/runKeys";
 import { sameDocumentNav, usePlaytestTab } from "./store/usePlaytestTab";
 import "./app.css";
 
@@ -72,6 +73,18 @@ export function App() {
     setPath([]);
     setExecutingIndex(null);
   }, []);
+
+  const appendStep = useCallback(
+    (step: ProgramStep) => {
+      if (step.kind === "move") {
+        setHeroFacing(step.direction);
+      }
+      setPath((prev) =>
+        prev.length >= programLength ? prev : [...prev, step],
+      );
+    },
+    [programLength],
+  );
 
   const applyDebugWalk = (coord: Coord) => {
     if (!heroId) return;
@@ -247,7 +260,60 @@ export function App() {
     setPath([]);
   }, [heroId, path, programLength, dispatch]);
 
+  useEffect(() => {
+    if (!runMode) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (isTypingTarget(event.target)) return;
+      const command = runKeyCommand(event.key, {
+        alt: event.altKey,
+        ctrl: event.ctrlKey,
+        meta: event.metaKey,
+      });
+      if (!command) return;
+      if (command.kind === "move") {
+        event.preventDefault();
+        const remaining = programLength - path.length;
+        if (
+          !canQueueWalk(
+            path,
+            remaining,
+            executingIndex !== null,
+            state.game.run.status === "playing",
+          )
+        ) {
+          return;
+        }
+        appendStep({ kind: "move", direction: command.direction });
+        return;
+      }
+      if (command.kind === "clear") {
+        event.preventDefault();
+        clearPath();
+        return;
+      }
+      if (command.kind === "debug") {
+        event.preventDefault();
+        setDebugEnabled((prev) => !prev);
+        return;
+      }
+      event.preventDefault();
+      void runProgramAnimated();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [
+    appendStep,
+    clearPath,
+    executingIndex,
+    path,
+    programLength,
+    runMode,
+    runProgramAnimated,
+    state.game.run.status,
+  ]);
+
   const allItems = Object.values(state.game.items);
+  const mapSeed = state.game.definition.board.edgeWalls?.seed;
   const pathKeys = useMemo(() => {
     const hero = state.game.pieces.find((piece) => piece.id === heroId);
     if (!hero) return new Set<string>();
@@ -333,8 +399,8 @@ export function App() {
             {runMode ? (
               <div className="modes">
                 <span className="mode-label">
-                  Click a tile to queue a walk, or pick actions above — up to{" "}
-                  {programLength}, then run
+                  Click a tile or use arrows to queue a walk — up to{" "}
+                  {programLength}, then run. Esc clears · D debug · Enter runs
                 </span>
               </div>
             ) : (
@@ -360,6 +426,9 @@ export function App() {
             {runMode ? (
               <RunHud game={state.game} onSoftReset={softReset} />
             ) : null}
+            {runMode && mapSeed !== undefined ? (
+              <span className="map-seed">Seed {mapSeed}</span>
+            ) : null}
             <button type="button" className="reset" onClick={hardReset}>
               {runMode ? "New map" : "Reset"}
             </button>
@@ -376,14 +445,7 @@ export function App() {
                   coins={state.game.coins}
                   executingIndex={executingIndex}
                   disabled={state.game.run.status !== "playing"}
-                  onAppend={(step) => {
-                    if (step.kind === "move") {
-                      setHeroFacing(step.direction);
-                    }
-                    setPath((prev) =>
-                      prev.length >= programLength ? prev : [...prev, step],
-                    );
-                  }}
+                  onAppend={appendStep}
                   onUndo={() => setPath((prev) => prev.slice(0, -1))}
                   onClear={clearPath}
                   onExecute={() => {
@@ -418,6 +480,7 @@ export function App() {
                       walkNow={debugWalkNow}
                       teleport={debugTeleport}
                       inspectorText={describeInspectedCell(state.game, inspected)}
+                      mapSeed={mapSeed}
                       onToggleEnabled={() =>
                         setDebugEnabled((prev) => {
                           if (prev) {
